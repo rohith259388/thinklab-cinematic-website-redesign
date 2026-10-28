@@ -1,0 +1,294 @@
+@import "tailwindcss";
+
+@theme {
+  /* ThinkLab palette — sampled from thinklabdigitalsolutions.com */
+  --color-void: #050505;
+  --color-graphite: #0a0a0a;
+  --color-ink: #0d0d0d;
+  --color-carbon: #141313;
+  --color-smoke: #1f1d1d;
+  --color-ash: #545454;
+  --color-mist: #9a97a8;
+  --color-bone: #e9e3dc;
+  --color-paper: #fcfcf7;
+
+  --color-violet: #7e6ff0;
+  --color-lavender: #a280ff;
+  --color-lilac: #c5b0ff;
+  --color-iris: #9f92ff;
+  --color-deep: #180a40;
+  --color-abyss: #000319;
+  --color-royal: #2a1170;
+
+  --color-champagne: #e4c390;
+  --color-ember: #f7ad85;
+
+  --font-display: var(--font-fraunces), "Georgia", serif;
+  --font-body: var(--font-grotesk), "Helvetica Neue", sans-serif;
+  --font-mono: var(--font-plex), "SFMono-Regular", monospace;
+
+  --ease-liquid: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-silk: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --animate-marquee: marquee 36s linear infinite;
+  --animate-orbit-slow: orbit 14s linear infinite;
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes orbit {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+}
+
+html {
+  background: var(--color-void);
+  scroll-behavior: auto;
+}
+
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
+body {
+  background: var(--color-void);
+  color: var(--color-paper);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(126, 111, 240, 0.85);
+  color: #fcfcf7;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #2a1170, #7e6ff0);
+  border-radius: 8px;
+  border: 2px solid #0a0a0a;
+}
+
+@media (pointer: fine) {
+  body,
+  a,
+  button,
+  [data-cursor] {
+    cursor: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Molten-glass material language — the bulb as interface DNA          */
+/* ------------------------------------------------------------------ */
+
+.glass {
+  position: relative;
+  background:
+    linear-gradient(160deg, rgba(197, 176, 255, 0.055), rgba(197, 176, 255, 0.012) 38%, rgba(228, 195, 144, 0.02)),
+    rgba(13, 13, 13, 0.42);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  border: 1px solid rgba(197, 176, 255, 0.12);
+  border-radius: 1.25rem;
+}
+
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(140deg, rgba(197, 176, 255, 0.35), transparent 32%, transparent 68%, rgba(228, 195, 144, 0.22));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.hairline {
+  background: linear-gradient(90deg, transparent, rgba(197, 176, 255, 0.35), rgba(228, 195, 144, 0.25), transparent);
+  height: 1px;
+}
+
+.text-outline {
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(197, 176, 255, 0.4);
+}
+
+.glow-violet {
+  text-shadow: 0 0 22px rgba(126, 111, 240, 0.55), 0 0 64px rgba(126, 111, 240, 0.28);
+}
+
+/* Liquid sheen that travels across interactive surfaces */
+.sheen {
+  position: relative;
+  overflow: hidden;
+}
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(115deg, transparent 42%, rgba(197, 176, 255, 0.16) 50%, rgba(228, 195, 144, 0.1) 54%, transparent 62%);
+  transform: translateX(-120%) rotate(0.001deg);
+  transition: transform 1.1s var(--ease-liquid);
+  pointer-events: none;
+}
+.sheen:hover::after {
+  transform: translateX(120%) rotate(0.001deg);
+}
+
+/* Primary action — a droplet of light */
+.btn-drop {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #9f92ff, #7e6ff0 55%, #5b4a8a);
+  color: #fcfcf7;
+  box-shadow:
+    0 0 0 1px rgba(197, 176, 255, 0.35) inset,
+    0 12px 40px -10px rgba(126, 111, 240, 0.65),
+    0 2px 12px rgba(126, 111, 240, 0.4);
+  transition: transform 0.6s var(--ease-liquid), box-shadow 0.6s var(--ease-liquid);
+  overflow: hidden;
+}
+.btn-drop::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: radial-gradient(120% 160% at 30% 0%, rgba(252, 252, 247, 0.35), transparent 42%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.btn-drop:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    0 0 0 1px rgba(197, 176, 255, 0.55) inset,
+    0 18px 60px -8px rgba(126, 111, 240, 0.8),
+    0 4px 18px rgba(126, 111, 240, 0.5);
+}
+.btn-drop:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(197, 176, 255, 0.25);
+  color: var(--color-bone);
+  backdrop-filter: blur(12px);
+  transition: border-color 0.5s var(--ease-liquid), background 0.5s var(--ease-liquid), transform 0.6s var(--ease-liquid);
+}
+.btn-ghost:hover {
+  border-color: rgba(197, 176, 255, 0.6);
+  background: rgba(126, 111, 240, 0.08);
+  transform: translateY(-2px);
+}
+
+/* The breathing spark — preloader & loading states */
+@keyframes spark-breathe {
+  0%, 100% { transform: scale(0.86); opacity: 0.75; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+.spark-core {
+  animation: spark-breathe 2.8s var(--ease-silk) infinite;
+  background: radial-gradient(circle at 38% 32%, #fcfcf7 0%, #e4c390 22%, #a280ff 58%, rgba(24, 10, 64, 0.2) 100%);
+  box-shadow:
+    0 0 24px rgba(162, 128, 255, 0.8),
+    0 0 80px rgba(126, 111, 240, 0.5),
+    0 0 160px rgba(24, 10, 64, 0.9);
+  border-radius: 999px;
+}
+
+/* Thin luminous divider that draws itself */
+.energy-line {
+  transform-origin: left center;
+  background: linear-gradient(90deg, rgba(126, 111, 240, 0), rgba(162, 128, 255, 0.8), rgba(228, 195, 144, 0.7), rgba(126, 111, 240, 0));
+  height: 1px;
+}
+
+/* Chapter caption chips for the scroll journey */
+.chapter-chip {
+  border: 1px solid rgba(197, 176, 255, 0.18);
+  background: rgba(10, 10, 10, 0.5);
+  backdrop-filter: blur(10px);
+}
+
+/* Accordion shell */
+.acc-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.7s var(--ease-liquid);
+}
+.acc-panel[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.acc-panel > div {
+  overflow: hidden;
+}
+
+/* Input surfaces */
+.field {
+  width: 100%;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(197, 176, 255, 0.14);
+  background: rgba(13, 13, 13, 0.55);
+  padding: 0.95rem 1.15rem;
+  color: var(--color-paper);
+  outline: none;
+  transition: border-color 0.4s var(--ease-liquid), box-shadow 0.4s var(--ease-liquid), background 0.4s var(--ease-liquid);
+}
+.field::placeholder {
+  color: rgba(154, 151, 168, 0.55);
+}
+.field:focus {
+  border-color: rgba(162, 128, 255, 0.65);
+  box-shadow: 0 0 0 3px rgba(126, 111, 240, 0.18), 0 0 30px -6px rgba(126, 111, 240, 0.45);
+  background: rgba(13, 13, 13, 0.8);
+}
+
+select.field option {
+  background: #0d0d0d;
+  color: #fcfcf7;
+}
+
+/* Grain overlay for cinematic texture */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: -100%;
+  z-index: 70;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain-shift 0.9s steps(4) infinite;
+}
+@keyframes grain-shift {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-2%, 3%); }
+  50% { transform: translate(3%, -2%); }
+  75% { transform: translate(-1%, -3%); }
+  100% { transform: translate(2%, 2%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grain::after,
+  .spark-core {
+    animation: none;
+  }
+}
