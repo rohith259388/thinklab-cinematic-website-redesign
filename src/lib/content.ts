@@ -35,6 +35,8 @@ export interface Service {
   title: string;
   /** What the service contributes to the living structure (scene language). */
   layer: string;
+  /** One-line version used on the services explorer. */
+  summary: string;
   description: string;
   capabilities: string[];
 }
@@ -45,6 +47,8 @@ export const SERVICES: Service[] = [
     index: '01',
     title: 'Digital Marketing',
     layer: 'Marketing adds motion',
+    summary:
+      'SEO, paid ads and social campaigns that bring in consistent, qualified leads.',
     description:
       'Our digital marketing services combine SEO, paid advertising, and social media marketing to improve online visibility, audience, and generate consistent leads through data-driven campaigns and continuous optimisation.',
     capabilities: ['SEO & Content', 'Google & Meta Ads', 'Social Media Marketing', 'Performance Campaigns'],
@@ -54,6 +58,8 @@ export const SERVICES: Service[] = [
     index: '02',
     title: 'Website Development',
     layer: 'Development adds architectural geometry',
+    summary:
+      'Fast, responsive websites and stores built to turn visitors into customers.',
     description:
       'We create fast, responsive websites including business sites, e-commerce platforms, and conversion-focused landing pages, designed to engage visitors, support marketing campaigns, and turn traffic into customers.',
     capabilities: ['Business Websites', 'E-Commerce Platforms', 'Landing Pages', 'CRO & Speed'],
@@ -63,6 +69,8 @@ export const SERVICES: Service[] = [
     index: '03',
     title: 'Brand Strategy',
     layer: 'Branding adds colour and identity',
+    summary:
+      'Positioning, identity and messaging that make your business instantly recognisable.',
     description:
       'Our brand strategy services cover brand positioning, visual identity, and messaging development to help businesses communicate clearly, build recognition, and maintain a consistent professional presence online.',
     capabilities: ['Brand Positioning', 'Visual Identity', 'Messaging', 'Brand Guidelines'],
@@ -72,6 +80,8 @@ export const SERVICES: Service[] = [
     index: '04',
     title: 'Workflow/AI Automation',
     layer: 'Automation connects systems',
+    summary:
+      'Automations and AI assistants that remove manual work and connect your tools.',
     description:
       'We build smart automation solutions including business process automation, marketing workflows, and system integrations to reduce manual work, improve efficiency, and ensure smooth data flow across your business tools.',
     capabilities: ['Process Automation', 'Marketing Workflows', 'System Integrations', 'AI Assistants'],
@@ -81,6 +91,8 @@ export const SERVICES: Service[] = [
     index: '05',
     title: 'CRM Services',
     layer: 'CRM creates memory',
+    summary:
+      'One system that keeps every lead, pipeline and follow-up in one place.',
     description:
       'We implement CRM systems that organise every customer relationship — pipelines, follow-ups, and customer data unified in one place so your team never loses a lead and every conversation builds on the last.',
     capabilities: ['CRM Implementation', 'Sales Pipelines', 'Lead Management', 'Reporting'],
@@ -90,11 +102,14 @@ export const SERVICES: Service[] = [
     index: '06',
     title: 'Strategic Planning',
     layer: 'Strategy draws the blueprint',
+    summary:
+      'A measurable roadmap — markets, channels, budgets and milestones.',
     description:
       'We map long-term digital roadways — market analysis, channel strategy, budgets and milestones — so every campaign, website and system is built against a clear, measurable growth plan.',
     capabilities: ['Market Analysis', 'Channel Strategy', 'Budget Planning', 'Growth Roadmaps'],
   },
-  { id: 'pr-events', index: '07', title: 'PR & Events', layer: 'Events bring people together', description: 'We help brands, businesses and communities organize impactful PR events through digital promotion, online registrations, attendee coordination and engaging event experiences.', capabilities: ['Event Promotion', 'Digital Registrations', 'Audience Engagement', 'Attendee Coordination'] },
+  { id: 'pr-events', index: '07', title: 'PR & Events', layer: 'Events bring people together', summary:
+      'PR and event experiences, promoted digitally from registration to the room.', description: 'We help brands, businesses and communities organize impactful PR events through digital promotion, online registrations, attendee coordination and engaging event experiences.', capabilities: ['Event Promotion', 'Digital Registrations', 'Audience Engagement', 'Attendee Coordination'] },
 ];
 
 export const HERO = {

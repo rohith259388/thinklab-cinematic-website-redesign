@@ -126,15 +126,15 @@ export function sampleHomeJourney(t: number, out: SceneState): SceneState {
 
 export const PAGE_SCENES: Record<Exclude<PageKey, 'home'>, SceneState> = {
   // About — molten glass as translucent architectural material; the lab is being built.
-  about: { stage: 2.85, melt: 1, bulb: 0, lattice: 0.9, flow: 0.35, warmth: 0.26, dim: 0.55, camZ: 8.0, camY: 0.15, spin: 0.1 },
+  about: { stage: 2.85, melt: 1, bulb: 0, lattice: 0.9, flow: 0.35, warmth: 0.26, dim: 0.78, camZ: 8.0, camY: 0.15, spin: 0.1 },
   // Services — mechanical, precision-engineered chambers.
-  services: { stage: 3.75, melt: 1, bulb: 0, lattice: 1, flow: 0.85, warmth: 0.38, dim: 0.62, camZ: 8.2, camY: 0, spin: 0.34 },
+  services: { stage: 3.75, melt: 1, bulb: 0, lattice: 1, flow: 0.85, warmth: 0.38, dim: 0.82, camZ: 8.2, camY: 0, spin: 0.34 },
   // Projects — completed work illuminates pathways through the structure.
   projects: { stage: 4.0, melt: 1, bulb: 0, lattice: 1, flow: 1, warmth: 0.5, dim: 0.62, camZ: 8.6, camY: -0.1, spin: 0.18 },
   // Blog — particles become knowledge; glowing connections.
-  blog: { stage: 2.35, melt: 1, bulb: 0, lattice: 0.4, flow: 0.55, warmth: 0.32, dim: 0.58, camZ: 7.4, camY: 0.1, spin: 0.08 },
+  blog: { stage: 2.35, melt: 1, bulb: 0, lattice: 0.4, flow: 0.55, warmth: 0.32, dim: 0.8, camZ: 7.4, camY: 0.1, spin: 0.08 },
   // Contact — energy returns to the centre; a new bulb slowly reforms. Warm light.
-  contact: { stage: 0.28, melt: 0.14, bulb: 1, lattice: 0, flow: 0.25, warmth: 1, dim: 0.2, camZ: 6.2, camY: 0.0, spin: 0.05 },
+  contact: { stage: 0.28, melt: 0.14, bulb: 1, lattice: 0, flow: 0.25, warmth: 1, dim: 0.74, camZ: 6.2, camY: 0.0, spin: 0.05 },
 };
 
 export const PAGE_META: Record<PageKey, { chapter: string; caption: string }> = {

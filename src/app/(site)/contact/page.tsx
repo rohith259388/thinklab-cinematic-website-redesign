@@ -22,6 +22,7 @@ export default function ContactPage() {
   return <CmsPage>{(
     <>
       <StageSetter page="contact" />
+      <div className="ink-surface">
       <PageHero
         page="contact"
         kicker={CONTACT_META.kicker}
@@ -109,6 +110,7 @@ export default function ContactPage() {
           </Magnetic>
         </Reveal>
       </section>
+      </div>
     </>
   )}</CmsPage>;
 }
