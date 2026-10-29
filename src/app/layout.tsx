@@ -2,11 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import { Fraunces, Space_Grotesk, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import { BRAND } from '@/lib/content';
-import ExperienceShell from '@/components/experience/ExperienceShell';
-import Cursor from '@/components/ui/Cursor';
-import Preloader from '@/components/ui/Preloader';
-import Nav from '@/components/ui/Nav';
-import Footer from '@/components/ui/Footer';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -67,12 +62,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={`${fraunces.variable} ${grotesk.variable} ${plex.variable}`}>
       <body className="grain overflow-x-clip bg-[#050505] text-[#fcfcf7]">
-        <Preloader />
-        <Cursor />
-        <ExperienceShell />
-        <Nav />
-        <main id="main" className="relative z-10">{children}</main>
-        <Footer />
+        {children}
       </body>
     </html>
   );

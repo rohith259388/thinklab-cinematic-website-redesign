@@ -30,3 +30,7 @@ export const projectCards = projects.map(p => ({
   tags: p.archive ? 'From the archive · Original case study ↗' : projectTags[p.slug] || 'Design · Development · Strategy',
   archive: p.archive,
 }));
+
+export function toProjectCard(p: LiveEntry & { tags?: string }) {
+  return {slug:p.slug,title:p.title.replace(/ [—–] .*/, '').replace(/\s*\(.*\)/, ''),image:p.image,href:p.archive?p.source:`/projects/${p.slug}`,tags:p.tags||(p.archive?'From the archive · Original case study ↗':projectTags[p.slug]||'Design · Development · Strategy'),archive:p.archive};
+}

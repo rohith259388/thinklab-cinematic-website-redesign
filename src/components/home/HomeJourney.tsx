@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import Link from 'next/link';
+import { CmsText, CmsLink } from '@/components/cms/Canvas';
 import { ArrowDown, ArrowUpRight } from 'lucide-react';
 import { ensureGsap } from '@/lib/gsap';
 import { motion, sampleHomeJourney, type SceneState } from '@/lib/motion';
@@ -106,15 +106,15 @@ export default function HomeJourney() {
     <section ref={wrap} className="journey" aria-label="The Living Idea">
       <div className="journey-stage">
         <div ref={heroIn} className="hero-composition">
-          <div data-hero-badge className="hero-eyebrow opacity-0"><span className="status-dot" /> INDEPENDENT THINKING. EXTRAORDINARY POSSIBILITIES.</div>
+          <div data-hero-badge className="hero-eyebrow opacity-0"><span className="status-dot" /> <CmsText field="hero.eyebrow">INDEPENDENT THINKING. EXTRAORDINARY POSSIBILITIES.</CmsText></div>
           <h1 className="hero-title">
-            <span className="hero-title-left"><span data-hero-line className="block opacity-0">Small spark.</span></span>
-            <span className="hero-title-right"><span data-hero-line className="block opacity-0">Big <em>impact.</em></span></span>
+            <span className="hero-title-left"><span data-hero-line className="block opacity-0"><CmsText field="hero.left">Small spark.</CmsText></span></span>
+            <span className="hero-title-right"><span data-hero-line className="block opacity-0"><CmsText field="hero.right">Big</CmsText> <em><CmsText field="hero.accent">impact.</CmsText></em></span></span>
           </h1>
           <div data-hero-ui className="hero-description opacity-0">
             <span className="micro-label">THINKLAB® — DIGITAL SOLUTIONS</span>
-            <p>We connect bold ideas, thoughtful design and intelligent technology to move your business forward.</p>
-            <Link href="/contact" className="text-link">Let’s make something matter <ArrowUpRight size={17} /></Link>
+            <p><CmsText field="hero.description">We connect bold ideas, thoughtful design and intelligent technology to move your business forward.</CmsText></p>
+            <CmsLink field="hero.cta" href="/contact" className="text-link"><CmsText field="hero.cta.label">Let’s make something matter</CmsText> <ArrowUpRight size={17} /></CmsLink>
           </div>
           <div data-hero-ui className="hero-coordinate opacity-0"><span>STRATEGY × DESIGN × TECHNOLOGY</span><span>INDIA ↔ AUSTRALIA</span></div>
         </div>

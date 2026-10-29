@@ -6,3 +6,10 @@ out/
 npm-debug.log*
 .DS_Store
 *.tsbuildinfo
+
+.env.local
+.env.production
+
+.cms-test.env
+
+.cms-browser-test.json

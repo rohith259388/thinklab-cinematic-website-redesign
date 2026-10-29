@@ -27,3 +27,7 @@ The enquiry API requires a valid `DATABASE_URL` and the existing leads schema. W
 `npm run typecheck`, `npm run lint`, `npm run build`. The scroll field symmetry, direction independence, viewport normalization, settling and refresh-rate checks run with `node scripts/check-project-bend.mjs`.
 
 The ESLint React immutability rule is disabled only for the original Three.js scene controller because it deliberately updates camera and scene objects every frame. Backup snapshots are excluded from linting.
+
+## Visual CMS
+
+Thinklab Studio is available at `/admin`. See [CMS.md](CMS.md) for the PostgreSQL bootstrap, publishing workflow, security architecture, verification commands and explicit remaining limitations. Production database configuration is required; no CMS credentials are embedded in the application.

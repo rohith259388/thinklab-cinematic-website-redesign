@@ -1,5 +1,6 @@
 'use client';
 
+import { CmsText,CmsLink } from '@/components/cms/Canvas';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -47,7 +48,7 @@ export default function Nav() {
         <Link href="/" className="wordmark" aria-label="Thinklab — Home">thinklab<span>®</span></Link>
         <span className="nav-descriptor">Ideas into impact.<br />Independent digital studio.</span>
         <div className="nav-actions">
-          <Link href="/contact" className="nav-contact">Let’s talk <ArrowUpRight size={16} /></Link>
+          <CmsLink global field="header.cta" href="/contact" className="nav-contact"><CmsText global field="header.cta">Let’s talk</CmsText> <ArrowUpRight size={16} /></CmsLink>
           <button ref={toggle} onClick={() => setOpen(true)} className="menu-toggle" aria-label="Open menu" aria-expanded={open} aria-controls="site-menu">Menu <span className="menu-dots"><i /><i /></span></button>
         </div>
       </header>
@@ -55,7 +56,7 @@ export default function Nav() {
         <div className="menu-top"><Link href="/" className="wordmark" onClick={() => setOpen(false)}>thinklab<span>®</span></Link><button className="menu-toggle" onClick={() => setOpen(false)} aria-label="Close menu">Close <X size={19} /></button></div>
         <div className="menu-body">
           <div className="menu-note"><Plus size={32} /><p>A little curiosity.<br />A whole new possibility.</p><span className="micro-label">INDIA ↔ AUSTRALIA</span></div>
-          <nav aria-label="Main navigation">{NAV.map((item, i) => <Link key={item.href} href={item.href} aria-current={pathname === item.href ? 'page' : undefined} onClick={() => setOpen(false)} style={{ animationDelay: `${i * 45}ms` }}><span className="micro-label">0{i + 1}</span><span>{item.label}</span><ArrowUpRight /></Link>)}</nav>
+          <nav aria-label="Main navigation">{NAV.map((item, i) => <CmsLink global field={`nav.${i}`} key={item.href} href={item.href} aria-current={pathname === item.href ? 'page' : undefined} onClick={() => setOpen(false)} style={{ animationDelay: `${i * 45}ms` }}><span className="micro-label">0{i + 1}</span><span><CmsText global field={`nav.${i}.label`}>{item.label}</CmsText></span><ArrowUpRight /></CmsLink>)}</nav>
         </div>
         <div className="menu-bottom"><span>GOOD THINGS BEGIN WITH A CONVERSATION.</span>{BRAND.phones.map(p => <a key={p.href} href={p.href}>{p.label} <span>{p.region}</span></a>)}</div>
       </dialog>
