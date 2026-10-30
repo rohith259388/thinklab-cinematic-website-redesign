@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 import data from './src/lib/live-content.json';
 const nextConfig: NextConfig = {
+  // pg loads pg-cloudflare's real socket only under the workerd export condition, which file tracing skips.
+  outputFileTracingIncludes: { '/*': ['./node_modules/pg-cloudflare/**/*'] },
   async redirects() {
     const fixed = [['/about-us', '/about'], ['/contact-us', '/contact'], ['/case-studies', '/projects'], ['/blogs', '/blog']];
     const entries = [
@@ -14,3 +16,5 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+import('@opennextjs/cloudflare').then(m => m.initOpenNextCloudflareForDev());

@@ -28,6 +28,10 @@ The enquiry API requires a valid `DATABASE_URL` and the existing leads schema. W
 
 The ESLint React immutability rule is disabled only for the original Three.js scene controller because it deliberately updates camera and scene objects every frame. Backup snapshots are excluded from linting.
 
+## Deployment
+
+The site runs on Cloudflare Workers (`thinklab-website` on the info@thinklabdigitalsolutions.com account) through the OpenNext adapter. Every push to `main` deploys automatically via `.github/workflows/deploy.yml`, which needs a `CLOUDFLARE_API_TOKEN` repository secret with the "Edit Cloudflare Workers" template permissions. To deploy by hand, run `npx wrangler login` and then `npm run deploy`; `npm run preview` runs the production build locally in the Workers runtime. Production variables such as `DATABASE_URL`, `CMS_ORIGIN` and `CMS_SETUP_SECRET` are set with `npx wrangler secret put <NAME>`.
+
 ## Visual CMS
 
 Thinklab Studio is available at `/admin`. See [CMS.md](CMS.md) for the PostgreSQL bootstrap, publishing workflow, security architecture, verification commands and explicit remaining limitations. Production database configuration is required; no CMS credentials are embedded in the application.
