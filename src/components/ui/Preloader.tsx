@@ -244,13 +244,13 @@ export default function Preloader() {
     // Portal shockwave ring appears right behind favicon
     tl.set(portalRingRef.current, { opacity: 1, scale: 0.1 }, '+=0.05');
 
-    // The circular portal blooms and expands outwards from behind the favicon
+    // The circular portal blooms and expands outwards from behind the favicon slowly and smoothly
     tl.to(
       portalState,
       {
         radius: maxPortalRadius,
-        duration: 1.15,
-        ease: 'power3.inOut',
+        duration: 2.4,
+        ease: 'power2.inOut',
         onUpdate() {
           const r = portalState.radius;
           if (paperRef.current) {
@@ -274,22 +274,22 @@ export default function Preloader() {
       portalRingRef.current,
       {
         opacity: 0,
-        duration: 0.45,
+        duration: 0.8,
         ease: 'power2.out',
       },
-      '>-0.45',
+      '>-0.8',
     );
 
-    // Logo & Stage dissolve into the revealed HomePage
+    // Logo & Stage dissolve smoothly as the circular portal expands
     tl.to(
       stageRef.current,
       {
         opacity: 0,
-        scale: 1.15,
-        duration: 0.6,
+        scale: 1.12,
+        duration: 1.1,
         ease: 'power2.out',
       },
-      '<0.2',
+      '<0.4',
     );
 
     // App reveal scaling effect
@@ -298,7 +298,7 @@ export default function Preloader() {
       tl.fromTo(
         mainEl,
         { scale: 1.04, opacity: 0.8 },
-        { scale: 1, opacity: 1, duration: 0.9, ease: 'power3.out' },
+        { scale: 1, opacity: 1, duration: 1.8, ease: 'power2.out' },
         '<',
       );
     }
