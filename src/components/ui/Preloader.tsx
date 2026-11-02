@@ -170,9 +170,9 @@ export default function Preloader() {
         y: (i) => (cards[i] as unknown as { _targetY: number })._targetY,
         scale: (i) => (cards[i] as unknown as { _depth: number })._depth,
         opacity: 1,
-        duration: 0.75,
-        ease: 'back.out(2)',
-        stagger: 0.12,
+        duration: 0.65,
+        ease: 'back.out(1.8)',
+        stagger: 0.06,
       },
       '<',
     );
@@ -181,37 +181,20 @@ export default function Preloader() {
     tl.fromTo(
       '.card .wave, .card .code, .card .line, .card .arrow, .card .curve',
       { strokeDasharray: 60, strokeDashoffset: 60 },
-      { strokeDashoffset: 0, duration: 0.7, stagger: 0.03, ease: 'power2.out' },
-      '<0.1',
+      { strokeDashoffset: 0, duration: 0.55, stagger: 0.02, ease: 'power2.out' },
+      '<0.08',
     );
 
     // Heart and star bounce pop
     tl.fromTo(
       '.card .heart, .card .star',
       { scale: 0, transformOrigin: '50% 50%' },
-      { scale: 1, duration: 0.45, ease: 'back.out(3)', stagger: 0.14 },
-      '<0.2',
+      { scale: 1, duration: 0.4, ease: 'back.out(3)', stagger: 0.08 },
+      '<0.12',
     );
 
-    // Subtle idle floating drift
-    let idleTweens: gsap.core.Tween[] = [];
-    tl.add(() => {
-      idleTweens = cards.map((el, i) =>
-        gsap.to(el, {
-          y: `+=${8 + (i % 3) * 3}`,
-          x: `+=${5 - (i % 2) * 10}`,
-          duration: 2.0 + (i % 3) * 0.4,
-          yoyo: true,
-          repeat: -1,
-          ease: 'sine.inOut',
-        }),
-      );
-    });
-
-    // Stay in orbit for ~0.8s
-    tl.to({}, { duration: 0.8 });
-
     // --- PHASE 3: GATHER BACK BEHIND THE TEXT ---
+    // Brief orbit hold (0.35s), then cards accelerate directly into the core
     tl.to(
       cards,
       {
@@ -219,27 +202,24 @@ export default function Preloader() {
         y: 0,
         scale: 0.1,
         opacity: 0,
-        duration: 0.45,
-        ease: 'power3.in',
-        stagger: 0.02,
-        onStart: () => {
-          idleTweens.forEach((t) => t.kill());
-        },
+        duration: 0.38,
+        ease: 'power2.in',
+        stagger: 0.015,
       },
-      '+=0.1',
+      '+=0.35',
     );
 
     // --- PHASE 4: SIMULTANEOUS CIRCULAR BUBBLE EXPANSION ---
     const portalState = { radius: 0 };
 
-    // When convergence completes, the circular bubble expansion starts simultaneously!
-    // Inward convergence seamlessly transitions into outward expansion without discontinuity.
+    // At the exact moment of convergence, the circular portal EXPLODES outward with instant momentum!
+    // No stall, no delay — inward collapse directly triggers the outward blast.
     tl.to(
       portalState,
       {
         radius: maxPortalRadius,
-        duration: 1.8, // Smooth cinematic expansion
-        ease: 'power2.out',
+        duration: 1.5, // Cinematic yet responsive explosion
+        ease: 'power3.out', // Immediate high burst velocity clearing the core within 100ms
         onStart: () => {
           // Trigger the HomePage entrance animations as the portal opens
           motion.ready = true;
@@ -257,32 +237,30 @@ export default function Preloader() {
           }
         },
       },
-      '<0.45', // Simultaneous with convergence completion!
+      '>-0.08', // Explodes right as the cards collide into the center
     );
 
-    // Counter fades out immediately as portal begins expanding
-    if (counterRef.current) {
-      tl.to(counterRef.current, { opacity: 0, duration: 0.3, ease: 'power2.out' }, '<');
-    }
-
-    // Thinklab typography dissolves smoothly as the circular portal opens around it
+    // Thinklab typography dissolves at the exact moment the explosion starts
     if (logoWrapRef.current) {
       tl.to(
         logoWrapRef.current,
         {
           opacity: 0,
-          scale: 1.06,
-          y: -14,
-          duration: 0.55,
+          scale: 1.08,
+          duration: 0.35,
           ease: 'power2.out',
         },
-        '<0.05',
+        '<',
       );
+    }
+
+    // Counter fades out immediately
+    if (counterRef.current) {
+      tl.to(counterRef.current, { opacity: 0, duration: 0.25, ease: 'power2.out' }, '<');
     }
 
     return () => {
       tl.kill();
-      idleTweens.forEach((t) => t.kill());
       document.documentElement.style.overflow = '';
     };
   }, []);
