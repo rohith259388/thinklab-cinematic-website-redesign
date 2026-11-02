@@ -9,7 +9,6 @@ export default function Preloader() {
 
   const loaderRef = useRef<HTMLDivElement>(null);
   const paperRef = useRef<HTMLDivElement>(null);
-  const portalRingRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const logoWrapRef = useRef<HTMLDivElement>(null);
   const brandTextRef = useRef<HTMLDivElement>(null);
@@ -238,21 +237,16 @@ export default function Preloader() {
       );
     }
 
-    // --- PHASE 4: VERY SLOW & MAJESTIC CIRCULAR PORTAL EXPANSION ---
+    // --- PHASE 4: CIRCULAR PORTAL EXPANSION ---
     const portalState = { radius: 0 };
 
-    // Initialize portal ring at scale 1 (no transform matrix conflict) and visible
-    if (portalRingRef.current) {
-      gsap.set(portalRingRef.current, { opacity: 1, scale: 1, width: 0, height: 0 });
-    }
-
-    // The circular portal blooms and expands slowly from behind the favicon
+    // The circular portal explodes immediately from behind the favicon right as the 7 service icons converge
     tl.to(
       portalState,
       {
         radius: maxPortalRadius,
-        duration: 3.8, // Very slow and smooth cinematic expansion
-        ease: 'power2.inOut',
+        duration: 1.8, // Smooth cinematic expansion
+        ease: 'power2.out', // Starts immediately upon convergence without lag, gliding cleanly across the viewport
         onStart: () => {
           // Trigger the HomePage entrance animations as the portal opens
           motion.ready = true;
@@ -268,43 +262,29 @@ export default function Preloader() {
             paperRef.current.style.maskImage = mask;
             paperRef.current.style.webkitMaskImage = mask;
           }
-          if (portalRingRef.current) {
-            const diameter = r * 2;
-            portalRingRef.current.style.width = `${diameter}px`;
-            portalRingRef.current.style.height = `${diameter}px`;
-          }
         },
       },
-      '+=0.15',
+      '>-0.05', // Starts immediately as the 7 icons finish converging behind the favicon
     );
 
-    // Counter fades out as portal begins expanding
+    // Counter fades out immediately as portal begins expanding
     if (counterRef.current) {
-      tl.to(counterRef.current, { opacity: 0, duration: 0.5, ease: 'power2.out' }, '<0.2');
+      tl.to(counterRef.current, { opacity: 0, duration: 0.3, ease: 'power2.out' }, '<');
     }
 
-    // Logo & Brand text dissolve smoothly as the portal expands around them
-    tl.to(
-      stageRef.current,
-      {
-        opacity: 0,
-        scale: 1.1,
-        duration: 1.2,
-        ease: 'power2.out',
-      },
-      '<0.8',
-    );
-
-    // Portal shockwave ring fades out as it reaches the screen bounds
-    tl.to(
-      portalRingRef.current,
-      {
-        opacity: 0,
-        duration: 0.9,
-        ease: 'power2.out',
-      },
-      '>-0.9',
-    );
+    // Logo & Brand text dissolve smoothly as the portal bursts open around them
+    if (stageRef.current) {
+      tl.to(
+        stageRef.current,
+        {
+          opacity: 0,
+          scale: 1.08,
+          duration: 0.6,
+          ease: 'power2.out',
+        },
+        '<0.05',
+      );
+    }
 
     return () => {
       tl.kill();
@@ -367,20 +347,6 @@ export default function Preloader() {
           <path d="M 650 0 Q 520 280 250 520 T 50 880" stroke="#000" strokeWidth="1" strokeOpacity="0.05" fill="none" />
         </svg>
       </div>
-
-      {/* ============================================================ */}
-      {/* CIRCULAR PORTAL GLOWING RIM (Expands from behind the favicon) */}
-      {/* ============================================================ */}
-      <div
-        ref={portalRingRef}
-        className="portal-ring absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none opacity-0 will-change-transform z-20"
-        style={{
-          width: 0,
-          height: 0,
-          border: '3px solid rgba(255, 79, 163, 0.95)',
-          boxShadow: '0 0 25px #ff4fa3, 0 0 50px #8b5cf6, inset 0 0 25px rgba(255, 154, 60, 0.6)',
-        }}
-      />
 
       {/* ============================================================ */}
       {/* STAGE: CENTER FAVICON, 7 ORBITING CARDS & COUNTER */}
