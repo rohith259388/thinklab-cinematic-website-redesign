@@ -4,43 +4,20 @@ import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { motion } from '@/lib/motion';
 
-function makeTear(steps = 28) {
-  const pts: [number, number][] = [];
-  for (let i = 0; i <= steps; i++) {
-    const y = (i / steps) * 100;
-    // Organic jagged jitter across the center line
-    const jitter = Math.sin(i * 1.5) * 1.8 + (Math.random() - 0.5) * 4.2;
-    pts.push([50 + jitter, y]);
-  }
-  const left = ['0% 0%', ...pts.map(([x, y]) => `${x.toFixed(2)}% ${y.toFixed(2)}%`), '0% 100%'];
-  const right = ['100% 0%', ...pts.map(([x, y]) => `${x.toFixed(2)}% ${y.toFixed(2)}%`), '100% 100%'];
-  return {
-    left: `polygon(${left.join(',')})`,
-    right: `polygon(${right.join(',')})`,
-    pts,
-  };
-}
-
 export default function Preloader() {
   const [gone, setGone] = useState(false);
-  const [tearPolys, setTearPolys] = useState<{ left: string; right: string; pts: [number, number][] } | null>(null);
 
   const loaderRef = useRef<HTMLDivElement>(null);
+  const paperRef = useRef<HTMLDivElement>(null);
+  const portalRingRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const logoWrapRef = useRef<HTMLDivElement>(null);
   const brandTextRef = useRef<HTMLDivElement>(null);
-
-  const paperLeftRef = useRef<HTMLDivElement>(null);
-  const paperRightRef = useRef<HTMLDivElement>(null);
   const counterRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement[]>([]);
 
   useEffect(() => {
-    // Generate organic tear path
-    const polys = makeTear(28);
-    setTearPolys(polys);
-
-    // Lock page scroll
+    // Lock page scroll during preloader
     document.documentElement.style.overflow = 'hidden';
 
     // Reduced motion check
@@ -54,6 +31,9 @@ export default function Preloader() {
     const rx = Math.min(w * (isMobile ? 0.36 : 0.32), isMobile ? 180 : 420);
     const ry = Math.min(h * (isMobile ? 0.32 : 0.28), isMobile ? 220 : 260);
 
+    // Maximum radius needed for circular portal to fully clear viewport corners
+    const maxPortalRadius = (Math.hypot(w, h) / 2) * 1.25;
+
     // Position setup: calculate each card's target orbit position
     cards.forEach((el, i) => {
       const a = (i / cards.length) * Math.PI * 2 - Math.PI / 2;
@@ -62,7 +42,7 @@ export default function Preloader() {
       (el as unknown as { _targetY: number; _depth: number })._targetY = Math.sin(a) * ry;
       (el as unknown as { _depth: number })._depth = depth;
 
-      // Ensure cards are 100% hidden at origin
+      // Start hidden at origin (behind favicon)
       gsap.set(el, {
         x: 0,
         y: 0,
@@ -116,7 +96,6 @@ export default function Preloader() {
     const counterState = { val: 0 };
 
     // --- PHASE 1: 0% -> 100% FAVICON GROWS FROM A SMALL DOT TO ORIGINAL SIZE ---
-    // Counter runs 0 -> 100 over 2.4 seconds
     tl.to(
       counterState,
       {
@@ -132,7 +111,7 @@ export default function Preloader() {
       0,
     );
 
-    // Favicon smoothly scales up from small dot (0.04) to original full size (1.0)
+    // Favicon scales up from tiny dot (0.04) to original full size (1.0)
     if (logoWrapRef.current) {
       tl.to(
         logoWrapRef.current,
@@ -145,7 +124,7 @@ export default function Preloader() {
       );
     }
 
-    // Brand text fades in near the end of the counter (from 1.6s to 2.3s)
+    // Brand text fades in cleanly near the end of 100%
     if (brandTextRef.current) {
       tl.to(
         brandTextRef.current,
@@ -175,10 +154,9 @@ export default function Preloader() {
     }
 
     // --- PHASE 2: AFTER 100%, THE 7 SERVICE ICONS POP OUT ---
-    // Make cards visible right before popping
     tl.set(cards, { visibility: 'visible' }, '+=0.1');
 
-    // Cards pop out from center (0,0) to their loose orbit positions
+    // Cards burst outward from behind the logo into loose orbit
     tl.to(
       cards,
       {
@@ -224,18 +202,18 @@ export default function Preloader() {
       );
     });
 
-    // Cards stay in orbit for ~0.8s
+    // Stay in orbit for ~0.8s
     tl.to({}, { duration: 0.8 });
 
-    // --- PHASE 3: GATHER BACK INTO THE LOGO ---
+    // --- PHASE 3: GATHER BACK BEHIND THE FAVICON ---
     tl.to(
       cards,
       {
         x: 0,
         y: 0,
-        scale: 0.15,
+        scale: 0.1,
         opacity: 0,
-        duration: 0.48,
+        duration: 0.5,
         ease: 'power3.in',
         stagger: 0.02,
         onStart: () => {
@@ -245,7 +223,7 @@ export default function Preloader() {
       '+=0.1',
     );
 
-    // Logo pulse on absorption
+    // Favicon pulses with energy as it absorbs all 7 services
     if (logoWrapRef.current) {
       tl.to(
         logoWrapRef.current,
@@ -260,42 +238,68 @@ export default function Preloader() {
       );
     }
 
-    // --- PHASE 4: OBSIDIAN PAPER TEARS DOWN THE CENTER WITH GLOWING GRADIENT EDGES ---
-    // Fade stage out slightly right before tearing
-    tl.to(stageRef.current, { opacity: 0, scale: 0.96, duration: 0.25 }, '+=0.1');
+    // --- PHASE 4: CIRCULAR PORTAL EXPANSION FROM BEHIND THE FAVICON ---
+    const portalState = { radius: 0, ringOpacity: 1 };
 
-    // Left obsidian paper half tears and slides away
+    // Portal shockwave ring appears right behind favicon
+    tl.set(portalRingRef.current, { opacity: 1, scale: 0.1 }, '+=0.05');
+
+    // The circular portal blooms and expands outwards from behind the favicon
     tl.to(
-      paperLeftRef.current,
+      portalState,
       {
-        xPercent: -72,
-        rotation: -4,
-        duration: 0.95,
+        radius: maxPortalRadius,
+        duration: 1.15,
         ease: 'power3.inOut',
+        onUpdate() {
+          const r = portalState.radius;
+          if (paperRef.current) {
+            // Cut expanding circular hole through the paper to reveal the HomePage beneath
+            const mask = `radial-gradient(circle at 50% 50%, transparent ${r}px, black ${r + 2}px)`;
+            paperRef.current.style.maskImage = mask;
+            paperRef.current.style.webkitMaskImage = mask;
+          }
+          if (portalRingRef.current) {
+            const diameter = r * 2;
+            portalRingRef.current.style.width = `${diameter}px`;
+            portalRingRef.current.style.height = `${diameter}px`;
+          }
+        },
       },
       '<',
     );
 
-    // Right obsidian paper half tears and slides away
+    // Portal shockwave ring fades out as it reaches the screen bounds
     tl.to(
-      paperRightRef.current,
+      portalRingRef.current,
       {
-        xPercent: 72,
-        rotation: 4,
-        duration: 0.95,
-        ease: 'power3.inOut',
+        opacity: 0,
+        duration: 0.45,
+        ease: 'power2.out',
       },
-      '<',
+      '>-0.45',
     );
 
-    // App reveal underneath
+    // Logo & Stage dissolve into the revealed HomePage
+    tl.to(
+      stageRef.current,
+      {
+        opacity: 0,
+        scale: 1.15,
+        duration: 0.6,
+        ease: 'power2.out',
+      },
+      '<0.2',
+    );
+
+    // App reveal scaling effect
     const mainEl = document.getElementById('main');
     if (mainEl) {
       tl.fromTo(
         mainEl,
         { scale: 1.04, opacity: 0.8 },
         { scale: 1, opacity: 1, duration: 0.9, ease: 'power3.out' },
-        '<0.1',
+        '<',
       );
     }
 
@@ -315,128 +319,89 @@ export default function Preloader() {
       className="fixed inset-0 z-[9999] overflow-hidden pointer-events-none select-none bg-transparent"
       aria-hidden="true"
     >
-      {/* SVG Definitions: Gradient & Dark Paper Texture */}
+      {/* Shared Gradient & Paper Texture Lighting */}
       <svg width="0" height="0" className="absolute pointer-events-none" aria-hidden="true">
         <defs>
-          {/* Signature Favicon Gradient */}
           <linearGradient id="tlds-grad" gradientUnits="userSpaceOnUse" x1="0" y1="64" x2="64" y2="0">
             <stop offset="0" stopColor="#ff9a3c" />
             <stop offset="0.5" stopColor="#ff4fa3" />
             <stop offset="1" stopColor="#8b5cf6" />
           </linearGradient>
 
-          {/* Full Vertical Tear Seam Gradient */}
-          <linearGradient id="tlds-tear-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#ff9a3c" />
-            <stop offset="45%" stopColor="#ff4fa3" />
-            <stop offset="100%" stopColor="#8b5cf6" />
-          </linearGradient>
-
-          {/* Procedural Tactile Dark Paper Fiber Filter */}
-          <filter id="obsidian-paper-texture" x="-10%" y="-10%" width="120%" height="120%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="4" result="noise" />
-            <feDiffuseLighting in="noise" lightingColor="#ffffff" surfaceScale="1.4" result="light">
-              <feDistantLight azimuth="45" elevation="60" />
+          {/* Paper Texture Filter */}
+          <filter id="paper-texture" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="5" result="noise" />
+            <feDiffuseLighting in="noise" lightingColor="#ffffff" surfaceScale="2.8" result="light">
+              <feDistantLight azimuth="55" elevation="52" />
             </feDiffuseLighting>
-            <feComponentTransfer in="light" result="dimLight">
-              <feFuncR type="linear" slope="0.35" intercept="0.08" />
-              <feFuncG type="linear" slope="0.35" intercept="0.08" />
-              <feFuncB type="linear" slope="0.45" intercept="0.12" />
+            <feComponentTransfer in="light" result="brightLight">
+              <feFuncR type="linear" slope="0.94" intercept="0.06" />
+              <feFuncG type="linear" slope="0.94" intercept="0.06" />
+              <feFuncB type="linear" slope="0.94" intercept="0.06" />
             </feComponentTransfer>
-            <feBlend mode="overlay" in="SourceGraphic" in2="dimLight" />
+            <feBlend mode="multiply" in="SourceGraphic" in2="brightLight" />
           </filter>
         </defs>
       </svg>
 
       {/* ============================================================ */}
-      {/* TORN OBSIDIAN PAPER LAYER - LEFT HALF */}
+      {/* THE PAPER LAYER (Punched through by the expanding circular portal) */}
       {/* ============================================================ */}
       <div
-        ref={paperLeftRef}
-        className="paper paper-left absolute inset-0 w-full h-full will-change-transform"
+        ref={paperRef}
+        className="paper-layer absolute inset-0 w-full h-full will-change-transform"
         style={{
-          clipPath: tearPolys ? tearPolys.left : 'polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%)',
-          filter: 'drop-shadow(14px 0px 32px rgba(0,0,0,0.75))',
+          backgroundColor: '#fafafc',
         }}
       >
-        <div className="paper-inner absolute inset-0 bg-[#08080d]">
-          {/* Dark paper texture overlay with creases */}
-          <svg className="w-full h-full absolute inset-0" preserveAspectRatio="none">
-            <rect width="100%" height="100%" fill="#0a0a12" filter="url(#obsidian-paper-texture)" />
-            {/* Subtle paper fold shadows and highlights */}
-            <path d="M 0 140 Q 240 100 500 260 T 1000 420" stroke="#000" strokeWidth="1.5" strokeOpacity="0.4" fill="none" />
-            <path d="M 100 0 Q 320 300 580 540 T 920 880" stroke="#fff" strokeWidth="1" strokeOpacity="0.04" fill="none" />
-            <path d="M 50 620 Q 300 560 620 800" stroke="#000" strokeWidth="1.8" strokeOpacity="0.35" fill="none" />
-            <path d="M 260 220 L 440 390 L 330 580" stroke="#fff" strokeWidth="0.8" strokeOpacity="0.05" fill="none" />
-          </svg>
-
-          {/* Glowing brand gradient core fiber along the torn seam */}
-          <div
-            className="absolute inset-y-0 right-0 w-[5px] pointer-events-none opacity-90 blur-[1px]"
-            style={{
-              background: 'linear-gradient(to bottom, #ff9a3c, #ff4fa3, #8b5cf6)',
-              boxShadow: '0 0 18px rgba(255, 79, 163, 0.6), 0 0 30px rgba(139, 92, 246, 0.45)',
-            }}
-          />
-        </div>
+        <svg className="w-full h-full absolute inset-0" preserveAspectRatio="none">
+          <rect width="100%" height="100%" fill="#fafafc" filter="url(#paper-texture)" />
+          {/* Subtle natural paper creases */}
+          <path d="M 0 120 Q 250 80 500 240 T 1000 400" stroke="#000" strokeWidth="1" strokeOpacity="0.06" fill="none" />
+          <path d="M 120 0 Q 340 320 600 550 T 950 900" stroke="#000" strokeWidth="1.2" strokeOpacity="0.05" fill="none" />
+          <path d="M 40 600 Q 320 540 650 780" stroke="#fff" strokeWidth="1.5" strokeOpacity="0.4" fill="none" />
+          <path d="M 800 60 Q 600 220 300 380 T 0 650" stroke="#000" strokeWidth="1.2" strokeOpacity="0.06" fill="none" />
+          <path d="M 650 0 Q 520 280 250 520 T 50 880" stroke="#000" strokeWidth="1" strokeOpacity="0.05" fill="none" />
+        </svg>
       </div>
 
       {/* ============================================================ */}
-      {/* TORN OBSIDIAN PAPER LAYER - RIGHT HALF */}
+      {/* CIRCULAR PORTAL SHOCKWAVE RING (Expands from behind the favicon) */}
       {/* ============================================================ */}
       <div
-        ref={paperRightRef}
-        className="paper paper-right absolute inset-0 w-full h-full will-change-transform"
+        ref={portalRingRef}
+        className="portal-ring absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none opacity-0 will-change-transform z-10"
         style={{
-          clipPath: tearPolys ? tearPolys.right : 'polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%)',
-          filter: 'drop-shadow(-14px 0px 32px rgba(0,0,0,0.75))',
+          width: 0,
+          height: 0,
+          border: '3px solid rgba(255, 79, 163, 0.85)',
+          boxShadow: '0 0 30px #ff4fa3, 0 0 60px #8b5cf6, inset 0 0 30px rgba(255, 154, 60, 0.6)',
         }}
-      >
-        <div className="paper-inner absolute inset-0 bg-[#08080d]">
-          {/* Dark paper texture overlay with creases */}
-          <svg className="w-full h-full absolute inset-0" preserveAspectRatio="none">
-            <rect width="100%" height="100%" fill="#0a0a12" filter="url(#obsidian-paper-texture)" />
-            {/* Subtle paper fold shadows and highlights */}
-            <path d="M 820 80 Q 620 240 320 400 T 0 680" stroke="#000" strokeWidth="1.5" strokeOpacity="0.4" fill="none" />
-            <path d="M 680 0 Q 540 290 270 540 T 60 900" stroke="#fff" strokeWidth="1" strokeOpacity="0.04" fill="none" />
-            <path d="M 870 500 Q 570 480 220 720" stroke="#000" strokeWidth="1.8" strokeOpacity="0.35" fill="none" />
-            <path d="M 520 180 L 340 360 L 470 540" stroke="#fff" strokeWidth="0.8" strokeOpacity="0.05" fill="none" />
-          </svg>
-
-          {/* Glowing brand gradient core fiber along the torn seam */}
-          <div
-            className="absolute inset-y-0 left-0 w-[5px] pointer-events-none opacity-90 blur-[1px]"
-            style={{
-              background: 'linear-gradient(to bottom, #ff9a3c, #ff4fa3, #8b5cf6)',
-              boxShadow: '0 0 18px rgba(255, 79, 163, 0.6), 0 0 30px rgba(139, 92, 246, 0.45)',
-            }}
-          />
-        </div>
-      </div>
+      />
 
       {/* ============================================================ */}
-      {/* STAGE: CENTER LOGO, % COUNTER & ORBITING ICONS */}
+      {/* STAGE: CENTER FAVICON, 7 ORBITING CARDS & COUNTER */}
       {/* ============================================================ */}
       <div
         ref={stageRef}
-        className="stage absolute inset-0 grid place-items-center pointer-events-none will-change-transform z-10"
+        className="stage absolute inset-0 grid place-items-center pointer-events-none will-change-transform z-20"
       >
-        {/* CENTER FAVICON (Scales smoothly from small dot at 0% to original size at 100%) */}
+        {/* CENTER FAVICON (Z-index 30, so cards gather BEHIND it) */}
         <div
           ref={logoWrapRef}
-          className="logo relative flex flex-col items-center justify-center will-change-transform"
+          className="logo relative z-30 flex flex-col items-center justify-center will-change-transform"
           style={{ transform: 'scale(0.04)' }}
         >
-          {/* Luminous brand gradient bloom behind logo */}
+          {/* Soft ambient glow behind logo */}
           <div
-            className="absolute -inset-12 rounded-full blur-3xl opacity-60 pointer-events-none animate-pulse"
+            className="absolute -inset-10 rounded-full blur-2xl opacity-50 pointer-events-none"
             style={{
-              background: 'radial-gradient(circle, rgba(255, 79, 163, 0.35) 0%, rgba(139, 92, 246, 0.28) 45%, transparent 75%)',
+              background: 'radial-gradient(circle, rgba(255, 79, 163, 0.28) 0%, rgba(139, 92, 246, 0.2) 50%, transparent 75%)',
             }}
           />
 
           {/* High-Resolution Favicon Icon */}
-          <div className="relative w-[120px] h-[120px] md:w-[132px] md:h-[132px] rounded-3xl p-1 bg-gradient-to-tr from-white/10 to-white/5 border border-white/20 shadow-[0_16px_50px_rgba(139,92,246,0.35)] backdrop-blur-md overflow-hidden">
+          <div className="relative w-[124px] h-[124px] md:w-[136px] md:h-[136px] rounded-3xl p-1 bg-white/80 border border-black/10 shadow-[0_16px_40px_rgba(0,0,0,0.12)] backdrop-blur-md overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/images/tlds-favicon.png"
@@ -445,31 +410,31 @@ export default function Preloader() {
             />
           </div>
 
-          {/* Company Name on Obsidian Paper */}
+          {/* Company Name */}
           <div
             ref={brandTextRef}
             className="brand-text mt-4 flex flex-col items-center"
             style={{ opacity: 0 }}
           >
-            <span className="text-white/95 text-sm md:text-base font-bold tracking-[0.24em] uppercase">
+            <span className="text-[#14141e] text-sm md:text-base font-bold tracking-[0.24em] uppercase">
               Thinklab
             </span>
-            <span className="text-white/50 text-[10px] md:text-xs tracking-[0.28em] uppercase font-mono mt-0.5">
+            <span className="text-[#646473] text-[10px] md:text-xs tracking-[0.28em] uppercase font-mono mt-0.5">
               Digital Solutions
             </span>
           </div>
         </div>
 
-        {/* 7 SERVICE ICONS (Pop out into orbit AFTER 100% - Initially hidden via inline styles) */}
-        <div className="orbit absolute inset-0 grid place-items-center pointer-events-none">
+        {/* 7 SERVICE ICONS (Z-index 20: Pop out into orbit, then tuck BEHIND favicon) */}
+        <div className="orbit absolute inset-0 grid place-items-center pointer-events-none z-20">
           {/* 01 Digital Marketing (megaphone + sound waves + heart) */}
           <div
             ref={(el) => { if (el) cardsRef.current[0] = el; }}
             data-depth="1.0"
             style={{ opacity: 0, transform: 'scale(0)', visibility: 'hidden' }}
-            className="card c1 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/[0.06] border border-white/[0.16] backdrop-blur-[10px] shadow-[0_12px_36px_rgba(139,92,246,0.25)] will-change-transform"
+            className="card c1 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/90 border border-[#8b5cf6]/30 backdrop-blur-md shadow-[0_12px_32px_rgba(139,92,246,0.2)] will-change-transform"
           >
-            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-white/50 tracking-wider">
+            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-[#181824]/60 tracking-wider">
               01
             </span>
             <svg
@@ -500,9 +465,9 @@ export default function Preloader() {
             ref={(el) => { if (el) cardsRef.current[1] = el; }}
             data-depth="0.75"
             style={{ opacity: 0, transform: 'scale(0)', visibility: 'hidden' }}
-            className="card c2 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/[0.06] border border-white/[0.16] backdrop-blur-[10px] shadow-[0_12px_36px_rgba(139,92,246,0.25)] will-change-transform"
+            className="card c2 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/90 border border-[#8b5cf6]/30 backdrop-blur-md shadow-[0_12px_32px_rgba(139,92,246,0.2)] will-change-transform"
           >
-            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-white/50 tracking-wider">
+            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-[#181824]/60 tracking-wider">
               02
             </span>
             <svg
@@ -530,9 +495,9 @@ export default function Preloader() {
             ref={(el) => { if (el) cardsRef.current[2] = el; }}
             data-depth="0.9"
             style={{ opacity: 0, transform: 'scale(0)', visibility: 'hidden' }}
-            className="card c3 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/[0.06] border border-white/[0.16] backdrop-blur-[10px] shadow-[0_12px_36px_rgba(139,92,246,0.25)] will-change-transform"
+            className="card c3 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/90 border border-[#8b5cf6]/30 backdrop-blur-md shadow-[0_12px_32px_rgba(139,92,246,0.2)] will-change-transform"
           >
-            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-white/50 tracking-wider">
+            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-[#181824]/60 tracking-wider">
               03
             </span>
             <svg
@@ -548,8 +513,8 @@ export default function Preloader() {
               <path d="M10 50 L20 6 M54 50 L44 6" strokeWidth="1.5" strokeDasharray="3 3" />
               <circle cx="20" cy="6" r="3" fill="url(#tlds-grad)" stroke="none" />
               <circle cx="44" cy="6" r="3" fill="url(#tlds-grad)" stroke="none" />
-              <rect x="6" y="46" width="8" height="8" rx="1.5" fill="#08080d" />
-              <rect x="50" y="46" width="8" height="8" rx="1.5" fill="#08080d" />
+              <rect x="6" y="46" width="8" height="8" rx="1.5" fill="#f8f8fb" />
+              <rect x="50" y="46" width="8" height="8" rx="1.5" fill="#f8f8fb" />
             </svg>
           </div>
 
@@ -558,9 +523,9 @@ export default function Preloader() {
             ref={(el) => { if (el) cardsRef.current[3] = el; }}
             data-depth="0.7"
             style={{ opacity: 0, transform: 'scale(0)', visibility: 'hidden' }}
-            className="card c4 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/[0.06] border border-white/[0.16] backdrop-blur-[10px] shadow-[0_12px_36px_rgba(139,92,246,0.25)] will-change-transform"
+            className="card c4 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/90 border border-[#8b5cf6]/30 backdrop-blur-md shadow-[0_12px_32px_rgba(139,92,246,0.2)] will-change-transform"
           >
-            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-white/50 tracking-wider">
+            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-[#181824]/60 tracking-wider">
               04
             </span>
             <svg
@@ -588,9 +553,9 @@ export default function Preloader() {
             ref={(el) => { if (el) cardsRef.current[4] = el; }}
             data-depth="0.95"
             style={{ opacity: 0, transform: 'scale(0)', visibility: 'hidden' }}
-            className="card c5 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/[0.06] border border-white/[0.16] backdrop-blur-[10px] shadow-[0_12px_36px_rgba(139,92,246,0.25)] will-change-transform"
+            className="card c5 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/90 border border-[#8b5cf6]/30 backdrop-blur-md shadow-[0_12px_32px_rgba(139,92,246,0.2)] will-change-transform"
           >
-            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-white/50 tracking-wider">
+            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-[#181824]/60 tracking-wider">
               05
             </span>
             <svg
@@ -616,9 +581,9 @@ export default function Preloader() {
             ref={(el) => { if (el) cardsRef.current[5] = el; }}
             data-depth="0.8"
             style={{ opacity: 0, transform: 'scale(0)', visibility: 'hidden' }}
-            className="card c6 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/[0.06] border border-white/[0.16] backdrop-blur-[10px] shadow-[0_12px_36px_rgba(139,92,246,0.25)] will-change-transform"
+            className="card c6 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/90 border border-[#8b5cf6]/30 backdrop-blur-md shadow-[0_12px_32px_rgba(139,92,246,0.2)] will-change-transform"
           >
-            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-white/50 tracking-wider">
+            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-[#181824]/60 tracking-wider">
               06
             </span>
             <svg
@@ -644,9 +609,9 @@ export default function Preloader() {
             ref={(el) => { if (el) cardsRef.current[6] = el; }}
             data-depth="1.0"
             style={{ opacity: 0, transform: 'scale(0)', visibility: 'hidden' }}
-            className="card c7 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/[0.06] border border-white/[0.16] backdrop-blur-[10px] shadow-[0_12px_36px_rgba(139,92,246,0.25)] will-change-transform"
+            className="card c7 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/90 border border-[#8b5cf6]/30 backdrop-blur-md shadow-[0_12px_32px_rgba(139,92,246,0.2)] will-change-transform"
           >
-            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-white/50 tracking-wider">
+            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-[#181824]/60 tracking-wider">
               07
             </span>
             <svg
@@ -670,11 +635,11 @@ export default function Preloader() {
           </div>
         </div>
 
-        {/* Percentage Counter at bottom (Clean monospace badge) */}
+        {/* Percentage Counter at bottom */}
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center">
           <div
             ref={counterRef}
-            className="counter font-mono text-sm tracking-widest text-white/70 bg-white/[0.04] border border-white/10 px-4 py-1.5 rounded-full shadow-inner backdrop-blur-sm"
+            className="counter font-mono text-sm tracking-widest text-[#181824]/75 bg-black/[0.04] border border-black/10 px-4 py-1.5 rounded-full shadow-sm"
           >
             0%
           </div>
