@@ -85,34 +85,26 @@ export default async function HomePage() {
                 </Reveal>
                 <div>
                   <h2 className="statement">
-                    <CmsText field="studio.line1" split>
-                      <SplitWords text="About Thinklab" />
-                    </CmsText>
+                    <SplitWords text="About Thinklab" />
                     <br />
                     <span className="muted">
-                      <CmsText field="studio.line2" split>
-                        <SplitWords text="Digital Solutions." delay={0.1} />
-                      </CmsText>
+                      <SplitWords text="Digital Solutions." delay={0.1} />
                     </span>
                   </h2>
                   <div className="intro-bottom">
                     <Reveal>
                       <div className="space-y-4 text-base md:text-lg leading-relaxed text-[#0b0b12]/80 dark:text-white/80">
                         <p>
-                          <CmsText field="studio.body">
-                            Thinklab Digital Solutions is a full-service digital agency providing digital marketing, website development, automation, CRM, and strategic consulting services.
-                          </CmsText>
+                          Thinklab Digital Solutions is a full-service digital agency providing digital marketing, website development, automation, CRM, and strategic consulting services.
                         </p>
                         <p>
-                          <CmsText field="studio.body2">
-                            We help businesses improve visibility, generate qualified leads, and streamline operations through data-driven solutions tailored to their growth goals.
-                          </CmsText>
+                          We help businesses improve visibility, generate qualified leads, and streamline operations through data-driven solutions tailored to their growth goals.
                         </p>
                       </div>
                     </Reveal>
                     <Reveal delay={0.15}>
                       <Link href="/about" className="round-link">
-                        <CmsText field="studio.cta">Meet the minds</CmsText>{" "}
+                        Meet the minds{" "}
                         <span>
                           <ArrowUpRight size={20} />
                         </span>
@@ -149,9 +141,7 @@ export default async function HomePage() {
               </div>
               <div className="section-heading">
                 <h2>
-                  <CmsText field="projects.title" split>
-                    <SplitWords text="Projects" />
-                  </CmsText>
+                  <SplitWords text="Projects" />
                   <span className="project-heading-count">
                     {" "}
                     / {projectCards.length}

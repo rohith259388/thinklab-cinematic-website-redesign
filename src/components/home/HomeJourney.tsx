@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { CmsText, CmsLink } from '@/components/cms/Canvas';
 import { ArrowDown, ArrowUpRight } from 'lucide-react';
 import { ensureGsap } from '@/lib/gsap';
@@ -119,15 +120,15 @@ export default function HomeJourney() {
     <section ref={wrap} className="journey" aria-label="The Living Idea">
       <div className="journey-stage">
         <div ref={heroIn} className="hero-composition">
-          <div data-hero-badge className="hero-eyebrow opacity-0"><span className="status-dot" /> <CmsText field="hero.eyebrow">Helping Brands Grow Faster Online.</CmsText></div>
+          <div data-hero-badge className="hero-eyebrow opacity-0"><span className="status-dot" /> Helping Brands Grow Faster Online.</div>
           <h1 className="hero-title">
-            <span className="hero-title-left"><span data-hero-line className="block opacity-0"><CmsText field="hero.left">The Right Partner</CmsText></span></span>
-            <span className="hero-title-right"><span data-hero-line className="block opacity-0"><CmsText field="hero.right">For Digital</CmsText> <em><CmsText field="hero.accent">Growth.</CmsText></em></span></span>
+            <span className="hero-title-left"><span data-hero-line className="block opacity-0">The Right Partner</span></span>
+            <span className="hero-title-right"><span data-hero-line className="block opacity-0">For Digital <em>Growth.</em></span></span>
           </h1>
           <div data-hero-ui className="hero-description opacity-0">
             <span className="micro-label">SMALL SPARK. BIG IMPACT.</span>
-            <p><CmsText field="hero.description">We grow your business with SEO, digital marketing, high converting websites, and performance campaigns that bring real leads and sales.</CmsText></p>
-            <CmsLink field="hero.cta" href="/contact" className="text-link"><CmsText field="hero.cta.label">Contact Us</CmsText> <ArrowUpRight size={17} /></CmsLink>
+            <p>We grow your business with SEO, digital marketing, high converting websites, and performance campaigns that bring real leads and sales.</p>
+            <Link href="/contact" className="text-link">Contact Us <ArrowUpRight size={17} /></Link>
           </div>
           <div data-hero-ui className="hero-coordinate opacity-0"><span>★ 200+ 5 STAR REVIEWS</span><span>INDIA ↔ AUSTRALIA</span></div>
         </div>
