@@ -15,7 +15,7 @@ export default async function SiteLayout({
   return (
     <CanvasProvider {...content} registerCanvas={false}>
       <Preloader />
-      <Cursor />
+
       <ExperienceShell />
       <Nav />
       <main id="main" className="relative z-10">

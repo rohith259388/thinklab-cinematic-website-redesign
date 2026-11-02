@@ -175,33 +175,17 @@ export default async function HomePage() {
               </div>
               <span className="micro-label">WHY THINKLAB DIGITAL SOLUTIONS STANDS OUT</span>
               <h2>
-                <SplitWords text="What if" />
-                <br />
-                <SplitWords text="became" />
-                <br />
-                <em>
-                  <SplitWords text="what’s next?" />
-                </em>
+                <span className="block"><SplitWords text="What if" /></span>
+                <span className="block"><SplitWords text="became" /></span>
+                <em className="block not-italic text-[#d0baff]"><SplitWords text="what’s next?" /></em>
               </h2>
-              <div className="max-w-2xl mx-auto space-y-4 my-6 text-white/80">
+              <div className="relative z-10 max-w-xl space-y-4 my-6 text-white/80 text-left">
                 <p>
                   We combine strategic digital marketing, high performance website development, and intelligent automation to help businesses increase traffic, generate qualified leads, and grow revenue consistently.
                 </p>
                 <p>
                   Our approach focuses on measurable results, transparent reporting, and continuous optimisation to ensure long-term digital success.
                 </p>
-              </div>
-
-              {/* Supporting Points Tags */}
-              <div className="flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto mb-8">
-                {WHY_US.values.map((val) => (
-                  <span
-                    key={val}
-                    className="px-3.5 py-1.5 rounded-full text-xs font-mono tracking-wider bg-white/10 border border-white/15 text-white/90 backdrop-blur-sm"
-                  >
-                    {val}
-                  </span>
-                ))}
               </div>
 
               <Link
@@ -332,20 +316,20 @@ export default async function HomePage() {
               <div className="review-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
                 {TESTIMONIALS.slice(0, 6).map((t, i) => (
                   <Reveal key={t.name} delay={i * 0.08}>
-                    <figure className="review-card p-7 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-sm flex flex-col justify-between h-full">
-                      <div className="flex items-center gap-1 text-amber-400 mb-4">
+                    <figure className="review-card p-7 rounded-2xl bg-white/75 border border-[#27291d]/15 shadow-sm hover:border-[#7e6ff0]/40 hover:shadow-md transition-all flex flex-col justify-between h-full">
+                      <div className="flex items-center gap-1 text-amber-500 mb-4">
                         {[...Array(5)].map((_, idx) => (
                           <Star key={idx} size={14} fill="currentColor" />
                         ))}
                       </div>
-                      <blockquote className="text-white/85 text-sm md:text-base leading-relaxed mb-6 italic">
+                      <blockquote className="text-[#20211f] text-sm md:text-base leading-relaxed mb-6 italic font-normal">
                         “{t.quote}”
                       </blockquote>
-                      <figcaption className="border-t border-white/10 pt-4">
-                        <div className="font-semibold text-white tracking-wide">
+                      <figcaption className="border-t border-[#27291d]/12 pt-4">
+                        <div className="font-semibold text-[#1a1b18] tracking-wide">
                           {t.name}
                         </div>
-                        <div className="text-xs text-white/50 font-mono mt-0.5">
+                        <div className="text-xs text-[#686b61] font-mono mt-0.5">
                           {t.role}, {t.company}
                         </div>
                       </figcaption>
@@ -388,18 +372,18 @@ export default async function HomePage() {
                   <Reveal key={blog.title} delay={i * 0.07}>
                     <Link
                       href={blog.slug ? `/blog/${blog.slug}` : "/blog"}
-                      className="group p-6 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-white/25 transition-all flex flex-col justify-between h-full"
+                      className="group p-6 rounded-2xl bg-white/75 border border-[#27291d]/15 shadow-sm hover:border-[#7e6ff0]/50 hover:shadow-md transition-all flex flex-col justify-between h-full"
                     >
                       <div>
-                        <div className="flex items-center justify-between text-xs font-mono text-white/40 mb-3">
-                          <span>{blog.tag}</span>
+                        <div className="flex items-center justify-between text-xs font-mono text-[#686b61] mb-3">
+                          <span className="px-2.5 py-0.5 rounded-full bg-[#7e6ff0]/10 text-[#644be2] font-medium border border-[#7e6ff0]/20">{blog.tag}</span>
                           <span>{blog.date}</span>
                         </div>
-                        <h3 className="text-base font-semibold text-white/90 group-hover:text-white transition-colors leading-snug">
+                        <h3 className="text-base font-semibold text-[#1a1b18] group-hover:text-[#644be2] transition-colors leading-snug">
                           {blog.title}
                         </h3>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-[#8b5cf6] font-mono mt-6 group-hover:translate-x-1 transition-transform">
+                      <div className="flex items-center gap-1.5 text-xs text-[#644be2] font-mono font-medium mt-6 group-hover:translate-x-1 transition-transform">
                         <span>Read article</span>
                         <ArrowUpRight size={14} />
                       </div>
@@ -424,41 +408,6 @@ export default async function HomePage() {
               </div>
               <Accordion items={HOME_FAQS} />
             </section>
-
-            {/* 11. FINAL CTA SECTION */}
-            <section className="final-cta-section section-pad text-center py-24 border-t border-white/10">
-              <Reveal>
-                <span className="micro-label">BIG THINKING STARTS WITH A SMALL HELLO.</span>
-                <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white mt-4 mb-6">
-                  Let&apos;s Talk!
-                </h2>
-                <p className="text-white/60 max-w-xl mx-auto mb-8 text-base md:text-lg">
-                  Let’s see where it takes us. Reach out to our teams in India and Australia to accelerate your digital growth.
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-4">
-                  <Link href="/contact" className="round-link bg-white text-black px-8 py-3.5 hover:bg-white/90 font-medium">
-                    Contact Us{" "}
-                    <span>
-                      <ArrowUpRight size={20} />
-                    </span>
-                  </Link>
-                  <a
-                    href={`mailto:${BRAND.email}`}
-                    className="round-link border border-white/20 text-white px-8 py-3.5 hover:bg-white/10"
-                  >
-                    {BRAND.email}
-                  </a>
-                </div>
-              </Reveal>
-            </section>
-
-            {/* CLOSING STRIP */}
-            <div className="closing-strip">
-              <span>BIG THINKING STARTS WITH A SMALL HELLO.</span>
-              <Plus size={22} />
-              <span>LET’S SEE WHERE IT TAKES US.</span>
-              <Plus size={22} />
-            </div>
           </div>
         </>
       }
