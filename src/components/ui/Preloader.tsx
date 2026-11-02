@@ -275,7 +275,7 @@ export default function Preloader() {
       className="fixed inset-0 z-[9999] overflow-hidden pointer-events-none select-none bg-transparent"
       aria-hidden="true"
     >
-      {/* Shared Gradient & Paper Texture Lighting */}
+      {/* Shared Gradient for Icons */}
       <svg width="0" height="0" className="absolute pointer-events-none" aria-hidden="true">
         <defs>
           <linearGradient id="tlds-grad" gradientUnits="userSpaceOnUse" x1="0" y1="64" x2="64" y2="0">
@@ -283,42 +283,33 @@ export default function Preloader() {
             <stop offset="0.5" stopColor="#ff4fa3" />
             <stop offset="1" stopColor="#8b5cf6" />
           </linearGradient>
-
-          {/* Paper Texture Filter */}
-          <filter id="paper-texture" x="-10%" y="-10%" width="120%" height="120%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="5" result="noise" />
-            <feDiffuseLighting in="noise" lightingColor="#ffffff" surfaceScale="2.8" result="light">
-              <feDistantLight azimuth="55" elevation="52" />
-            </feDiffuseLighting>
-            <feComponentTransfer in="light" result="brightLight">
-              <feFuncR type="linear" slope="0.94" intercept="0.06" />
-              <feFuncG type="linear" slope="0.94" intercept="0.06" />
-              <feFuncB type="linear" slope="0.94" intercept="0.06" />
-            </feComponentTransfer>
-            <feBlend mode="multiply" in="SourceGraphic" in2="brightLight" />
-          </filter>
         </defs>
       </svg>
 
       {/* ============================================================ */}
-      {/* THE PAPER LAYER (Punched through by the expanding circular portal) */}
+      {/* THE GLOSSY LID LAYER (Blurs the 3D content underneath;       */}
+      {/* as the circular bubble expands, the blur is zoned away)      */}
       {/* ============================================================ */}
       <div
         ref={paperRef}
-        className="paper-layer absolute inset-0 w-full h-full will-change-transform z-10"
+        className="glossy-lid absolute inset-0 w-full h-full will-change-transform z-10 overflow-hidden"
         style={{
-          backgroundColor: '#fafafc',
+          backgroundColor: 'rgba(6, 5, 10, 0.76)',
+          backdropFilter: 'blur(30px) saturate(190%) brightness(0.95)',
+          WebkitBackdropFilter: 'blur(30px) saturate(190%) brightness(0.95)',
         }}
       >
-        <svg className="w-full h-full absolute inset-0" preserveAspectRatio="none">
-          <rect width="100%" height="100%" fill="#fafafc" filter="url(#paper-texture)" />
-          {/* Subtle natural paper creases */}
-          <path d="M 0 120 Q 250 80 500 240 T 1000 400" stroke="#000" strokeWidth="1" strokeOpacity="0.06" fill="none" />
-          <path d="M 120 0 Q 340 320 600 550 T 950 900" stroke="#000" strokeWidth="1.2" strokeOpacity="0.05" fill="none" />
-          <path d="M 40 600 Q 320 540 650 780" stroke="#fff" strokeWidth="1.5" strokeOpacity="0.4" fill="none" />
-          <path d="M 800 60 Q 600 220 300 380 T 0 650" stroke="#000" strokeWidth="1.2" strokeOpacity="0.06" fill="none" />
-          <path d="M 650 0 Q 520 280 250 520 T 50 880" stroke="#000" strokeWidth="1" strokeOpacity="0.05" fill="none" />
-        </svg>
+        {/* Glossy specular reflection sheen across the lid */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(ellipse 90% 60% at 50% 20%, rgba(255, 255, 255, 0.08) 0%, rgba(139, 92, 246, 0.04) 50%, transparent 80%), linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 60%)',
+          }}
+        />
+
+        {/* Subtle glass edge highlight */}
+        <div className="absolute inset-0 border border-white/10 pointer-events-none" />
       </div>
 
       {/* ============================================================ */}
@@ -335,19 +326,19 @@ export default function Preloader() {
         >
           {/* Soft ambient atmospheric glow */}
           <div
-            className="absolute -inset-16 rounded-full blur-3xl opacity-40 pointer-events-none"
+            className="absolute -inset-16 rounded-full blur-3xl opacity-50 pointer-events-none"
             style={{
-              background: 'radial-gradient(circle, rgba(139, 92, 246, 0.24) 0%, rgba(255, 79, 163, 0.16) 45%, transparent 75%)',
+              background: 'radial-gradient(circle, rgba(139, 92, 246, 0.35) 0%, rgba(255, 79, 163, 0.22) 45%, transparent 75%)',
             }}
           />
 
-          {/* HomePage Thinklab Typography (No indicator symbol) */}
-          <div className="wordmark flex items-center justify-center font-semibold tracking-[-0.045em] text-[#14141e] text-5xl sm:text-6xl md:text-7xl lg:text-8xl select-none leading-none">
+          {/* HomePage Thinklab Typography in Pure Crisp Luminous White */}
+          <div className="wordmark flex items-center justify-center font-semibold tracking-[-0.045em] text-[#ffffff] text-5xl sm:text-6xl md:text-7xl lg:text-8xl select-none leading-none drop-shadow-[0_4px_30px_rgba(0,0,0,0.7)]">
             {'thinklab'.split('').map((ch, i) => (
               <span key={i} className="inline-block overflow-hidden py-2 px-[1px]">
                 <span
                   data-char
-                  className="char-inner inline-block will-change-transform"
+                  className="char-inner inline-block will-change-transform text-white"
                 >
                   {ch}
                 </span>
@@ -361,7 +352,7 @@ export default function Preloader() {
             className="brand-text mt-3 flex flex-col items-center"
             style={{ opacity: 0 }}
           >
-            <span className="text-[#646473] text-[10px] sm:text-xs md:text-sm tracking-[0.32em] uppercase font-mono">
+            <span className="text-[#a5a5be] text-[10px] sm:text-xs md:text-sm tracking-[0.32em] uppercase font-mono drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
               Digital Solutions
             </span>
           </div>
@@ -374,9 +365,9 @@ export default function Preloader() {
             ref={(el) => { if (el) cardsRef.current[0] = el; }}
             data-depth="1.0"
             style={{ opacity: 0, transform: 'scale(0)', visibility: 'hidden' }}
-            className="card c1 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/90 border border-[#8b5cf6]/30 backdrop-blur-md shadow-[0_12px_32px_rgba(139,92,246,0.2)] will-change-transform"
+            className="card c1 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-[#100e18]/80 border border-white/20 backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.6)] will-change-transform"
           >
-            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-[#181824]/60 tracking-wider">
+            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-white/70 tracking-wider">
               01
             </span>
             <svg
@@ -407,9 +398,9 @@ export default function Preloader() {
             ref={(el) => { if (el) cardsRef.current[1] = el; }}
             data-depth="0.75"
             style={{ opacity: 0, transform: 'scale(0)', visibility: 'hidden' }}
-            className="card c2 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/90 border border-[#8b5cf6]/30 backdrop-blur-md shadow-[0_12px_32px_rgba(139,92,246,0.2)] will-change-transform"
+            className="card c2 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-[#100e18]/80 border border-white/20 backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.6)] will-change-transform"
           >
-            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-[#181824]/60 tracking-wider">
+            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-white/70 tracking-wider">
               02
             </span>
             <svg
@@ -437,9 +428,9 @@ export default function Preloader() {
             ref={(el) => { if (el) cardsRef.current[2] = el; }}
             data-depth="0.9"
             style={{ opacity: 0, transform: 'scale(0)', visibility: 'hidden' }}
-            className="card c3 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/90 border border-[#8b5cf6]/30 backdrop-blur-md shadow-[0_12px_32px_rgba(139,92,246,0.2)] will-change-transform"
+            className="card c3 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-[#100e18]/80 border border-white/20 backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.6)] will-change-transform"
           >
-            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-[#181824]/60 tracking-wider">
+            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-white/70 tracking-wider">
               03
             </span>
             <svg
@@ -455,8 +446,8 @@ export default function Preloader() {
               <path d="M10 50 L20 6 M54 50 L44 6" strokeWidth="1.5" strokeDasharray="3 3" />
               <circle cx="20" cy="6" r="3" fill="url(#tlds-grad)" stroke="none" />
               <circle cx="44" cy="6" r="3" fill="url(#tlds-grad)" stroke="none" />
-              <rect x="6" y="46" width="8" height="8" rx="1.5" fill="#f8f8fb" />
-              <rect x="50" y="46" width="8" height="8" rx="1.5" fill="#f8f8fb" />
+              <rect x="6" y="46" width="8" height="8" rx="1.5" fill="#201c2e" />
+              <rect x="50" y="46" width="8" height="8" rx="1.5" fill="#201c2e" />
             </svg>
           </div>
 
@@ -465,9 +456,9 @@ export default function Preloader() {
             ref={(el) => { if (el) cardsRef.current[3] = el; }}
             data-depth="0.7"
             style={{ opacity: 0, transform: 'scale(0)', visibility: 'hidden' }}
-            className="card c4 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/90 border border-[#8b5cf6]/30 backdrop-blur-md shadow-[0_12px_32px_rgba(139,92,246,0.2)] will-change-transform"
+            className="card c4 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-[#100e18]/80 border border-white/20 backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.6)] will-change-transform"
           >
-            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-[#181824]/60 tracking-wider">
+            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-white/70 tracking-wider">
               04
             </span>
             <svg
@@ -495,9 +486,9 @@ export default function Preloader() {
             ref={(el) => { if (el) cardsRef.current[4] = el; }}
             data-depth="0.95"
             style={{ opacity: 0, transform: 'scale(0)', visibility: 'hidden' }}
-            className="card c5 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/90 border border-[#8b5cf6]/30 backdrop-blur-md shadow-[0_12px_32px_rgba(139,92,246,0.2)] will-change-transform"
+            className="card c5 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-[#100e18]/80 border border-white/20 backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.6)] will-change-transform"
           >
-            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-[#181824]/60 tracking-wider">
+            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-white/70 tracking-wider">
               05
             </span>
             <svg
@@ -523,9 +514,9 @@ export default function Preloader() {
             ref={(el) => { if (el) cardsRef.current[5] = el; }}
             data-depth="0.8"
             style={{ opacity: 0, transform: 'scale(0)', visibility: 'hidden' }}
-            className="card c6 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/90 border border-[#8b5cf6]/30 backdrop-blur-md shadow-[0_12px_32px_rgba(139,92,246,0.2)] will-change-transform"
+            className="card c6 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-[#100e18]/80 border border-white/20 backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.6)] will-change-transform"
           >
-            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-[#181824]/60 tracking-wider">
+            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-white/70 tracking-wider">
               06
             </span>
             <svg
@@ -551,9 +542,9 @@ export default function Preloader() {
             ref={(el) => { if (el) cardsRef.current[6] = el; }}
             data-depth="1.0"
             style={{ opacity: 0, transform: 'scale(0)', visibility: 'hidden' }}
-            className="card c7 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-white/90 border border-[#8b5cf6]/30 backdrop-blur-md shadow-[0_12px_32px_rgba(139,92,246,0.2)] will-change-transform"
+            className="card c7 absolute w-[84px] h-[84px] md:w-[88px] md:h-[88px] rounded-[22px] grid place-items-center bg-[#100e18]/80 border border-white/20 backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.6)] will-change-transform"
           >
-            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-[#181824]/60 tracking-wider">
+            <span className="num absolute top-2 left-2.5 font-mono text-[10px] leading-none text-white/70 tracking-wider">
               07
             </span>
             <svg
@@ -581,7 +572,7 @@ export default function Preloader() {
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center">
           <div
             ref={counterRef}
-            className="counter font-mono text-sm tracking-widest text-[#181824]/75 bg-black/[0.04] border border-black/10 px-4 py-1.5 rounded-full shadow-sm"
+            className="counter font-mono text-sm tracking-widest text-white/80 bg-white/[0.08] border border-white/15 px-4 py-1.5 rounded-full shadow-lg backdrop-blur-md"
           >
             0%
           </div>
