@@ -159,10 +159,10 @@ export default function Preloader() {
       );
     }
 
-    // --- PHASE 2: AFTER 100%, THE 7 SERVICE ICONS POP OUT ---
-    tl.set(cards, { visibility: 'visible' }, '+=0.1');
+    // --- 1. ALL SEVEN SERVICE ICONS DIVERGE (Butter-smooth outward bloom) ---
+    tl.set(cards, { visibility: 'visible' }, '+=0.08');
 
-    // Cards burst outward from behind the logo into loose orbit
+    // Cards glide outward into orbit with silky smooth deceleration
     tl.to(
       cards,
       {
@@ -170,9 +170,9 @@ export default function Preloader() {
         y: (i) => (cards[i] as unknown as { _targetY: number })._targetY,
         scale: (i) => (cards[i] as unknown as { _depth: number })._depth,
         opacity: 1,
-        duration: 0.65,
-        ease: 'back.out(1.8)',
-        stagger: 0.06,
+        duration: 0.75,
+        ease: 'power2.out',
+        stagger: 0.02,
       },
       '<',
     );
@@ -181,45 +181,46 @@ export default function Preloader() {
     tl.fromTo(
       '.card .wave, .card .code, .card .line, .card .arrow, .card .curve',
       { strokeDasharray: 60, strokeDashoffset: 60 },
-      { strokeDashoffset: 0, duration: 0.55, stagger: 0.02, ease: 'power2.out' },
-      '<0.08',
+      { strokeDashoffset: 0, duration: 0.6, stagger: 0.02, ease: 'power2.out' },
+      '<0.05',
     );
 
-    // Heart and star bounce pop
+    // Heart and star pop smoothly
     tl.fromTo(
       '.card .heart, .card .star',
       { scale: 0, transformOrigin: '50% 50%' },
-      { scale: 1, duration: 0.4, ease: 'back.out(3)', stagger: 0.08 },
-      '<0.12',
+      { scale: 1, duration: 0.45, ease: 'power2.out', stagger: 0.04 },
+      '<0.1',
     );
 
-    // --- PHASE 3: GATHER BACK BEHIND THE TEXT ---
-    // Brief orbit hold (0.35s), then cards accelerate directly into the core
+    // --- 2. ORBIT SETTLE ---
+    tl.to({}, { duration: 0.35 });
+
+    // --- 3. ALL SEVEN SERVICE ICONS FULLY CONVERGE ---
+    // All 7 cards converge back inwards simultaneously into the center (Title stays fully visible!)
     tl.to(
       cards,
       {
         x: 0,
         y: 0,
-        scale: 0.1,
+        scale: 0.05,
         opacity: 0,
-        duration: 0.38,
-        ease: 'power2.in',
-        stagger: 0.015,
+        duration: 0.45,
+        ease: 'power2.inOut',
+        stagger: 0, // In perfect synchronization: all seven cards reach the center together
       },
-      '+=0.35',
     );
 
-    // --- PHASE 4: SIMULTANEOUS CIRCULAR BUBBLE EXPANSION ---
+    // --- 4. CIRCULAR BUBBLE EXPANSION (STARTS IMMEDIATELY AFTER CONVERGENCE) ---
     const portalState = { radius: 0 };
 
-    // At the exact moment of convergence, the circular portal EXPLODES outward with instant momentum!
-    // No stall, no delay — inward collapse directly triggers the outward blast.
+    // The circular bubble begins expanding immediately the moment the 7 icons finish converging!
     tl.to(
       portalState,
       {
         radius: maxPortalRadius,
-        duration: 1.5, // Cinematic yet responsive explosion
-        ease: 'power3.out', // Immediate high burst velocity clearing the core within 100ms
+        duration: 1.4, // Cinematic smooth expansion
+        ease: 'power2.out',
         onStart: () => {
           // Trigger the HomePage entrance animations as the portal opens
           motion.ready = true;
@@ -237,26 +238,26 @@ export default function Preloader() {
           }
         },
       },
-      '>-0.08', // Explodes right as the cards collide into the center
+      '>', // Starts IMMEDIATELY when the 7 icons finish converging!
     );
 
-    // Thinklab typography dissolves at the exact moment the explosion starts
+    // Title text fades out IN RESPECT TO the circular bubble expansion
     if (logoWrapRef.current) {
       tl.to(
         logoWrapRef.current,
         {
           opacity: 0,
-          scale: 1.08,
-          duration: 0.35,
+          scale: 1.06,
+          duration: 0.5,
           ease: 'power2.out',
         },
-        '<',
+        '<', // Starts in sync with the circular bubble expansion!
       );
     }
 
-    // Counter fades out immediately
+    // Counter fades out in sync with circular bubble expansion
     if (counterRef.current) {
-      tl.to(counterRef.current, { opacity: 0, duration: 0.25, ease: 'power2.out' }, '<');
+      tl.to(counterRef.current, { opacity: 0, duration: 0.35, ease: 'power2.out' }, '<');
     }
 
     return () => {
