@@ -52,3 +52,11 @@ This is a bounded visual CMS, not full Framer parity:
 Page content providers render within leaf routes, preventing stale page content during client navigation while keeping the animation shell persistent.
 
 The local verification files `.cms-test.env` and `.cms-browser-test.json` contain randomly generated test-only credentials and are gitignored. Never deploy them. The test database is the Docker container `thinklab-cms-check`, bound to loopback port 55439; the test application runs at `http://localhost:3002/admin`. Keep this distinct from the production setup above.
+
+## Verification — 30 October 2026
+
+Rebuilt the current committed redesign and restarted the local PostgreSQL-backed preview at `http://localhost:3002/admin`. Lint, TypeScript, production build, schema checks, project-scroll regression checks, and the complete PostgreSQL publishing integration suite passed. Test fixtures were cleaned up by the suite.
+
+The original bulb and all nine experience component checksums still match. The older checksum for `src/lib/motion.ts` differs because commit `b818557` deliberately adjusted inner-page brightness; those existing changes were preserved. The checksum command therefore reports one mismatch and must not be described as wholly passing.
+
+This verifies the local test environment only. Production connection and deployment remain outstanding, together with the feature limitations listed above.
