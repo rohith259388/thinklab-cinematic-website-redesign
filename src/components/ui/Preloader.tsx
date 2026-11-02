@@ -32,7 +32,7 @@ export default function Preloader() {
     const ry = Math.min(h * (isMobile ? 0.32 : 0.28), isMobile ? 220 : 260);
 
     // Maximum radius needed for circular portal to fully clear viewport corners
-    const maxPortalRadius = (Math.hypot(w, h) / 2) * 1.25;
+    const maxPortalRadius = (Math.hypot(w, h) / 2) * 1.35;
 
     // Position setup: calculate each card's target orbit position
     cards.forEach((el, i) => {
@@ -238,24 +238,33 @@ export default function Preloader() {
       );
     }
 
-    // --- PHASE 4: CIRCULAR PORTAL EXPANSION FROM BEHIND THE FAVICON ---
-    const portalState = { radius: 0, ringOpacity: 1 };
+    // --- PHASE 4: VERY SLOW & MAJESTIC CIRCULAR PORTAL EXPANSION ---
+    const portalState = { radius: 0 };
 
-    // Portal shockwave ring appears right behind favicon
-    tl.set(portalRingRef.current, { opacity: 1, scale: 0.1 }, '+=0.05');
+    // Initialize portal ring at scale 1 (no transform matrix conflict) and visible
+    if (portalRingRef.current) {
+      gsap.set(portalRingRef.current, { opacity: 1, scale: 1, width: 0, height: 0 });
+    }
 
-    // The circular portal blooms and expands outwards from behind the favicon slowly and smoothly
+    // The circular portal blooms and expands slowly from behind the favicon
     tl.to(
       portalState,
       {
         radius: maxPortalRadius,
-        duration: 2.4,
+        duration: 3.8, // Very slow and smooth cinematic expansion
         ease: 'power2.inOut',
+        onStart: () => {
+          // Trigger the HomePage entrance animations as the portal opens
+          motion.ready = true;
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('thinklab:ready'));
+          }
+        },
         onUpdate() {
           const r = portalState.radius;
           if (paperRef.current) {
             // Cut expanding circular hole through the paper to reveal the HomePage beneath
-            const mask = `radial-gradient(circle at 50% 50%, transparent ${r}px, black ${r + 2}px)`;
+            const mask = `radial-gradient(circle at 50% 50%, transparent ${r}px, black ${r + 2.5}px)`;
             paperRef.current.style.maskImage = mask;
             paperRef.current.style.webkitMaskImage = mask;
           }
@@ -266,7 +275,24 @@ export default function Preloader() {
           }
         },
       },
-      '<',
+      '+=0.15',
+    );
+
+    // Counter fades out as portal begins expanding
+    if (counterRef.current) {
+      tl.to(counterRef.current, { opacity: 0, duration: 0.5, ease: 'power2.out' }, '<0.2');
+    }
+
+    // Logo & Brand text dissolve smoothly as the portal expands around them
+    tl.to(
+      stageRef.current,
+      {
+        opacity: 0,
+        scale: 1.1,
+        duration: 1.2,
+        ease: 'power2.out',
+      },
+      '<0.8',
     );
 
     // Portal shockwave ring fades out as it reaches the screen bounds
@@ -274,34 +300,11 @@ export default function Preloader() {
       portalRingRef.current,
       {
         opacity: 0,
-        duration: 0.8,
+        duration: 0.9,
         ease: 'power2.out',
       },
-      '>-0.8',
+      '>-0.9',
     );
-
-    // Logo & Stage dissolve smoothly as the circular portal expands
-    tl.to(
-      stageRef.current,
-      {
-        opacity: 0,
-        scale: 1.12,
-        duration: 1.1,
-        ease: 'power2.out',
-      },
-      '<0.4',
-    );
-
-    // App reveal scaling effect
-    const mainEl = document.getElementById('main');
-    if (mainEl) {
-      tl.fromTo(
-        mainEl,
-        { scale: 1.04, opacity: 0.8 },
-        { scale: 1, opacity: 1, duration: 1.8, ease: 'power2.out' },
-        '<',
-      );
-    }
 
     return () => {
       tl.kill();
@@ -349,7 +352,7 @@ export default function Preloader() {
       {/* ============================================================ */}
       <div
         ref={paperRef}
-        className="paper-layer absolute inset-0 w-full h-full will-change-transform"
+        className="paper-layer absolute inset-0 w-full h-full will-change-transform z-10"
         style={{
           backgroundColor: '#fafafc',
         }}
@@ -366,16 +369,16 @@ export default function Preloader() {
       </div>
 
       {/* ============================================================ */}
-      {/* CIRCULAR PORTAL SHOCKWAVE RING (Expands from behind the favicon) */}
+      {/* CIRCULAR PORTAL GLOWING RIM (Expands from behind the favicon) */}
       {/* ============================================================ */}
       <div
         ref={portalRingRef}
-        className="portal-ring absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none opacity-0 will-change-transform z-10"
+        className="portal-ring absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none opacity-0 will-change-transform z-20"
         style={{
           width: 0,
           height: 0,
-          border: '3px solid rgba(255, 79, 163, 0.85)',
-          boxShadow: '0 0 30px #ff4fa3, 0 0 60px #8b5cf6, inset 0 0 30px rgba(255, 154, 60, 0.6)',
+          border: '3px solid rgba(255, 79, 163, 0.95)',
+          boxShadow: '0 0 25px #ff4fa3, 0 0 50px #8b5cf6, inset 0 0 25px rgba(255, 154, 60, 0.6)',
         }}
       />
 
@@ -384,12 +387,12 @@ export default function Preloader() {
       {/* ============================================================ */}
       <div
         ref={stageRef}
-        className="stage absolute inset-0 grid place-items-center pointer-events-none will-change-transform z-20"
+        className="stage absolute inset-0 grid place-items-center pointer-events-none will-change-transform z-30"
       >
-        {/* CENTER FAVICON (Z-index 30, so cards gather BEHIND it) */}
+        {/* CENTER FAVICON (Z-index 40: stays in front while cards tuck behind) */}
         <div
           ref={logoWrapRef}
-          className="logo relative z-30 flex flex-col items-center justify-center will-change-transform"
+          className="logo relative z-40 flex flex-col items-center justify-center will-change-transform"
           style={{ transform: 'scale(0.04)' }}
         >
           {/* Soft ambient glow behind logo */}
@@ -425,8 +428,8 @@ export default function Preloader() {
           </div>
         </div>
 
-        {/* 7 SERVICE ICONS (Z-index 20: Pop out into orbit, then tuck BEHIND favicon) */}
-        <div className="orbit absolute inset-0 grid place-items-center pointer-events-none z-20">
+        {/* 7 SERVICE ICONS (Z-index 30: Pop out into orbit, then tuck BEHIND favicon) */}
+        <div className="orbit absolute inset-0 grid place-items-center pointer-events-none z-30">
           {/* 01 Digital Marketing (megaphone + sound waves + heart) */}
           <div
             ref={(el) => { if (el) cardsRef.current[0] = el; }}
