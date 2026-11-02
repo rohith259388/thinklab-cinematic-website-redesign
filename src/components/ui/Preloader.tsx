@@ -100,12 +100,12 @@ export default function Preloader() {
     // State for percentage counter
     const counterState = { val: 0 };
 
-    // --- PHASE 1: 0% -> 100% PERCENTAGE COUNTER & THINKLAB TYPOGRAPHY ANIMATION ---
+    // --- PHASE 1: 0% -> 100% (FAST, CRISP, AND CLEAN TYPOGRAPHY ANIMATION) ---
     tl.to(
       counterState,
       {
         val: 100,
-        duration: 2.4,
+        duration: 1.2, // Snappy & brisk counter
         ease: 'power2.inOut',
         onUpdate() {
           if (counterRef.current) {
@@ -116,51 +116,51 @@ export default function Preloader() {
       0,
     );
 
-    // The letters of "thinklab" rise up in elegant typography animation
+    // The letters of "thinklab" rise up swiftly and cleanly
     tl.to(
       '[data-char]',
       {
         yPercent: 0,
         rotate: 0,
         opacity: 1,
-        duration: 1.1,
-        stagger: 0.08,
-        ease: 'power4.out',
+        duration: 0.7,
+        stagger: 0.035,
+        ease: 'power3.out',
       },
-      0.2,
+      0.1,
     );
 
-    // Subtitle "Digital Solutions" fades in cleanly under thinklab
+    // Subtitle "Digital Solutions" fades in cleanly
     if (brandTextRef.current) {
       tl.to(
         brandTextRef.current,
         {
           opacity: 1,
           y: 0,
-          duration: 0.8,
+          duration: 0.5,
           ease: 'power2.out',
         },
-        1.3,
+        0.6,
       );
     }
 
-    // Celebratory subtle breathe / pulse when reaching 100%
+    // Crisp micro-pulse when reaching 100%
     if (logoWrapRef.current) {
       tl.to(
         logoWrapRef.current,
         {
-          scale: 1.05,
-          duration: 0.2,
+          scale: 1.03,
+          duration: 0.12,
           yoyo: true,
           repeat: 1,
           ease: 'power2.out',
         },
-        2.4,
+        1.2,
       );
     }
 
     // --- 1. ALL SEVEN SERVICE ICONS DIVERGE (Butter-smooth outward bloom) ---
-    tl.set(cards, { visibility: 'visible' }, '+=0.08');
+    tl.set(cards, { visibility: 'visible' }, '+=0.04');
 
     // Cards glide outward into orbit with silky smooth deceleration
     tl.to(
