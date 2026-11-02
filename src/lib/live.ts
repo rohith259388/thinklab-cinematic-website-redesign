@@ -11,10 +11,10 @@ export const careers: LiveEntry[] = data.careers;
 export const serviceDetails: LiveEntry[] = data.services;
 export const team = data.team;
 const projectTags: Record<string, string> = {
-  hreemkarpapers: 'Corporate website · Design · SEO',
-  'elevex-rentals': 'Website · SEO · Digital strategy',
-  'geeta-home-appliances': 'Shopify · E-commerce · Development',
-  'sandhatri-amaraone': 'Real estate · Website · Marketing',
+  hreemkarpapers: 'Corporate Website for Paper Manufacturing & Supply Company',
+  'elevex-rentals': 'Website Redesign · Equipment-Focused Content · SEO · Conversion-Focused Design',
+  'geeta-home-appliances': 'Shopify E-Commerce Website',
+  'sandhatri-amaraone': 'Real Estate · Website · Marketing',
   'udyaan-projects': 'Real estate · Website development',
   'forge-arc-shopify-website-development': 'Shopify · E-commerce · Development',
   'avocado-brownies': 'Food & beverage · Digital marketing',

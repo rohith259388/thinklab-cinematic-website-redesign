@@ -32,17 +32,29 @@ export default function HomeJourney() {
     const el = wrap.current;
     if (!el) return;
 
-    // Hero entrance — delayed until the preloader releases the spark.
-    const intro = gsap.timeline({ delay: 2.15 });
-    intro
-      .fromTo('[data-hero-badge]', { y: 26, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.9, ease: 'power3.out' })
-      .fromTo(
-        '[data-hero-line]',
-        { yPercent: 112, rotate: 3, autoAlpha: 0 },
-        { yPercent: 0, rotate: 0, autoAlpha: 1, duration: 1.25, stagger: 0.12, ease: 'power4.out' },
-        '-=0.5',
-      )
-      .fromTo('[data-hero-ui]', { y: 26, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.9, stagger: 0.09, ease: 'power3.out' }, '-=0.7');
+    // Hero entrance — triggered when preloader finishes and opens the home page.
+    let intro: gsap.core.Timeline | null = null;
+    const playHero = () => {
+      if (intro) return;
+      intro = gsap.timeline();
+      intro
+        .fromTo('[data-hero-badge]', { y: 26, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.9, ease: 'power3.out' })
+        .fromTo(
+          '[data-hero-line]',
+          { yPercent: 112, rotate: 3, autoAlpha: 0 },
+          { yPercent: 0, rotate: 0, autoAlpha: 1, duration: 1.25, stagger: 0.12, ease: 'power4.out' },
+          '-=0.5',
+        )
+        .fromTo('[data-hero-ui]', { y: 26, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.9, stagger: 0.09, ease: 'power3.out' }, '-=0.7');
+    };
+
+    const onReady = () => playHero();
+
+    if (motion.ready) {
+      playHero();
+    } else {
+      window.addEventListener('thinklab:ready', onReady, { once: true });
+    }
 
     const captions = chapterRefs.current;
     const hero = heroIn.current!;
@@ -97,8 +109,9 @@ export default function HomeJourney() {
     ScrollTrigger.refresh();
 
     return () => {
+      window.removeEventListener('thinklab:ready', onReady);
       st.kill();
-      intro.kill();
+      if (intro) intro.kill();
     };
   }, []);
 
@@ -106,17 +119,17 @@ export default function HomeJourney() {
     <section ref={wrap} className="journey" aria-label="The Living Idea">
       <div className="journey-stage">
         <div ref={heroIn} className="hero-composition">
-          <div data-hero-badge className="hero-eyebrow opacity-0"><span className="status-dot" /> <CmsText field="hero.eyebrow">INDEPENDENT THINKING. EXTRAORDINARY POSSIBILITIES.</CmsText></div>
+          <div data-hero-badge className="hero-eyebrow opacity-0"><span className="status-dot" /> <CmsText field="hero.eyebrow">Helping Brands Grow Faster Online.</CmsText></div>
           <h1 className="hero-title">
-            <span className="hero-title-left"><span data-hero-line className="block opacity-0"><CmsText field="hero.left">Small spark.</CmsText></span></span>
-            <span className="hero-title-right"><span data-hero-line className="block opacity-0"><CmsText field="hero.right">Big</CmsText> <em><CmsText field="hero.accent">impact.</CmsText></em></span></span>
+            <span className="hero-title-left"><span data-hero-line className="block opacity-0"><CmsText field="hero.left">The Right Partner</CmsText></span></span>
+            <span className="hero-title-right"><span data-hero-line className="block opacity-0"><CmsText field="hero.right">For Digital</CmsText> <em><CmsText field="hero.accent">Growth.</CmsText></em></span></span>
           </h1>
           <div data-hero-ui className="hero-description opacity-0">
-            <span className="micro-label">THINKLAB® — DIGITAL SOLUTIONS</span>
-            <p><CmsText field="hero.description">We connect bold ideas, thoughtful design and intelligent technology to move your business forward.</CmsText></p>
-            <CmsLink field="hero.cta" href="/contact" className="text-link"><CmsText field="hero.cta.label">Let’s make something matter</CmsText> <ArrowUpRight size={17} /></CmsLink>
+            <span className="micro-label">SMALL SPARK. BIG IMPACT.</span>
+            <p><CmsText field="hero.description">We grow your business with SEO, digital marketing, high converting websites, and performance campaigns that bring real leads and sales.</CmsText></p>
+            <CmsLink field="hero.cta" href="/contact" className="text-link"><CmsText field="hero.cta.label">Contact Us</CmsText> <ArrowUpRight size={17} /></CmsLink>
           </div>
-          <div data-hero-ui className="hero-coordinate opacity-0"><span>STRATEGY × DESIGN × TECHNOLOGY</span><span>INDIA ↔ AUSTRALIA</span></div>
+          <div data-hero-ui className="hero-coordinate opacity-0"><span>★ 200+ 5 STAR REVIEWS</span><span>INDIA ↔ AUSTRALIA</span></div>
         </div>
 
         <div ref={cue} className="journey-bottom">

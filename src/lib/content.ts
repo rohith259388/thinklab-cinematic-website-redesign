@@ -115,9 +115,11 @@ export const SERVICES: Service[] = [
 export const HERO = {
   badge: 'Helping Brands Grow Faster Online.',
   titleLines: ['The Right', 'Partner For', 'Digital Growth'],
+  heading: 'The Right Partner For Digital Growth',
   kicker: 'Helping Businesses Scale with Data-Driven Marketing',
   sub: 'We grow your business with SEO, digital marketing, high converting websites, and performance campaigns that bring real leads and sales.',
   reviews: '200+ 5 Star Reviews',
+  cta: 'Contact Us',
 };
 
 export const STATS = [
@@ -211,43 +213,41 @@ export const CASE_STUDIES: CaseStudy[] = [
 ];
 
 export const TESTIMONIALS = [
-  { name: 'Deepa Sinha', role: 'Director, CIU Safe', quote: 'TLDS is a proactive and knowledgeable digital marketer with strong leadership qualities. He successfully managed our SEO, Google Ads, and social media presence, showing excellent initiative and professionalism while delivering measurable results.' },
-  { name: 'Dr Mo Kader', role: 'Managing Director, Consultica Worldwide Management Consultants', quote: "TLDS can interpret client needs and relate them to the external environment with flair and a genuine interest in the client's business. He is a relaxed, easy to deal with person who can get things done without fuss." },
   {
-    quote:
-      'They refined our brand’s digital presence and increased customer retention. The personalised strategies made a huge impact.',
     name: 'Jonathan Zrihen',
-    role: 'Clarins CEO',
+    role: 'CEO',
+    company: 'Clarins',
+    quote: 'They refined our brand’s digital presence and increased customer retention. The personalised strategies made a huge impact.',
   },
   {
-    quote:
-      'Their marketing approach brought in more foot traffic and online orders. The data driven insights made all the difference.',
     name: 'Laurie Kane',
-    role: 'SolarPlus CEO',
+    role: 'CEO',
+    company: 'SolarPlus',
+    quote: 'Their marketing approach brought in more foot traffic and online orders. The data driven insights made all the difference.',
   },
   {
-    quote:
-      'Their system improved our client engagement and lead conversions. The easy to use tools streamlined our entire sales process.',
     name: 'Ollie Gordon',
-    role: 'Local Valuers Founder',
+    role: 'Founder',
+    company: 'Local Valuers',
+    quote: 'Their system improved our client engagement and lead conversions. The easy to use tools streamlined our entire sales process.',
   },
   {
-    quote:
-      'Their system improved our client engagement and lead conversions. The easy to use tools streamlined our entire sales process',
     name: 'Daniel Foster',
-    role: 'House Finder CEO',
+    role: 'CEO',
+    company: 'House Finder',
+    quote: 'Their system improved our client engagement and lead conversions. The easy to use tools streamlined our entire sales process.',
   },
   {
-    quote:
-      'Their platform transformed how we approach campaigns. The intuitive tools and seamless integrations saved us a lot of time.',
     name: 'Brian White',
-    role: 'Ray White MD',
+    role: 'MD',
+    company: 'Ray White',
+    quote: 'Their platform transformed how we approach campaigns. The intuitive tools and seamless integrations saved us a lot of time.',
   },
   {
-    quote:
-      'Their platform enhanced project coordination and design workflow. The advanced tools helped us meet deadlines stress-free.',
     name: 'Arpan Choudhary',
-    role: 'Architect Founder',
+    role: 'Founder',
+    company: 'Architecture',
+    quote: 'Their platform enhanced project coordination and design workflow. The advanced tools helped us meet deadlines stress-free.',
   },
 ];
 
@@ -311,13 +311,44 @@ export const BLOGS = [
     title: 'Creative Marketing Agency in Vijayawada: How Creative Strategy Drives Real Business Growth',
     date: 'Apr 30, 2026',
     tag: 'Creative Strategy',
+    slug: 'creative-marketing-agency-in-vijayawada-how-creative-strategy-drives-real-business-growth',
     featured: true,
   },
-  { title: 'Website Development Services in Hyderabad', date: 'Mar 9, 2026', tag: 'Web Development', featured: false },
-  { title: 'Workflow & AI Automation Services in Mumbai', date: 'Mar 9, 2026', tag: 'Automation', featured: false },
-  { title: 'Strategic Planning Services in Hyderabad', date: 'Mar 9, 2026', tag: 'Strategy', featured: false },
-  { title: 'Brand Strategy Services in Kolkata', date: 'Mar 9, 2026', tag: 'Branding', featured: false },
-  { title: 'CRM Services in Pune', date: 'Mar 9, 2026', tag: 'CRM', featured: false },
+  {
+    title: 'Website Development Services in Hyderabad',
+    date: 'Mar 9, 2026',
+    tag: 'Web Development',
+    slug: 'website-development-hyderabad',
+    featured: false,
+  },
+  {
+    title: 'Workflow & AI Automation Services in Mumbai',
+    date: 'Mar 9, 2026',
+    tag: 'Automation',
+    slug: 'workflow-ai-automation-mumbai',
+    featured: false,
+  },
+  {
+    title: 'Strategic Planning Services in Hyderabad',
+    date: 'Mar 9, 2026',
+    tag: 'Strategy',
+    slug: 'strategic-planning-services-hyderabad',
+    featured: false,
+  },
+  {
+    title: 'Brand Strategy Services in Kolkata',
+    date: 'Mar 9, 2026',
+    tag: 'Branding',
+    slug: 'brand-strategy-services-kolkata',
+    featured: false,
+  },
+  {
+    title: 'CRM Services in Pune',
+    date: 'Mar 9, 2026',
+    tag: 'CRM',
+    slug: 'crm-services-pune',
+    featured: false,
+  },
 ];
 
 export const HOME_FAQS = [
