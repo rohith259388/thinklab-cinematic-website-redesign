@@ -27,8 +27,8 @@ export default function Preloader() {
     const h = window.innerHeight;
     const isMobile = w < 768;
 
-    const rx = Math.min(w * (isMobile ? 0.36 : 0.32), isMobile ? 180 : 420);
-    const ry = Math.min(h * (isMobile ? 0.32 : 0.28), isMobile ? 220 : 260);
+    const rx = Math.min(w * (isMobile ? 0.44 : 0.38), isMobile ? 210 : 480);
+    const ry = Math.min(h * (isMobile ? 0.32 : 0.28), isMobile ? 220 : 270);
 
     // Maximum radius needed for circular portal to fully clear viewport corners
     const maxPortalRadius = (Math.hypot(w, h) / 2) * 1.35;
@@ -41,7 +41,7 @@ export default function Preloader() {
       (el as unknown as { _targetY: number; _depth: number })._targetY = Math.sin(a) * ry;
       (el as unknown as { _depth: number })._depth = depth;
 
-      // Start hidden at origin (behind favicon)
+      // Start hidden at origin (behind text)
       gsap.set(el, {
         x: 0,
         y: 0,
@@ -52,19 +52,25 @@ export default function Preloader() {
       });
     });
 
-    // Logo initial state: tiny dot at 0%
+    // Typography initial state
     if (logoWrapRef.current) {
       gsap.set(logoWrapRef.current, {
-        scale: 0.04,
+        scale: 1,
         opacity: 1,
         transformOrigin: '50% 50%',
       });
     }
 
+    gsap.set('[data-char]', {
+      yPercent: 115,
+      rotate: 3,
+      opacity: 0,
+    });
+
     if (brandTextRef.current) {
       gsap.set(brandTextRef.current, {
         opacity: 0,
-        y: 10,
+        y: 8,
       });
     }
 
@@ -80,7 +86,7 @@ export default function Preloader() {
     if (prefersReducedMotion) {
       const rmTl = gsap.timeline({ onComplete: finish });
       rmTl
-        .fromTo(logoWrapRef.current, { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6 })
+        .fromTo(logoWrapRef.current, { opacity: 0 }, { opacity: 1, duration: 0.6 })
         .to(loaderRef.current, { opacity: 0, duration: 0.5, delay: 0.8 });
       return;
     }
@@ -94,7 +100,7 @@ export default function Preloader() {
     // State for percentage counter
     const counterState = { val: 0 };
 
-    // --- PHASE 1: 0% -> 100% FAVICON GROWS FROM A SMALL DOT TO ORIGINAL SIZE ---
+    // --- PHASE 1: 0% -> 100% PERCENTAGE COUNTER & THINKLAB TYPOGRAPHY ANIMATION ---
     tl.to(
       counterState,
       {
@@ -110,40 +116,41 @@ export default function Preloader() {
       0,
     );
 
-    // Favicon scales up from tiny dot (0.04) to original full size (1.0)
-    if (logoWrapRef.current) {
-      tl.to(
-        logoWrapRef.current,
-        {
-          scale: 1,
-          duration: 2.4,
-          ease: 'power2.out',
-        },
-        0,
-      );
-    }
+    // The letters of "thinklab" rise up in elegant typography animation
+    tl.to(
+      '[data-char]',
+      {
+        yPercent: 0,
+        rotate: 0,
+        opacity: 1,
+        duration: 1.1,
+        stagger: 0.08,
+        ease: 'power4.out',
+      },
+      0.2,
+    );
 
-    // Brand text fades in cleanly near the end of 100%
+    // Subtitle "Digital Solutions" fades in cleanly under thinklab
     if (brandTextRef.current) {
       tl.to(
         brandTextRef.current,
         {
           opacity: 1,
           y: 0,
-          duration: 0.7,
+          duration: 0.8,
           ease: 'power2.out',
         },
-        1.6,
+        1.3,
       );
     }
 
-    // Celebratory pulse when reaching 100%
+    // Celebratory subtle breathe / pulse when reaching 100%
     if (logoWrapRef.current) {
       tl.to(
         logoWrapRef.current,
         {
-          scale: 1.08,
-          duration: 0.22,
+          scale: 1.05,
+          duration: 0.2,
           yoyo: true,
           repeat: 1,
           ease: 'power2.out',
@@ -204,7 +211,7 @@ export default function Preloader() {
     // Stay in orbit for ~0.8s
     tl.to({}, { duration: 0.8 });
 
-    // --- PHASE 3: GATHER BACK BEHIND THE FAVICON ---
+    // --- PHASE 3: GATHER BACK BEHIND THE TEXT ---
     tl.to(
       cards,
       {
@@ -212,7 +219,7 @@ export default function Preloader() {
         y: 0,
         scale: 0.1,
         opacity: 0,
-        duration: 0.5,
+        duration: 0.45,
         ease: 'power3.in',
         stagger: 0.02,
         onStart: () => {
@@ -222,31 +229,17 @@ export default function Preloader() {
       '+=0.1',
     );
 
-    // Favicon pulses with energy as it absorbs all 7 services
-    if (logoWrapRef.current) {
-      tl.to(
-        logoWrapRef.current,
-        {
-          scale: 1.15,
-          duration: 0.22,
-          yoyo: true,
-          repeat: 1,
-          ease: 'power2.out',
-        },
-        '<0.2',
-      );
-    }
-
-    // --- PHASE 4: CIRCULAR PORTAL EXPANSION ---
+    // --- PHASE 4: SIMULTANEOUS CIRCULAR BUBBLE EXPANSION ---
     const portalState = { radius: 0 };
 
-    // The circular portal explodes immediately from behind the favicon right as the 7 service icons converge
+    // When convergence completes, the circular bubble expansion starts simultaneously!
+    // Inward convergence seamlessly transitions into outward expansion without discontinuity.
     tl.to(
       portalState,
       {
         radius: maxPortalRadius,
         duration: 1.8, // Smooth cinematic expansion
-        ease: 'power2.out', // Starts immediately upon convergence without lag, gliding cleanly across the viewport
+        ease: 'power2.out',
         onStart: () => {
           // Trigger the HomePage entrance animations as the portal opens
           motion.ready = true;
@@ -264,7 +257,7 @@ export default function Preloader() {
           }
         },
       },
-      '>-0.05', // Starts immediately as the 7 icons finish converging behind the favicon
+      '<0.45', // Simultaneous with convergence completion!
     );
 
     // Counter fades out immediately as portal begins expanding
@@ -272,14 +265,15 @@ export default function Preloader() {
       tl.to(counterRef.current, { opacity: 0, duration: 0.3, ease: 'power2.out' }, '<');
     }
 
-    // Logo & Brand text dissolve smoothly as the portal bursts open around them
-    if (stageRef.current) {
+    // Thinklab typography dissolves smoothly as the circular portal opens around it
+    if (logoWrapRef.current) {
       tl.to(
-        stageRef.current,
+        logoWrapRef.current,
         {
           opacity: 0,
-          scale: 1.08,
-          duration: 0.6,
+          scale: 1.06,
+          y: -14,
+          duration: 0.55,
           ease: 'power2.out',
         },
         '<0.05',
@@ -349,52 +343,52 @@ export default function Preloader() {
       </div>
 
       {/* ============================================================ */}
-      {/* STAGE: CENTER FAVICON, 7 ORBITING CARDS & COUNTER */}
+      {/* STAGE: CENTER THINKLAB TYPOGRAPHY, 7 ORBITING CARDS & COUNTER */}
       {/* ============================================================ */}
       <div
         ref={stageRef}
         className="stage absolute inset-0 grid place-items-center pointer-events-none will-change-transform z-30"
       >
-        {/* CENTER FAVICON (Z-index 40: stays in front while cards tuck behind) */}
+        {/* CENTER TYPOGRAPHY ANIMATION: thinklab (without indicator symbol) */}
         <div
           ref={logoWrapRef}
-          className="logo relative z-40 flex flex-col items-center justify-center will-change-transform"
-          style={{ transform: 'scale(0.04)' }}
+          className="relative z-40 flex flex-col items-center justify-center will-change-transform px-4 pointer-events-none select-none"
         >
-          {/* Soft ambient glow behind logo */}
+          {/* Soft ambient atmospheric glow */}
           <div
-            className="absolute -inset-10 rounded-full blur-2xl opacity-50 pointer-events-none"
+            className="absolute -inset-16 rounded-full blur-3xl opacity-40 pointer-events-none"
             style={{
-              background: 'radial-gradient(circle, rgba(255, 79, 163, 0.28) 0%, rgba(139, 92, 246, 0.2) 50%, transparent 75%)',
+              background: 'radial-gradient(circle, rgba(139, 92, 246, 0.24) 0%, rgba(255, 79, 163, 0.16) 45%, transparent 75%)',
             }}
           />
 
-          {/* High-Resolution Favicon Icon */}
-          <div className="relative w-[124px] h-[124px] md:w-[136px] md:h-[136px] rounded-3xl p-1 bg-white/80 border border-black/10 shadow-[0_16px_40px_rgba(0,0,0,0.12)] backdrop-blur-md overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/tlds-favicon.png"
-              alt="Thinklab Digital Solutions"
-              className="w-full h-full object-cover rounded-[22px]"
-            />
+          {/* HomePage Thinklab Typography (No indicator symbol) */}
+          <div className="wordmark flex items-center justify-center font-semibold tracking-[-0.045em] text-[#14141e] text-5xl sm:text-6xl md:text-7xl lg:text-8xl select-none leading-none">
+            {'thinklab'.split('').map((ch, i) => (
+              <span key={i} className="inline-block overflow-hidden py-2 px-[1px]">
+                <span
+                  data-char
+                  className="char-inner inline-block will-change-transform"
+                >
+                  {ch}
+                </span>
+              </span>
+            ))}
           </div>
 
-          {/* Company Name */}
+          {/* Subtitle */}
           <div
             ref={brandTextRef}
-            className="brand-text mt-4 flex flex-col items-center"
+            className="brand-text mt-3 flex flex-col items-center"
             style={{ opacity: 0 }}
           >
-            <span className="text-[#14141e] text-sm md:text-base font-bold tracking-[0.24em] uppercase">
-              Thinklab
-            </span>
-            <span className="text-[#646473] text-[10px] md:text-xs tracking-[0.28em] uppercase font-mono mt-0.5">
+            <span className="text-[#646473] text-[10px] sm:text-xs md:text-sm tracking-[0.32em] uppercase font-mono">
               Digital Solutions
             </span>
           </div>
         </div>
 
-        {/* 7 SERVICE ICONS (Z-index 30: Pop out into orbit, then tuck BEHIND favicon) */}
+        {/* 7 SERVICE ICONS (Z-index 30: Pop out into orbit, then tuck BEHIND text) */}
         <div className="orbit absolute inset-0 grid place-items-center pointer-events-none z-30">
           {/* 01 Digital Marketing (megaphone + sound waves + heart) */}
           <div
