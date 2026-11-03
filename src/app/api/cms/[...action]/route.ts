@@ -288,7 +288,7 @@ export async function POST(req: NextRequest) {
           id,
           b.kind,
           slug,
-          JSON.stringify(validateContent(emptyContent(b.title || slug))),
+          JSON.stringify(b.content && typeof b.content === 'object' ? validateContent({ ...emptyContent(b.title || slug), ...b.content }) : validateContent(emptyContent(b.title || slug))),
         ],
       );
       return json(await document(id));

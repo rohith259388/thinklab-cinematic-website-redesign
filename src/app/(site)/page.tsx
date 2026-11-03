@@ -68,9 +68,9 @@ export default async function HomePage() {
             <section id="studio" className="studio-intro section-pad">
               <div className="section-index">
                 <span>
-                  <Plus size={14} /> 01 / WHO WE ARE
+                  <Plus size={14} /> <CmsText field="home.intro.number">01 / WHO WE ARE</CmsText>
                 </span>
-                <span>CURIOUS MINDS. SHARED AMBITION.</span>
+                <span><CmsText field="home.intro.kicker">CURIOUS MINDS. SHARED AMBITION.</CmsText></span>
               </div>
               <div className="intro-grid">
                 <Reveal>
@@ -78,33 +78,39 @@ export default async function HomePage() {
                     ✳
                   </span>
                   <p className="small-note">
-                    Helping Brands
-                    <br />
-                    Grow Faster Online.
+                    <CmsText field="home.intro.note">
+                      Helping Brands
+                      <br />
+                      Grow Faster Online.
+                    </CmsText>
                   </p>
                 </Reveal>
                 <div>
                   <h2 className="statement">
-                    <SplitWords text="About Thinklab" />
+                    <CmsText field="home.intro.title" split><SplitWords text="About Thinklab" /></CmsText>
                     <br />
                     <span className="muted">
-                      <SplitWords text="Digital Solutions." delay={0.1} />
+                      <CmsText field="home.intro.accent" split><SplitWords text="Digital Solutions." delay={0.1} /></CmsText>
                     </span>
                   </h2>
                   <div className="intro-bottom">
                     <Reveal>
                       <div className="space-y-4 text-base md:text-lg leading-relaxed text-[#0b0b12]/80 dark:text-white/80">
                         <p>
-                          Thinklab Digital Solutions is a full-service digital agency providing digital marketing, website development, automation, CRM, and strategic consulting services.
+                          <CmsText field="home.intro.body1">
+                            Thinklab Digital Solutions is a full-service digital agency providing digital marketing, website development, automation, CRM, and strategic consulting services.
+                          </CmsText>
                         </p>
                         <p>
-                          We help businesses improve visibility, generate qualified leads, and streamline operations through data-driven solutions tailored to their growth goals.
+                          <CmsText field="home.intro.body2">
+                            We help businesses improve visibility, generate qualified leads, and streamline operations through data-driven solutions tailored to their growth goals.
+                          </CmsText>
                         </p>
                       </div>
                     </Reveal>
                     <Reveal delay={0.15}>
                       <Link href="/about" className="round-link">
-                        Meet the minds{" "}
+                        <CmsText field="home.intro.cta">Meet the minds</CmsText>{" "}
                         <span>
                           <ArrowUpRight size={20} />
                         </span>
@@ -125,7 +131,9 @@ export default async function HomePage() {
                         suffix={s.suffix ?? ""}
                       />
                     </p>
-                    <span className="micro-label">{s.label}</span>
+                    <span className="micro-label">
+                      <CmsText field={`home.stats.label.${i}`}>{s.label}</CmsText>
+                    </span>
                   </Reveal>
                 ))}
               </div>
@@ -135,13 +143,13 @@ export default async function HomePage() {
             <section id="works" className="selected-work section-pad">
               <div className="section-index">
                 <span>
-                  <Plus size={14} /> 02 / SELECTED WORK
+                  <Plus size={14} /> <CmsText field="home.projects.number">02 / SELECTED WORK</CmsText>
                 </span>
-                <span>THINKING MADE TANGIBLE.</span>
+                <span><CmsText field="home.projects.kicker">THINKING MADE TANGIBLE.</CmsText></span>
               </div>
               <div className="section-heading">
                 <h2>
-                  <SplitWords text="Projects" />
+                  <CmsText field="home.projects.title" split><SplitWords text="Projects" /></CmsText>
                   <span className="project-heading-count">
                     {" "}
                     / {projectCards.length}
@@ -149,12 +157,14 @@ export default async function HomePage() {
                 </h2>
                 <Reveal>
                   <p>
-                    A few of the brands we’ve helped
-                    <br />
-                    find their next chapter.
+                    <CmsText field="home.projects.body">
+                      A few of the brands we’ve helped
+                      <br />
+                      find their next chapter.
+                    </CmsText>
                   </p>
                   <Link href="/projects" className="round-link">
-                    View All Projects{" "}
+                    <CmsText field="home.projects.cta">View All Projects</CmsText>{" "}
                     <span>
                       <ArrowUpRight size={20} />
                     </span>
@@ -173,33 +183,39 @@ export default async function HomePage() {
                 <i />
                 <i />
               </div>
-              <span className="micro-label">WHY THINKLAB DIGITAL SOLUTIONS STANDS OUT</span>
+              <span className="micro-label">
+                <CmsText field="home.philosophy.kicker">WHY THINKLAB DIGITAL SOLUTIONS STANDS OUT</CmsText>
+              </span>
               <h2>
-                <SplitWords text="What if" />
+                <CmsText field="home.philosophy.title" split><SplitWords text="What if" /></CmsText>
                 <br />
-                <SplitWords text="became" />
+                <CmsText field="home.philosophy.title2" split><SplitWords text="became" /></CmsText>
                 <br />
                 <em>
-                  <SplitWords text="what’s next?" />
+                  <CmsText field="home.philosophy.accent" split><SplitWords text="what’s next?" /></CmsText>
                 </em>
               </h2>
               <div className="max-w-2xl mx-auto space-y-4 my-6 text-white/80">
                 <p>
-                  We combine strategic digital marketing, high performance website development, and intelligent automation to help businesses increase traffic, generate qualified leads, and grow revenue consistently.
+                  <CmsText field="home.philosophy.body1">
+                    We combine strategic digital marketing, high performance website development, and intelligent automation to help businesses increase traffic, generate qualified leads, and grow revenue consistently.
+                  </CmsText>
                 </p>
                 <p>
-                  Our approach focuses on measurable results, transparent reporting, and continuous optimisation to ensure long-term digital success.
+                  <CmsText field="home.philosophy.body2">
+                    Our approach focuses on measurable results, transparent reporting, and continuous optimisation to ensure long-term digital success.
+                  </CmsText>
                 </p>
               </div>
 
               {/* Supporting Points Tags */}
               <div className="flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto mb-8">
-                {WHY_US.values.map((val) => (
+                {WHY_US.values.map((val, i) => (
                   <span
                     key={val}
                     className="px-3.5 py-1.5 rounded-full text-xs font-mono tracking-wider bg-white/10 border border-white/15 text-white/90 backdrop-blur-sm"
                   >
-                    {val}
+                    <CmsText field={`home.whyus.tag.${i}`}>{val}</CmsText>
                   </span>
                 ))}
               </div>
@@ -217,25 +233,27 @@ export default async function HomePage() {
             <section id="services" className="services-section section-pad">
               <div className="section-index">
                 <span>
-                  <Plus size={14} /> 03 / WHAT WE DO
+                  <Plus size={14} /> <CmsText field="home.services.number">03 / WHAT WE DO</CmsText>
                 </span>
-                <span>CONNECTED BY DESIGN.</span>
+                <span><CmsText field="home.services.kicker">CONNECTED BY DESIGN.</CmsText></span>
               </div>
               <div className="services-grid">
                 <div className="services-intro">
                   <h2>
-                    <SplitWords text="Different skills." />
+                    <CmsText field="home.services.title" split><SplitWords text="Different skills." /></CmsText>
                     <br />
                     <span className="muted">
-                      <SplitWords text="One big picture." />
+                      <CmsText field="home.services.accent" split><SplitWords text="One big picture." /></CmsText>
                     </span>
                   </h2>
                   <p>
-                    From the first conversation to your next breakthrough.
-                    Everything your brand needs, working together.
+                    <CmsText field="home.services.body">
+                      From the first conversation to your next breakthrough.
+                      Everything your brand needs, working together.
+                    </CmsText>
                   </p>
                   <Link href="/services" className="round-link">
-                    View All Services{" "}
+                    <CmsText field="home.services.cta">View All Services</CmsText>{" "}
                     <span>
                       <ArrowUpRight size={20} />
                     </span>
@@ -247,15 +265,21 @@ export default async function HomePage() {
                   </div>
                 </div>
                 <div className="service-list">
-                  {primaryServices.map((s) => (
+                  {primaryServices.map((s, i) => (
                     <Reveal key={s.id} y={22}>
                       <Link href={`/services/${s.id}`} className="service-row">
                         <span className="micro-label">{s.index}</span>
                         <div>
                           <h3>
-                            {s.title.replace("Workflow/AI", "Workflow / AI")}
+                            <CmsText field={`home.service.${i}.title`}>
+                              {s.title.replace("Workflow/AI", "Workflow / AI")}
+                            </CmsText>
                           </h3>
-                          <p className="line-clamp-2">{s.description}</p>
+                          <p className="line-clamp-2">
+                            <CmsText field={`home.service.${i}.desc`}>
+                              {s.description}
+                            </CmsText>
+                          </p>
                         </div>
                         <ArrowUpRight size={23} />
                       </Link>
@@ -269,21 +293,23 @@ export default async function HomePage() {
             <section className="process-section section-pad">
               <div className="section-index">
                 <span>
-                  <Plus size={14} /> 04 / HOW WE THINK
+                  <Plus size={14} /> <CmsText field="home.process.number">04 / HOW WE THINK</CmsText>
                 </span>
-                <span>FROM POSSIBILITY TO PROGRESS.</span>
+                <span><CmsText field="home.process.kicker">FROM POSSIBILITY TO PROGRESS.</CmsText></span>
               </div>
               <div className="section-heading">
                 <h2>
-                  <SplitWords text="Great work." />
+                  <CmsText field="home.process.title" split><SplitWords text="Great work." /></CmsText>
                   <br />
                   <span className="muted">
-                    <SplitWords text="No guesswork." />
+                    <CmsText field="home.process.accent" split><SplitWords text="No guesswork." /></CmsText>
                   </span>
                 </h2>
                 <p>
-                  A clear process. An open conversation.
-                  <br />A shared commitment to getting it right.
+                  <CmsText field="home.process.body">
+                    A clear process. An open conversation.
+                    <br />A shared commitment to getting it right.
+                  </CmsText>
                 </p>
               </div>
               <div className="process-grid">
@@ -291,8 +317,8 @@ export default async function HomePage() {
                   <Reveal key={stage.title}>
                     <article>
                       <span className="process-number">0{i + 1}</span>
-                      <h3>{stage.title}</h3>
-                      <p>{stage.description}</p>
+                      <h3><CmsText field={`home.feature.${i}.title`}>{stage.title}</CmsText></h3>
+                      <p><CmsText field={`home.feature.${i}.desc`}>{stage.description}</CmsText></p>
                     </article>
                   </Reveal>
                 ))}
@@ -303,26 +329,28 @@ export default async function HomePage() {
             <section className="testimonials-section section-pad">
               <div className="section-index">
                 <span>
-                  <Plus size={14} /> 05 / CLIENT FEEDBACK
+                  <Plus size={14} /> <CmsText field="home.testimonials.number">05 / CLIENT FEEDBACK</CmsText>
                 </span>
-                <span>PROVEN RESULTS. TRUSTED PARTNERSHIPS.</span>
+                <span><CmsText field="home.testimonials.kicker">PROVEN RESULTS. TRUSTED PARTNERSHIPS.</CmsText></span>
               </div>
               <div className="section-heading">
                 <h2>
-                  <SplitWords text="In their" />
+                  <CmsText field="home.testimonials.title" split><SplitWords text="In their" /></CmsText>
                   <br />
                   <span className="muted">
-                    <SplitWords text="own words." />
+                    <CmsText field="home.testimonials.accent" split><SplitWords text="own words." /></CmsText>
                   </span>
                 </h2>
                 <Reveal>
                   <p>
-                    Hear what our clients have to say about
-                    <br />
-                    working with Thinklab.
+                    <CmsText field="home.testimonials.body">
+                      Hear what our clients have to say about
+                      <br />
+                      working with Thinklab.
+                    </CmsText>
                   </p>
                   <Link href="/reviews" className="round-link">
-                    View All Reviews{" "}
+                    <CmsText field="home.testimonials.cta">View All Reviews</CmsText>{" "}
                     <span>
                       <ArrowUpRight size={20} />
                     </span>
@@ -339,14 +367,14 @@ export default async function HomePage() {
                         ))}
                       </div>
                       <blockquote className="text-white/85 text-sm md:text-base leading-relaxed mb-6 italic">
-                        “{t.quote}”
+                        “<CmsText field={`home.review.${i}.quote`}>{t.quote}</CmsText>”
                       </blockquote>
                       <figcaption className="border-t border-white/10 pt-4">
                         <div className="font-semibold text-white tracking-wide">
-                          {t.name}
+                          <CmsText field={`home.review.${i}.name`}>{t.name}</CmsText>
                         </div>
                         <div className="text-xs text-white/50 font-mono mt-0.5">
-                          {t.role}, {t.company}
+                          <CmsText field={`home.review.${i}.role`}>{t.role}</CmsText>, <CmsText field={`home.review.${i}.company`}>{t.company}</CmsText>
                         </div>
                       </figcaption>
                     </figure>
@@ -359,24 +387,26 @@ export default async function HomePage() {
             <section className="insights-section section-pad">
               <div className="section-index">
                 <span>
-                  <Plus size={14} /> 06 / INSIGHTS
+                  <Plus size={14} /> <CmsText field="home.insights.number">06 / INSIGHTS</CmsText>
                 </span>
-                <span>PERSPECTIVES &amp; STRATEGY.</span>
+                <span><CmsText field="home.insights.kicker">PERSPECTIVES &amp; STRATEGY.</CmsText></span>
               </div>
               <div className="section-heading">
                 <h2>
-                  <SplitWords text="Dive into our collection of" />
+                  <CmsText field="home.insights.title" split><SplitWords text="Dive into our collection of" /></CmsText>
                   <br />
                   <span className="muted">
-                    <SplitWords text="engaging blog posts." />
+                    <CmsText field="home.insights.accent" split><SplitWords text="engaging blog posts." /></CmsText>
                   </span>
                 </h2>
                 <Reveal>
                   <p>
-                    Strategic ideas, modern frameworks, and practical guides.
+                    <CmsText field="home.insights.body">
+                      Strategic ideas, modern frameworks, and practical guides.
+                    </CmsText>
                   </p>
                   <Link href="/blog" className="round-link">
-                    Read Blogs{" "}
+                    <CmsText field="home.insights.cta">Read Blogs</CmsText>{" "}
                     <span>
                       <ArrowUpRight size={20} />
                     </span>
@@ -396,7 +426,7 @@ export default async function HomePage() {
                           <span>{blog.date}</span>
                         </div>
                         <h3 className="text-base font-semibold text-white/90 group-hover:text-white transition-colors leading-snug">
-                          {blog.title}
+                          <CmsText field={`home.blog.${i}.title`}>{blog.title}</CmsText>
                         </h3>
                       </div>
                       <div className="flex items-center gap-1 text-xs text-[#8b5cf6] font-mono mt-6 group-hover:translate-x-1 transition-transform">
@@ -412,14 +442,16 @@ export default async function HomePage() {
             {/* 10. FAQ SECTION */}
             <section className="faq-section section-pad">
               <div>
-                <span className="micro-label">A LITTLE MORE CLARITY</span>
+                <span className="micro-label">
+                  <CmsText field="home.faq.kicker">A LITTLE MORE CLARITY</CmsText>
+                </span>
                 <h2>
-                  Frequently Asked
+                  <CmsText field="home.faq.title">Frequently Asked</CmsText>
                   <br />
-                  <span className="muted">Questions.</span>
+                  <span className="muted"><CmsText field="home.faq.accent">Questions.</CmsText></span>
                 </h2>
                 <Link href="/contact" className="text-link">
-                  Have another one? <ArrowUpRight size={17} />
+                  <CmsText field="home.faq.cta">Have another one?</CmsText> <ArrowUpRight size={17} />
                 </Link>
               </div>
               <Accordion items={HOME_FAQS} />
@@ -428,16 +460,20 @@ export default async function HomePage() {
             {/* 11. FINAL CTA SECTION */}
             <section className="final-cta-section section-pad text-center py-24 border-t border-white/10">
               <Reveal>
-                <span className="micro-label">BIG THINKING STARTS WITH A SMALL HELLO.</span>
+                <span className="micro-label">
+                  <CmsText field="home.cta.kicker">BIG THINKING STARTS WITH A SMALL HELLO.</CmsText>
+                </span>
                 <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white mt-4 mb-6">
-                  Let&apos;s Talk!
+                  <CmsText field="home.cta.title">Let&apos;s Talk!</CmsText>
                 </h2>
                 <p className="text-white/60 max-w-xl mx-auto mb-8 text-base md:text-lg">
-                  Let’s see where it takes us. Reach out to our teams in India and Australia to accelerate your digital growth.
+                  <CmsText field="home.cta.body">
+                    Let’s see where it takes us. Reach out to our teams in India and Australia to accelerate your digital growth.
+                  </CmsText>
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-4">
                   <Link href="/contact" className="round-link bg-white text-black px-8 py-3.5 hover:bg-white/90 font-medium">
-                    Contact Us{" "}
+                    <CmsText field="home.cta.button">Contact Us</CmsText>{" "}
                     <span>
                       <ArrowUpRight size={20} />
                     </span>
@@ -454,9 +490,9 @@ export default async function HomePage() {
 
             {/* CLOSING STRIP */}
             <div className="closing-strip">
-              <span>BIG THINKING STARTS WITH A SMALL HELLO.</span>
+              <span><CmsText field="home.strip.left">BIG THINKING STARTS WITH A SMALL HELLO.</CmsText></span>
               <Plus size={22} />
-              <span>LET’S SEE WHERE IT TAKES US.</span>
+              <span><CmsText field="home.strip.right">LET’S SEE WHERE IT TAKES US.</CmsText></span>
               <Plus size={22} />
             </div>
           </div>

@@ -131,7 +131,7 @@ export function CanvasProvider({
       }}
     >
       {initial.previewId && (
-        <style>{`[data-cms-field]:hover,[data-cms-entry]:hover,[data-cms-section]:hover{outline:1px solid #8c64ff;cursor:text} [data-cms-field]{scroll-margin-top:100px}`}</style>
+        <style>{`[data-cms-field],[data-cms-entry],[data-cms-section],.journey-caption,.journey-finale{pointer-events:auto !important}[data-cms-field]:hover,[data-cms-entry]:hover,[data-cms-section]:hover{outline:2px solid #8c64ff !important;outline-offset:3px;cursor:pointer !important;background:rgba(140,100,255,0.12);border-radius:4px}[data-cms-field]{scroll-margin-top:100px}`}</style>
       )}
       {children}
     </Context.Provider>

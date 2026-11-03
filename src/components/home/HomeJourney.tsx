@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { CmsText, CmsLink } from '@/components/cms/Canvas';
+import { CmsText } from '@/components/cms/Canvas';
 import { ArrowDown, ArrowUpRight } from 'lucide-react';
 import { ensureGsap } from '@/lib/gsap';
 import { motion, sampleHomeJourney, type SceneState } from '@/lib/motion';
@@ -120,36 +120,87 @@ export default function HomeJourney() {
     <section ref={wrap} className="journey" aria-label="The Living Idea">
       <div className="journey-stage">
         <div ref={heroIn} className="hero-composition">
-          <div data-hero-badge className="hero-eyebrow opacity-0"><span className="status-dot" /> Helping Brands Grow Faster Online.</div>
+          <div data-hero-badge className="hero-eyebrow opacity-0">
+            <span className="status-dot" />{' '}
+            <CmsText field="hero.badge">Helping Brands Grow Faster Online.</CmsText>
+          </div>
           <h1 className="hero-title">
-            <span className="hero-title-left"><span data-hero-line className="block opacity-0">The Right Partner</span></span>
-            <span className="hero-title-right"><span data-hero-line className="block opacity-0">For Digital <em>Growth.</em></span></span>
+            <span className="hero-title-left">
+              <span data-hero-line className="block opacity-0">
+                <CmsText field="hero.title.left">The Right Partner</CmsText>
+              </span>
+            </span>
+            <span className="hero-title-right">
+              <span data-hero-line className="block opacity-0">
+                <CmsText field="hero.title.right">For Digital <em>Growth.</em></CmsText>
+              </span>
+            </span>
           </h1>
           <div data-hero-ui className="hero-description opacity-0">
-            <span className="micro-label">SMALL SPARK. BIG IMPACT.</span>
-            <p>We grow your business with SEO, digital marketing, high converting websites, and performance campaigns that bring real leads and sales.</p>
-            <Link href="/contact" className="text-link">Contact Us <ArrowUpRight size={17} /></Link>
+            <span className="micro-label">
+              <CmsText field="hero.kicker">SMALL SPARK. BIG IMPACT.</CmsText>
+            </span>
+            <p>
+              <CmsText field="hero.body">
+                We grow your business with SEO, digital marketing, high converting websites, and performance campaigns that bring real leads and sales.
+              </CmsText>
+            </p>
+            <Link href="/contact" className="text-link">
+              <CmsText field="hero.cta">Contact Us</CmsText> <ArrowUpRight size={17} />
+            </Link>
           </div>
-          <div data-hero-ui className="hero-coordinate opacity-0"><span>★ 200+ 5 STAR REVIEWS</span><span>INDIA ↔ AUSTRALIA</span></div>
+          <div data-hero-ui className="hero-coordinate opacity-0">
+            <span>
+              <CmsText field="hero.reviews">★ 200+ 5 STAR REVIEWS</CmsText>
+            </span>
+            <span>
+              <CmsText field="hero.locations">INDIA ↔ AUSTRALIA</CmsText>
+            </span>
+          </div>
         </div>
 
         <div ref={cue} className="journey-bottom">
-          <a href="#studio" className="journey-skip">Discover Thinklab <ArrowUpRight size={14} /></a>
-          <span className="scroll-prompt"><span className="scroll-track"><ArrowDown size={14} /></span> SCROLL TO IGNITE</span>
+          <a href="#studio" className="journey-skip">
+            <CmsText field="hero.skip">Discover Thinklab</CmsText> <ArrowUpRight size={14} />
+          </a>
+          <span className="scroll-prompt">
+            <span className="scroll-track">
+              <ArrowDown size={14} />
+            </span>{' '}
+            SCROLL TO IGNITE
+          </span>
           <span className="journey-edition">THE LIVING IDEA — 01 / 04</span>
         </div>
 
         {CHAPTERS.map((c, i) => (
-          <div key={c.kicker} ref={(n) => { if (n) chapterRefs.current[i] = n; }} className="journey-caption" style={{ visibility: 'hidden', opacity: 0 }}>
-            <span className="micro-label">{c.kicker}</span>
-            <p>{c.line}</p>
+          <div
+            key={c.kicker}
+            ref={(n) => {
+              if (n) chapterRefs.current[i] = n;
+            }}
+            className="journey-caption"
+            style={{ visibility: 'hidden', opacity: 0 }}
+          >
+            <span className="micro-label">
+              <CmsText field={`hero.chapter.${i}.kicker`}>{c.kicker}</CmsText>
+            </span>
+            <p>
+              <CmsText field={`hero.chapter.${i}.line`}>{c.line}</CmsText>
+            </p>
           </div>
         ))}
         <div ref={finale} className="journey-finale" style={{ visibility: 'hidden', opacity: 0 }}>
-          <span className="micro-label">ONE IDEA. INFINITE POSSIBILITIES.</span>
-          <p>This is Thinklab<span>®</span></p>
+          <span className="micro-label">
+            <CmsText field="hero.finale.kicker">ONE IDEA. INFINITE POSSIBILITIES.</CmsText>
+          </span>
+          <p>
+            <CmsText field="hero.finale.title">This is Thinklab</CmsText>
+            <span>®</span>
+          </p>
         </div>
-        <div className="journey-progress"><div ref={prog} className="energy-line h-full origin-left scale-x-0" /></div>
+        <div className="journey-progress">
+          <div ref={prog} className="energy-line h-full origin-left scale-x-0" />
+        </div>
       </div>
     </section>
   );

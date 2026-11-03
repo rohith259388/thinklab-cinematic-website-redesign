@@ -1,7 +1,8 @@
 "use client";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { type Document, type Content, documentPath } from "@/lib/cms/schema";
+import { type Document, type Content, type Kind, documentPath } from "@/lib/cms/schema";
+import TemplateModal from "./TemplateModal";
 import "./studio.css";
 type Field = { key: string; value: string; global: boolean };
 type Asset = { id: string; name: string; mime: string; alt: string };
@@ -15,6 +16,12 @@ async function api(action: string, data?: unknown) {
   if (!r.ok) throw new Error(v.error || "Request failed");
   return v;
 }
+const isDeletable = (d: Document) =>
+  !(
+    d.kind === "global" ||
+    (d.kind === "page" &&
+      ["/", "about", "services", "projects", "reviews", "blog", "contact"].includes(d.slug))
+  );
 export default function Studio() {
   const [user, setUser] = useState<{ email: string; role: string } | null>(
       null,
@@ -40,7 +47,8 @@ export default function Studio() {
     [canvasWidth, setCanvasWidth] = useState(700),
     [canUndo, setCanUndo] = useState(false),
     [canRedo, setCanRedo] = useState(false),
-    [mediaSection, setMediaSection] = useState("");
+    [mediaSection, setMediaSection] = useState(""),
+    [templateModal, setTemplateModal] = useState<Kind | null>(null);
   const canvasArea = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLIFrameElement>(null),
     past = useRef<Content[]>([]),
@@ -108,7 +116,7 @@ export default function Studio() {
       );
     }
   };
-  const open = (d: Document) => {
+  const open = useCallback((d: Document) => {
     if (status === "Unsaved changes" && !confirm("Discard unsaved changes?"))
       return;
     setDoc(d);
@@ -122,7 +130,7 @@ export default function Studio() {
     setCanRedo(false);
     setStatus("Saved");
     setPanel("design");
-  };
+  }, [status]);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     setError("");
@@ -134,12 +142,13 @@ export default function Studio() {
       setBusy(false);
     }
   };
-  const save = async () => {
-    if (!doc || !latest.current) return;
+  const save = async (contentOverride?: Content) => {
+    const toSave = contentOverride || latest.current;
+    if (!doc || !toSave) return;
     const updated = await api("save", {
       id: doc.id,
       revision: doc.revision,
-      content: latest.current,
+      content: toSave,
     });
     setDoc(updated);
     setDraft(updated.draft);
@@ -159,6 +168,68 @@ export default function Studio() {
     setStatus("Saved");
     setFrameVersion((v) => v + 1);
     await refresh();
+  };
+  const deleteDocument = async (id: string, revision: number, title: string) => {
+    const itemType = tab === "projects" ? "project" : tab === "blog" ? "insight" : tab === "careers" ? "career" : "entry";
+    if (!confirm(`Are you sure you want to permanently delete the ${itemType} "${title}"? This cannot be undone.`)) return;
+    await run(async () => {
+      await api("delete", { id, revision });
+      if (doc?.id === id) {
+        setDoc(null);
+        setDraft(null);
+      }
+      setStatus(`Deleted ${title}`);
+      await refresh();
+    });
+  };
+  const revertDraft = async () => {
+    if (!doc) return;
+    const isLocalModified = JSON.stringify(draft) !== JSON.stringify(doc.draft);
+    const hasPublished = Boolean(doc.published);
+    const isDraftDifferentFromPublished =
+      hasPublished && JSON.stringify(draft) !== JSON.stringify(doc.published);
+
+    if (!isLocalModified && !isDraftDifferentFromPublished) {
+      setError("This document is already up to date with the latest published/saved version.");
+      return;
+    }
+
+    if (isLocalModified) {
+      if (!confirm("Discard your current unsaved edits? This will reset all fields to the last saved state.")) {
+        return;
+      }
+      setDraft(doc.draft);
+      past.current = [];
+      future.current = [];
+      setCanUndo(false);
+      setCanRedo(false);
+      setStatus("Reverted unsaved edits");
+      setFrameVersion((v) => v + 1);
+      return;
+    }
+
+    if (isDraftDifferentFromPublished) {
+      if (
+        !confirm(
+          "Revert this entire draft back to the currently LIVE published version? All unpublished draft changes will be discarded.",
+        )
+      ) {
+        return;
+      }
+      await run(async () => {
+        const updated = await save(doc.published!);
+        if (updated) {
+          setDraft(updated.draft);
+          setDoc(updated);
+          past.current = [];
+          future.current = [];
+          setCanUndo(false);
+          setCanRedo(false);
+          setStatus("Reverted to published");
+          setFrameVersion((v) => v + 1);
+        }
+      });
+    }
   };
   useEffect(() => {
     const receive = (e: MessageEvent) => {
@@ -189,8 +260,14 @@ export default function Studio() {
       }
       if (e.data.type === "cms:select") {
         if (e.data.global && doc.kind !== "global") {
-          setError("Choose Shared content to edit header and footer content.");
-          return;
+          const g = docs.find((d) => d.kind === "global");
+          if (g) {
+            open(g);
+            setTab("global");
+            setSelected(e.data.key);
+            setPanel("design");
+            return;
+          }
         }
         setSelected(e.data.key);
         setPanel(e.data.key?.startsWith("entry.") ? "content" : "design");
@@ -198,7 +275,7 @@ export default function Studio() {
     };
     window.addEventListener("message", receive);
     return () => window.removeEventListener("message", receive);
-  }, [doc]);
+  }, [doc, docs, open]);
   useEffect(() => {
     if (draft && doc)
       frame.current?.contentWindow?.postMessage(
@@ -362,6 +439,14 @@ export default function Studio() {
           Save draft
         </button>
         <button
+          className="cms-revert-btn"
+          disabled={!doc || busy}
+          title="Revert draft back to published or saved version"
+          onClick={() => void revertDraft()}
+        >
+          ↺ Revert
+        </button>
+        <button
           className="cms-primary"
           disabled={!doc || busy || user.role === "editor"}
           onClick={() =>
@@ -394,11 +479,11 @@ export default function Studio() {
         {[
           ["page", "Pages"],
           ["projects", "Projects"],
-          ["blog", "Journal"],
+          ["blog", "Insights"],
           ["careers", "Careers"],
-          ["global", "Shared content"],
-          ["media", "Media library"],
-          ["users", "Team access"],
+          ["global", "Header & Footer"],
+          ["media", "Media Assets"],
+          ["users", "Admin Access"],
         ].map(([key, label]) => (
           <button
             className={tab === key ? "active" : ""}
@@ -417,43 +502,70 @@ export default function Studio() {
         {!["media", "users"].includes(tab) && (
           <>
             <div className="cms-section-label">
-              {tab === "page" ? "PAGES" : "ENTRIES"}
-              <button
-                title="Create new entry"
-                disabled={tab === "global" || busy}
-                onClick={() => {
-                  const title = prompt("Entry title");
-                  if (!title) return;
-                  const slug = prompt(
-                    "URL slug (lowercase words separated by hyphens)",
-                    title
-                      .toLowerCase()
-                      .replace(/[^a-z0-9]+/g, "-")
-                      .replace(/^-|-$/g, ""),
-                  );
-                  if (!slug) return;
-                  void run(async () => {
-                    const d = await api("create", { kind: tab, title, slug });
-                    await refresh();
-                    open(d);
-                  });
-                }}
-              >
-                ＋
-              </button>
+              {tab === "page"
+                ? "PAGES"
+                : tab === "projects"
+                ? "PROJECTS"
+                : tab === "blog"
+                ? "INSIGHTS"
+                : tab === "careers"
+                ? "CAREERS"
+                : "ENTRIES"}
+              {tab !== "page" && tab !== "global" && (
+                <button
+                  title="Create new entry"
+                  disabled={busy}
+                  onClick={() => setTemplateModal(tab as Kind)}
+                >
+                  ＋
+                </button>
+              )}
             </div>
             <div className="cms-documents">
               {docs
                 .filter((d) => d.kind === tab)
                 .map((d) => (
-                  <button
-                    key={d.id}
-                    className={d.id === doc?.id ? "active" : ""}
-                    onClick={() => open(d)}
-                  >
-                    <i className={d.published ? "published" : ""} />
-                    <span>{d.draft.title}</span>
-                  </button>
+                  <div key={d.id} className="cms-document-row">
+                    <button
+                      className={`cms-document-item ${d.id === doc?.id ? "active" : ""}`}
+                      onClick={() => open(d)}
+                      title={d.draft.title}
+                    >
+                      <i className={d.published ? "published" : ""} />
+                      <span className="cms-doc-title">{d.draft.title}</span>
+                    </button>
+                    {["projects", "blog", "careers"].includes(tab) && (
+                      <button
+                        type="button"
+                        className="cms-delete-quick-btn"
+                        title={`Delete ${d.draft.title}`}
+                        disabled={busy}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void deleteDocument(d.id, d.revision, d.draft.title);
+                        }}
+                      >
+                        <svg
+                          width="11"
+                          height="11"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M3 6h18" />
+                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                          <line x1="10" y1="11" x2="10" y2="17" />
+                          <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                        <span>Delete</span>
+                      </button>
+                    )}
+                  </div>
                 ))}
             </div>
           </>
@@ -688,6 +800,9 @@ export default function Studio() {
           </form>
         ) : doc && draft ? (
           <>
+            <div className="cms-firsttime-banner">
+              <span><strong>Visual Editor:</strong> Hover & click any text on the website preview to edit it. Or click <strong>＋</strong> on the left to add a new project, insight, or career.</span>
+            </div>
             <div className="cms-canvas-toolbar">
               {[
                 [1280, "Desktop"],
@@ -1210,6 +1325,23 @@ export default function Studio() {
             )}
           </fieldset>
         </aside>
+      )}
+      {templateModal && (
+        <TemplateModal
+          key={templateModal}
+          kind={templateModal}
+          isOpen={true}
+          onClose={() => setTemplateModal(null)}
+          onSubmit={async ({ title, slug, content: newContent }) => {
+            await run(async () => {
+              const d = await api("create", { kind: templateModal, title, slug, content: newContent });
+              await refresh();
+              open(d);
+            });
+          }}
+          assets={assets}
+          busy={busy}
+        />
       )}
     </div>
   );

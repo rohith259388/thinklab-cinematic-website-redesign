@@ -481,3 +481,187 @@
 .cms-sidebar { overflow-y: auto; }
 .cms-layer { text-transform: capitalize; font-family: Arial,sans-serif !important; }
 .cms-canvas-scroll { padding: 24px; }
+
+
+/* Template Creation Modal */
+.cms-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.cms-modal {
+  background: #191a1f;
+  border: 1px solid #383944;
+  border-radius: 12px;
+  width: min(720px, 95vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  color: #eeeef3;
+}
+.cms-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--cms-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cms-modal-header h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fcfcf7;
+}
+.cms-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cms-modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--cms-line);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  background: #14151a;
+  border-radius: 0 0 12px 12px;
+}
+.cms-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.cms-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.cms-form-group.full {
+  grid-column: 1 / -1;
+}
+.cms-form-group label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #c5b0ff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.cms-form-group input,
+.cms-form-group textarea,
+.cms-form-group select {
+  background: #111215;
+  border: 1px solid var(--cms-line);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 12px;
+  font-family: inherit;
+}
+.cms-form-group input:focus,
+.cms-form-group textarea:focus,
+.cms-form-group select:focus {
+  border-color: #bb9bff;
+  outline: none;
+}
+.cms-form-group textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+.cms-form-group small {
+  color: #8c8c98;
+  font-size: 11px;
+}
+
+
+/* Document list with quick delete & clean rows */
+.cms-document-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin: 3px 0;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+  padding: 1px 4px 1px 2px;
+}
+.cms-document-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.cms-document-item {
+  flex: 1;
+  min-width: 0;
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  border: 0 !important;
+  background: none !important;
+  text-align: left;
+  padding: 7px 8px !important;
+  cursor: pointer;
+  color: inherit;
+  font-size: 12px;
+}
+.cms-doc-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 125px;
+}
+.cms-delete-quick-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  background: rgba(235, 75, 75, 0.12) !important;
+  border: 1px solid rgba(235, 75, 75, 0.28) !important;
+  color: #ff9999 !important;
+  padding: 3px 7px !important;
+  font-size: 10.5px !important;
+  line-height: 1 !important;
+  border-radius: 4px !important;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s, background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+.cms-delete-quick-btn:hover {
+  opacity: 1;
+  background: rgba(235, 75, 75, 0.3) !important;
+  border-color: rgba(235, 75, 75, 0.6) !important;
+  color: #ffffff !important;
+}
+.cms-delete-quick-btn svg {
+  flex-shrink: 0;
+}
+.cms-revert-btn {
+  background: #2a2336 !important;
+  border-color: #5d4380 !important;
+  color: #d1bfff !important;
+  font-weight: 500;
+}
+.cms-revert-btn:hover {
+  background: #3e2e54 !important;
+  border-color: #8c64ff !important;
+}
+.cms-firsttime-banner {
+  background: linear-gradient(90deg, rgba(140, 100, 255, 0.14), rgba(45, 30, 80, 0.18));
+  border-bottom: 1px solid rgba(140, 100, 255, 0.22);
+  padding: 8px 18px;
+  font-size: 12px;
+  color: #ded8f7;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cms-firsttime-banner strong {
+  color: #fff;
+}

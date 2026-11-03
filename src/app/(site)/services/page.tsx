@@ -10,6 +10,7 @@ import ServiceExplorer from '@/components/ui/ServiceExplorer';
 import SectionIntro from '@/components/ui/SectionIntro';
 import Magnetic from '@/components/ui/Magnetic';
 import { Reveal, EnergyLine } from '@/components/ui/Reveal';
+import { CmsText } from '@/components/cms/Canvas';
 
 const defaultMetadata: Metadata = {
   title: 'Services',
@@ -48,8 +49,12 @@ export default function ServicesPage() {
                       <span className="font-display text-3xl italic text-[rgba(162,128,255,0.55)]">0{i + 1}</span>
                       <span className="h-1.5 w-1.5 rounded-full bg-[#a280ff] shadow-[0_0_12px_rgba(162,128,255,0.9)] transition-all duration-700 group-hover:scale-150" />
                     </div>
-                    <h3 className="mt-6 font-display text-[21px] tracking-tight text-[#fcfcf7]">{w.title}</h3>
-                    <p className="mt-3.5 text-[13.5px] leading-relaxed text-[#bdb9c9]">{w.description}</p>
+                    <h3 className="mt-6 font-display text-[21px] tracking-tight text-[#fcfcf7]">
+                      <CmsText field={`services.why.${i}.title`}>{w.title}</CmsText>
+                    </h3>
+                    <p className="mt-3.5 text-[13.5px] leading-relaxed text-[#bdb9c9]">
+                      <CmsText field={`services.why.${i}.desc`}>{w.description}</CmsText>
+                    </p>
                   </article>
                 </Reveal>
               ))}
@@ -57,7 +62,7 @@ export default function ServicesPage() {
             <Reveal delay={0.2} className="mt-16 text-center">
               <Magnetic>
                 <Link href="/contact" className="btn-drop sheen px-8 py-4 text-sm font-medium">
-                  {CTA.contact}
+                  <CmsText field="services.cta">{CTA.contact}</CmsText>
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>
               </Magnetic>

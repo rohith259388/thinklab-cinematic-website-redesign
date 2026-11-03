@@ -32,6 +32,34 @@ The ESLint React immutability rule is disabled only for the original Three.js sc
 
 The site runs on Cloudflare Workers (`thinklab-website` on the info@thinklabdigitalsolutions.com account) through the OpenNext adapter. Every push to `main` deploys automatically via `.github/workflows/deploy.yml`, which needs a `CLOUDFLARE_API_TOKEN` repository secret with the "Edit Cloudflare Workers" template permissions. To deploy by hand, run `npx wrangler login` and then `npm run deploy`; `npm run preview` runs the production build locally in the Workers runtime. Production variables such as `DATABASE_URL`, `CMS_ORIGIN` and `CMS_SETUP_SECRET` are set with `npx wrangler secret put <NAME>`.
 
-## Visual CMS
+## Visual CMS (ThinkLab Studio)
 
-Thinklab Studio is available at `/admin`. See [CMS.md](CMS.md) for the PostgreSQL bootstrap, publishing workflow, security architecture, verification commands and explicit remaining limitations. Production database configuration is required; no CMS credentials are embedded in the application.
+ThinkLab Studio is available at `/admin`. It provides visual in-context editing of site copy, typography, sections, projects, and articles.
+
+### Quick Setup & Admin Access
+
+When sharing or cloning this repository, follow these 3 steps to access the admin panel:
+
+1. **Configure Environment Variables**:
+   ```bash
+   cp .env.example .env.local
+   ```
+   Set `DATABASE_URL` to your PostgreSQL database (local Postgres, Docker, Supabase, Neon, etc.). Ensure `CMS_ORIGIN` matches the exact local development URL (default: `http://localhost:3000`).
+
+2. **Seed the Static Admin User**:
+   ```bash
+   npm run seed:admin
+   ```
+   This initializes the admin account with default static credentials:
+   - **Email:** `admin@thinklab.com`
+   - **Password:** `AdminThinkLab2026!` *(Note: passwords must be ≥ 14 characters)*
+
+   *(Optional: pass custom credentials with `npm run seed:admin -- --email user@example.com --password YourPasswordHere123`)*
+
+3. **Start the Application & Log In**:
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000/admin](http://localhost:3000/admin) in your browser and enter your credentials.
+
+See [CMS.md](CMS.md) for full architecture, publishing workflows, security guardrails, and schema specifications.

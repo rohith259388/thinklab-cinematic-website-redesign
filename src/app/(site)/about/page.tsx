@@ -12,6 +12,7 @@ import SectionIntro from '@/components/ui/SectionIntro';
 import Accordion from '@/components/ui/Accordion';
 import Marquee from '@/components/ui/Marquee';
 import { Reveal, EnergyLine } from '@/components/ui/Reveal';
+import { CmsText } from '@/components/cms/Canvas';
 
 const defaultMetadata: Metadata = {
   title: 'About',
@@ -40,8 +41,12 @@ export default function AboutPage() {
             <Reveal key={p.title} delay={i * 0.12}>
               <article className="glass sheen group relative h-full overflow-hidden p-8 md:p-10">
                 <span className="text-outline font-display text-7xl md:text-8xl">{p.index}</span>
-                <h2 className="mt-6 font-display text-[26px] tracking-tight text-[#fcfcf7]">{p.title}</h2>
-                <p className="mt-4 text-[14px] leading-relaxed text-[#9a97a8]">{p.body}</p>
+                <h2 className="mt-6 font-display text-[26px] tracking-tight text-[#fcfcf7]">
+                  <CmsText field={`about.pillar.${i}.title`}>{p.title}</CmsText>
+                </h2>
+                <p className="mt-4 text-[14px] leading-relaxed text-[#9a97a8]">
+                  <CmsText field={`about.pillar.${i}.body`}>{p.body}</CmsText>
+                </p>
                 <span className="absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-[rgba(162,128,255,0.5)] to-transparent opacity-0 transition-opacity duration-700 group-hover:opacity-100" />
               </article>
             </Reveal>
@@ -51,7 +56,9 @@ export default function AboutPage() {
 
       {/* ——— BRANDS ——— */}
       <section className="border-y border-[rgba(197,176,255,0.08)] bg-[rgba(13,13,13,0.55)] py-16 md:py-20">
-        <p className="mb-10 text-center font-mono text-[10px] tracking-[0.4em] text-[#545454] uppercase">{ABOUT.brandsLabel}</p>
+        <p className="mb-10 text-center font-mono text-[10px] tracking-[0.4em] text-[#545454] uppercase">
+          <CmsText field="about.brands.label">{ABOUT.brandsLabel}</CmsText>
+        </p>
         <Marquee items={ABOUT.brands} />
       </section>
 
@@ -61,13 +68,13 @@ export default function AboutPage() {
           <div>
             <SectionIntro kicker={ABOUT.founder.kicker} title="Ajay Kumar" accent="Kattamuri" />
             <Reveal delay={0.2} className="mt-7 text-[15.5px] leading-relaxed text-[#9a97a8]">
-              {ABOUT.founder.body}
+              <CmsText field="about.founder.bio">{ABOUT.founder.body}</CmsText>
             </Reveal>
             <div className="mt-8 flex flex-wrap gap-2.5">
               {ABOUT.founder.traits.map((t, i) => (
                 <Reveal key={t} delay={0.25 + i * 0.06} y={14}>
                   <span className="chapter-chip rounded-full px-4 py-2 font-mono text-[10px] tracking-[0.2em] text-[#c5b0ff] uppercase">
-                    {t}
+                    <CmsText field={`about.founder.trait.${i}`}>{t}</CmsText>
                   </span>
                 </Reveal>
               ))}
@@ -81,7 +88,9 @@ export default function AboutPage() {
 
       {/* ——— FEATURED IN ——— */}
       <section className="border-y border-[rgba(197,176,255,0.08)] bg-[rgba(13,13,13,0.55)] py-14 md:py-16">
-        <p className="mb-8 text-center font-mono text-[10px] tracking-[0.4em] text-[#545454] uppercase">Working across cities</p>
+        <p className="mb-8 text-center font-mono text-[10px] tracking-[0.4em] text-[#545454] uppercase">
+          <CmsText field="about.cities.label">Working across cities</CmsText>
+        </p>
         <Marquee items={ABOUT.featuredIn} glow />
       </section>
 
@@ -103,8 +112,12 @@ export default function AboutPage() {
                     {s.index}
                   </span>
                   <div className="glass sheen flex-1 p-6 md:p-8">
-                    <h3 className="font-display text-xl tracking-tight text-[#fcfcf7]">{s.title}</h3>
-                    <p className="mt-3 text-[13.5px] leading-relaxed text-[#9a97a8]">{s.body}</p>
+                    <h3 className="font-display text-xl tracking-tight text-[#fcfcf7]">
+                      <CmsText field={`about.process.${i}.title`}>{s.title}</CmsText>
+                    </h3>
+                    <p className="mt-3 text-[13.5px] leading-relaxed text-[#9a97a8]">
+                      <CmsText field={`about.process.${i}.body`}>{s.body}</CmsText>
+                    </p>
                   </div>
                 </div>
               </Reveal>
