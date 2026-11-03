@@ -187,15 +187,17 @@ export default async function HomePage() {
                 <CmsText field="home.philosophy.kicker">WHY THINKLAB DIGITAL SOLUTIONS STANDS OUT</CmsText>
               </span>
               <h2>
-                <CmsText field="home.philosophy.title" split><SplitWords text="What if" /></CmsText>
-                <br />
-                <CmsText field="home.philosophy.title2" split><SplitWords text="became" /></CmsText>
-                <br />
-                <em>
+<span className="block">
+                  <CmsText field="home.philosophy.title" split><SplitWords text="What if" /></CmsText>
+                </span>
+                <span className="block">
+                  <CmsText field="home.philosophy.title2" split><SplitWords text="became" /></CmsText>
+                </span>
+                <em className="block not-italic text-[#d0baff]">
                   <CmsText field="home.philosophy.accent" split><SplitWords text="what’s next?" /></CmsText>
                 </em>
               </h2>
-              <div className="max-w-2xl mx-auto space-y-4 my-6 text-white/80">
+              <div className="relative z-10 max-w-xl space-y-4 my-6 text-white/80 text-left">
                 <p>
                   <CmsText field="home.philosophy.body1">
                     We combine strategic digital marketing, high performance website development, and intelligent automation to help businesses increase traffic, generate qualified leads, and grow revenue consistently.
@@ -208,17 +210,6 @@ export default async function HomePage() {
                 </p>
               </div>
 
-              {/* Supporting Points Tags */}
-              <div className="flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto mb-8">
-                {WHY_US.values.map((val, i) => (
-                  <span
-                    key={val}
-                    className="px-3.5 py-1.5 rounded-full text-xs font-mono tracking-wider bg-white/10 border border-white/15 text-white/90 backdrop-blur-sm"
-                  >
-                    <CmsText field={`home.whyus.tag.${i}`}>{val}</CmsText>
-                  </span>
-                ))}
-              </div>
 
               <Link
                 href="/contact"
@@ -360,20 +351,20 @@ export default async function HomePage() {
               <div className="review-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
                 {TESTIMONIALS.slice(0, 6).map((t, i) => (
                   <Reveal key={t.name} delay={i * 0.08}>
-                    <figure className="review-card p-7 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-sm flex flex-col justify-between h-full">
-                      <div className="flex items-center gap-1 text-amber-400 mb-4">
+                    <figure className="review-card p-7 rounded-2xl bg-white/75 border border-[#27291d]/15 shadow-sm hover:border-[#7e6ff0]/40 hover:shadow-md transition-all flex flex-col justify-between h-full">
+                      <div className="flex items-center gap-1 text-amber-500 mb-4">
                         {[...Array(5)].map((_, idx) => (
                           <Star key={idx} size={14} fill="currentColor" />
                         ))}
                       </div>
-                      <blockquote className="text-white/85 text-sm md:text-base leading-relaxed mb-6 italic">
+<blockquote className="text-[#20211f] text-sm md:text-base leading-relaxed mb-6 italic font-normal">
                         “<CmsText field={`home.review.${i}.quote`}>{t.quote}</CmsText>”
                       </blockquote>
-                      <figcaption className="border-t border-white/10 pt-4">
-                        <div className="font-semibold text-white tracking-wide">
+                      <figcaption className="border-t border-[#27291d]/12 pt-4">
+                        <div className="font-semibold text-[#1a1b18] tracking-wide">
                           <CmsText field={`home.review.${i}.name`}>{t.name}</CmsText>
                         </div>
-                        <div className="text-xs text-white/50 font-mono mt-0.5">
+                        <div className="text-xs text-[#686b61] font-mono mt-0.5">
                           <CmsText field={`home.review.${i}.role`}>{t.role}</CmsText>, <CmsText field={`home.review.${i}.company`}>{t.company}</CmsText>
                         </div>
                       </figcaption>
@@ -418,18 +409,18 @@ export default async function HomePage() {
                   <Reveal key={blog.title} delay={i * 0.07}>
                     <Link
                       href={blog.slug ? `/blog/${blog.slug}` : "/blog"}
-                      className="group p-6 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-white/25 transition-all flex flex-col justify-between h-full"
+                      className="group p-6 rounded-2xl bg-white/75 border border-[#27291d]/15 shadow-sm hover:border-[#7e6ff0]/50 hover:shadow-md transition-all flex flex-col justify-between h-full"
                     >
                       <div>
-                        <div className="flex items-center justify-between text-xs font-mono text-white/40 mb-3">
-                          <span>{blog.tag}</span>
+                        <div className="flex items-center justify-between text-xs font-mono text-[#686b61] mb-3">
+                          <span className="px-2.5 py-0.5 rounded-full bg-[#7e6ff0]/10 text-[#644be2] font-medium border border-[#7e6ff0]/20">{blog.tag}</span>
                           <span>{blog.date}</span>
                         </div>
-                        <h3 className="text-base font-semibold text-white/90 group-hover:text-white transition-colors leading-snug">
+<h3 className="text-base font-semibold text-[#1a1b18] group-hover:text-[#644be2] transition-colors leading-snug">
                           <CmsText field={`home.blog.${i}.title`}>{blog.title}</CmsText>
                         </h3>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-[#8b5cf6] font-mono mt-6 group-hover:translate-x-1 transition-transform">
+                      <div className="flex items-center gap-1.5 text-xs text-[#644be2] font-mono font-medium mt-6 group-hover:translate-x-1 transition-transform">
                         <span>Read article</span>
                         <ArrowUpRight size={14} />
                       </div>
@@ -457,44 +448,6 @@ export default async function HomePage() {
               <Accordion items={HOME_FAQS} />
             </section>
 
-            {/* 11. FINAL CTA SECTION */}
-            <section className="final-cta-section section-pad text-center py-24 border-t border-white/10">
-              <Reveal>
-                <span className="micro-label">
-                  <CmsText field="home.cta.kicker">BIG THINKING STARTS WITH A SMALL HELLO.</CmsText>
-                </span>
-                <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white mt-4 mb-6">
-                  <CmsText field="home.cta.title">Let&apos;s Talk!</CmsText>
-                </h2>
-                <p className="text-white/60 max-w-xl mx-auto mb-8 text-base md:text-lg">
-                  <CmsText field="home.cta.body">
-                    Let’s see where it takes us. Reach out to our teams in India and Australia to accelerate your digital growth.
-                  </CmsText>
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-4">
-                  <Link href="/contact" className="round-link bg-white text-black px-8 py-3.5 hover:bg-white/90 font-medium">
-                    <CmsText field="home.cta.button">Contact Us</CmsText>{" "}
-                    <span>
-                      <ArrowUpRight size={20} />
-                    </span>
-                  </Link>
-                  <a
-                    href={`mailto:${BRAND.email}`}
-                    className="round-link border border-white/20 text-white px-8 py-3.5 hover:bg-white/10"
-                  >
-                    {BRAND.email}
-                  </a>
-                </div>
-              </Reveal>
-            </section>
-
-            {/* CLOSING STRIP */}
-            <div className="closing-strip">
-              <span><CmsText field="home.strip.left">BIG THINKING STARTS WITH A SMALL HELLO.</CmsText></span>
-              <Plus size={22} />
-              <span><CmsText field="home.strip.right">LET’S SEE WHERE IT TAKES US.</CmsText></span>
-              <Plus size={22} />
-            </div>
           </div>
         </>
       }
