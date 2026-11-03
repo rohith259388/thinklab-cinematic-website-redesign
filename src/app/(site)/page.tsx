@@ -16,6 +16,7 @@ import {
 import StageSetter from "@/components/experience/StageSetter";
 import HomeJourney from "@/components/home/HomeJourney";
 import ProjectGallery from "@/components/home/ProjectGallery";
+import VerticalTestimonials from "@/components/home/VerticalTestimonials";
 import { entries, siteContent } from "@/lib/cms/public";
 import { CmsText } from "@/components/cms/Canvas";
 import Accordion from "@/components/ui/Accordion";
@@ -348,30 +349,9 @@ export default async function HomePage() {
                   </Link>
                 </Reveal>
               </div>
-              <div className="review-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-                {TESTIMONIALS.slice(0, 6).map((t, i) => (
-                  <Reveal key={t.name} delay={i * 0.08}>
-                    <figure className="review-card p-7 rounded-2xl bg-white/75 border border-[#27291d]/15 shadow-sm hover:border-[#7e6ff0]/40 hover:shadow-md transition-all flex flex-col justify-between h-full">
-                      <div className="flex items-center gap-1 text-amber-500 mb-4">
-                        {[...Array(5)].map((_, idx) => (
-                          <Star key={idx} size={14} fill="currentColor" />
-                        ))}
-                      </div>
-<blockquote className="text-[#20211f] text-sm md:text-base leading-relaxed mb-6 italic font-normal">
-                        “<CmsText field={`home.review.${i}.quote`}>{t.quote}</CmsText>”
-                      </blockquote>
-                      <figcaption className="border-t border-[#27291d]/12 pt-4">
-                        <div className="font-semibold text-[#1a1b18] tracking-wide">
-                          <CmsText field={`home.review.${i}.name`}>{t.name}</CmsText>
-                        </div>
-                        <div className="text-xs text-[#686b61] font-mono mt-0.5">
-                          <CmsText field={`home.review.${i}.role`}>{t.role}</CmsText>, <CmsText field={`home.review.${i}.company`}>{t.company}</CmsText>
-                        </div>
-                      </figcaption>
-                    </figure>
-                  </Reveal>
-                ))}
-              </div>
+
+              {/* Infinite Vertical Testimonial Scroller */}
+              <VerticalTestimonials />
             </section>
 
             {/* 9. BLOG / INSIGHTS SECTION */}
