@@ -1,6 +1,6 @@
 import ExperienceShell from "@/components/experience/ExperienceShell";
 import Cursor from "@/components/ui/Cursor";
-import Preloader from "@/components/ui/Preloader";
+import IntroLoader from "@/components/ui/IntroLoader";
 import Nav from "@/components/ui/Nav";
 import Footer from "@/components/ui/Footer";
 
@@ -14,7 +14,7 @@ export default async function SiteLayout({
   const content = await siteContent();
   return (
     <CanvasProvider {...content} registerCanvas={false}>
-      <Preloader />
+      <IntroLoader />
 
       <ExperienceShell />
       <Nav />
