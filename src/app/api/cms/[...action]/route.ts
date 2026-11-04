@@ -67,12 +67,20 @@ export async function GET(req: NextRequest) {
 }
 
 function failure(e: unknown) {
-  const databaseError = typeof e === "object" && e !== null && "code" in e;
-  const message = databaseError
-    ? "Database operation failed. Check the server connection and logs."
-    : e instanceof Error
-      ? e.message
-      : "Request failed";
+  const errStr = e instanceof Error ? e.message : String(e || "");
+  const isTimeout =
+    errStr.includes("timed out") ||
+    errStr.includes("Server selection") ||
+    errStr.includes("ECONNREFUSED") ||
+    errStr.includes("ENOTFOUND");
+  const databaseError = typeof e === "object" && e !== null && ("code" in e || isTimeout);
+  const message = isTimeout
+    ? "Database connection timed out. Please allow 0.0.0.0/0 (Anywhere) in MongoDB Atlas > Network Access."
+    : databaseError
+      ? `Database operation failed: ${errStr || "Check server connection."}`
+      : e instanceof Error
+        ? e.message
+        : "Request failed";
   const status =
     message === "Unauthorized"
       ? 401

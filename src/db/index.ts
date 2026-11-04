@@ -23,16 +23,23 @@ export async function getMongoClient(): Promise<MongoClient> {
   }
   const uri = normalizeMongoUri(rawUri);
 
+  const clientOptions = {
+    serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 5000,
+    socketTimeoutMS: 15000,
+    maxPoolSize: 1,
+  };
+
   if (process.env.NODE_ENV === "development") {
     if (!globalForMongo.__mongoClientPromise) {
-      const client = new MongoClient(uri);
+      const client = new MongoClient(uri, clientOptions);
       globalForMongo.__mongoClientPromise = client.connect();
     }
     return globalForMongo.__mongoClientPromise;
   }
 
   if (!globalForMongo.__mongoClientPromise) {
-    const client = new MongoClient(uri);
+    const client = new MongoClient(uri, clientOptions);
     globalForMongo.__mongoClientPromise = client.connect();
   }
   return globalForMongo.__mongoClientPromise;

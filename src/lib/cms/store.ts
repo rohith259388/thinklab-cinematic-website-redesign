@@ -31,7 +31,12 @@ export async function getDb(): Promise<Db> {
   }
   const uri = normalizeMongoUri(rawUri);
   if (!g.__cmsMongoClient) {
-    g.__cmsMongoClient = new MongoClient(uri);
+    g.__cmsMongoClient = new MongoClient(uri, {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
+      socketTimeoutMS: 15000,
+      maxPoolSize: 1,
+    });
     await g.__cmsMongoClient.connect();
   }
   g.__cmsMongoDb = g.__cmsMongoClient.db("thinklab");

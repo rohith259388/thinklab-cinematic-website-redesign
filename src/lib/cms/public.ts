@@ -19,20 +19,33 @@ export const previewDocument = cache(async () => {
   }
 });
 
+async function withQuickTimeout<T>(promise: Promise<T>, ms = 2000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('DB lookup timed out')), ms)
+    ),
+  ]);
+}
+
 export async function publicDocuments(kind: Kind) {
   const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
   if (!uri) return null;
   try {
-    const db = await getDb();
-    const list = await db
-      .collection('cms_documents')
-      .find({
-        kind,
-        deleted: false,
-        published: { $ne: null },
-      })
-      .sort({ updated: -1 })
-      .toArray();
+    const list = await withQuickTimeout(
+      getDb().then((db) =>
+        db
+          .collection('cms_documents')
+          .find({
+            kind,
+            deleted: false,
+            published: { $ne: null },
+          })
+          .sort({ updated: -1 })
+          .toArray()
+      ),
+      2000
+    );
 
     return list.map((d) => ({
       id: d.id,
@@ -60,12 +73,12 @@ export async function entries(kind: 'projects' | 'blog' | 'careers') {
   }));
   const result = rows
     ? rows
-        .map((d) => ({ ...d.published!, slug: d.slug }))
-        .sort((a, b) => {
-          const ai = fallback.findIndex((e) => e.slug === a.slug),
-            bi = fallback.findIndex((e) => e.slug === b.slug);
-          return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
-        })
+    .map((d) => ({ ...d.published!, slug: d.slug }))
+    .sort((a, b) => {
+      const ai = fallback.findIndex((e) => e.slug === a.slug),
+        bi = fallback.findIndex((e) => e.slug === b.slug);
+      return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+    })
     : fallback;
   if (preview?.kind === kind)
     return [
@@ -79,18 +92,22 @@ export async function siteContent(slug = '/') {
   const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
   if (!uri) return { page: null, global: null };
   try {
-    const db = await getDb();
-    const rows = await db
-      .collection('cms_documents')
-      .find({
-        deleted: false,
-        published: { $ne: null },
-        $or: [
-          { kind: 'page', slug },
-          { kind: 'global', slug: 'site' },
-        ],
-      })
-      .toArray();
+    const rows = await withQuickTimeout(
+      getDb().then((db) =>
+        db
+          .collection('cms_documents')
+          .find({
+            deleted: false,
+            published: { $ne: null },
+            $or: [
+              { kind: 'page', slug },
+              { kind: 'global', slug: 'site' },
+            ],
+          })
+          .toArray()
+      ),
+      2000
+    );
 
     const page = rows.find((r) => r.kind === 'page' && r.slug === slug)?.published as Content | null;
     const global = rows.find((r) => r.kind === 'global' && r.slug === 'site')?.published as Content | null;
