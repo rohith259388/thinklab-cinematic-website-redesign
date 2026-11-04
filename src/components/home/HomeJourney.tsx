@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { CmsText } from '@/components/cms/Canvas';
+import { CmsText, useCanvasContent } from '@/components/cms/Canvas';
 import { ArrowDown, ArrowUpRight } from 'lucide-react';
 import { ensureGsap } from '@/lib/gsap';
 import { motion, sampleHomeJourney, type SceneState } from '@/lib/motion';
@@ -27,6 +27,14 @@ export default function HomeJourney() {
   const prog = useRef<HTMLDivElement>(null);
   const chapterRefs = useRef<HTMLDivElement[]>([]);
   const finale = useRef<HTMLDivElement>(null);
+  const finaleTitle = useRef<HTMLParagraphElement>(null);
+  const finaleLetters = useRef<HTMLSpanElement[]>([]);
+
+  const { page, global } = useCanvasContent();
+  const finaleTitleText =
+    page?.fields['hero.finale.title'] ||
+    global?.fields['hero.finale.title'] ||
+    'This is Thinklab';
 
   useEffect(() => {
     const { gsap, ScrollTrigger } = ensureGsap();
@@ -94,11 +102,44 @@ export default function HomeJourney() {
           cap.style.visibility = vis <= 0.001 ? 'hidden' : 'visible';
         });
 
-        // Finale caption — the structure has become Thinklab.
-        const fIn = Math.min(1, Math.max(0, (p - 0.9) / 0.05));
+        // Finale caption & exploding letter effect on scroll
+        const fIn = Math.min(1, Math.max(0, (p - 0.86) / 0.06));
         fin.style.opacity = fIn.toFixed(3);
-        fin.style.transform = `translate3d(0, ${((1 - fIn) * 30).toFixed(2)}px, 0)`;
+        fin.style.transform = `translate3d(0, ${((1 - fIn) * 35).toFixed(2)}px, 0)`;
         fin.style.visibility = fIn <= 0.001 ? 'hidden' : 'visible';
+
+        // Explode progress: 0 (compressed) at p <= 0.87 -> 1 (fully exploded) at p >= 0.98
+        const explode = Math.min(1, Math.max(0, (p - 0.87) / 0.11));
+        const letters = finaleLetters.current;
+        const total = letters.length;
+        const center = total > 1 ? (total - 1) / 2 : 1;
+
+        if (letters.length > 0) {
+          letters.forEach((letterEl, i) => {
+            if (!letterEl) return;
+            const norm = (i - center) / center; // -1 on far left to +1 on far right
+            // Outward lateral explosion
+            const tx = norm * explode * 34; // spread in px
+            // Arced elevation burst
+            const ty = -Math.sin(Math.abs(norm) * Math.PI * 0.5) * explode * 10;
+            // Slight tilt rotation
+            const rot = norm * explode * 4.5;
+            // Scale enhancement
+            const sc = 0.95 + explode * 0.14;
+            letterEl.style.transform = `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 0) rotate(${rot.toFixed(1)}deg) scale(${sc.toFixed(3)})`;
+          });
+        }
+
+        const titleEl = finaleTitle.current;
+        if (titleEl) {
+          // Dynamic tracking explosion: from compressed (-0.02em) to wide explosion (+0.12em)
+          const tracking = -0.02 + explode * 0.14;
+          titleEl.style.letterSpacing = `${tracking.toFixed(3)}em`;
+          titleEl.style.textShadow =
+            explode > 0.05
+              ? `0 0 ${(explode * 32).toFixed(1)}px rgba(197, 176, 255, ${(explode * 0.85).toFixed(2)}), 0 0 ${(explode * 75).toFixed(1)}px rgba(126, 111, 240, ${(explode * 0.55).toFixed(2)})`
+              : 'none';
+        }
 
         progEl.style.transform = `scaleX(${p.toFixed(4)})`;
       },
@@ -190,12 +231,28 @@ export default function HomeJourney() {
           </div>
         ))}
         <div ref={finale} className="journey-finale" style={{ visibility: 'hidden', opacity: 0 }}>
-          <span className="micro-label">
-            <CmsText field="hero.finale.kicker">ONE IDEA. INFINITE POSSIBILITIES.</CmsText>
-          </span>
-          <p>
-            <CmsText field="hero.finale.title">This is Thinklab</CmsText>
-            <span>®</span>
+          <p ref={finaleTitle}>
+            <span
+              data-cms-field="hero.finale.title"
+              className="inline-flex items-baseline"
+              aria-label={finaleTitleText}
+            >
+              {finaleTitleText.split('').map((char, i) => (
+                <span
+                  key={i}
+                  ref={(el) => {
+                    if (el) finaleLetters.current[i] = el;
+                  }}
+                  className="journey-finale-char"
+                  style={{
+                    display: 'inline-block',
+                    whiteSpace: char === ' ' ? 'pre' : 'normal',
+                  }}
+                >
+                  {char === ' ' ? '\u00A0' : char}
+                </span>
+              ))}
+            </span>
           </p>
         </div>
         <div className="journey-progress">
