@@ -237,7 +237,7 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
   };
 
   return (
-    <div className="cms-auth">
+    <div className="cms-login cms-auth">
       {mode === 'login' && (
         <form onSubmit={onLoginSubmit}>
           <div className="cms-brand">

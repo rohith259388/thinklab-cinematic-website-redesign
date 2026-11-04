@@ -1,5 +1,5 @@
 .cms-app,
-.cms-login {
+.cms-login, .cms-auth {
   --cms-bg: #111215;
   --cms-panel: #191a1f;
   --cms-line: #303139;
@@ -21,16 +21,16 @@
   grid-template-rows: 60px 1fr;
 }
 .cms-app *,
-.cms-login * {
+.cms-login *, .cms-auth * {
   box-sizing: border-box;
 }
 .cms-app button,
-.cms-login button,
+.cms-login button, .cms-auth button,
 .cms-app a {
   cursor: pointer;
 }
 .cms-app button,
-.cms-login button {
+.cms-login button, .cms-auth button {
   border: 1px solid var(--cms-line);
   border-radius: 6px;
   padding: 7px 10px;
@@ -40,11 +40,11 @@
   white-space: nowrap;
 }
 .cms-app button:hover,
-.cms-login button:hover {
+.cms-login button:hover, .cms-auth button:hover {
   background: #35313f;
 }
 .cms-app button:disabled,
-.cms-login button:disabled {
+.cms-login button:disabled, .cms-auth button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -255,7 +255,7 @@
 .cms-app input,
 .cms-app textarea,
 .cms-app select,
-.cms-login input {
+.cms-login input, .cms-auth input {
   background: #101115;
   color: #efedf4;
   border: 1px solid #383640;
@@ -332,7 +332,7 @@
   border: 1px solid #b85f7c;
   border-radius: 7px;
 }
-.cms-login {
+.cms-login, .cms-auth {
   position: fixed;
   inset: 0;
   z-index: 10000;
@@ -340,7 +340,7 @@
   place-items: center;
   background: radial-gradient(at 50% 0, #32253c, #111215 65%);
 }
-.cms-login form {
+.cms-login form, .cms-auth form {
   width: min(430px, 90vw);
   padding: 35px;
   border: 1px solid #3a3344;
@@ -348,20 +348,20 @@
   background: #17171ddd;
   box-shadow: 0 25px 80px #0005;
 }
-.cms-login h1 {
+.cms-login h1, .cms-auth h1 {
   font-size: 28px;
   letter-spacing: -1px;
   margin: 32px 0 10px;
 }
-.cms-login p {
+.cms-login p, .cms-auth p {
   color: #9b94aa;
 }
-.cms-login label {
+.cms-login label, .cms-auth label {
   display: grid;
   gap: 8px;
   margin: 20px 0;
 }
-.cms-login button {
+.cms-login button, .cms-auth button {
   width: 100%;
   margin-top: 12px;
   padding: 11px;
