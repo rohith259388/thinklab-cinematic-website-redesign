@@ -302,13 +302,25 @@ export async function POST(req: NextRequest) {
       const credential = String(b.credential || "");
       if (!credential) throw new Error("Google credential token required.");
 
-      const verifyRes = await fetch(
-        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
-      );
-      if (!verifyRes.ok) {
-        throw new Error("Google authentication failed or token expired. Please try again.");
+      let payload: { email?: string; email_verified?: boolean | string; sub?: string } = {};
+
+      if (credential.startsWith("ya29.")) {
+        const userinfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${credential}` },
+        });
+        if (!userinfoRes.ok) {
+          throw new Error("Failed to verify Google access token. Please try again.");
+        }
+        payload = await userinfoRes.json();
+      } else {
+        const verifyRes = await fetch(
+          `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
+        );
+        if (!verifyRes.ok) {
+          throw new Error("Google authentication failed or token expired. Please try again.");
+        }
+        payload = await verifyRes.json();
       }
-      const payload = await verifyRes.json();
       const email = String(payload.email || "").toLowerCase().trim();
       const emailVerified = payload.email_verified === "true" || payload.email_verified === true;
 

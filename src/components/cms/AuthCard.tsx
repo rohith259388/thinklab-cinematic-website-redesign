@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import '@/components/cms/studio.css';
 
@@ -15,10 +15,6 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
   const [infoMsg, setInfoMsg] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
-  const [gsiLoaded, setGsiLoaded] = useState(false);
-
-  const googleBtnRef = useRef<HTMLDivElement>(null);
-  const gsiInitializedRef = useRef(false);
 
   const api = useCallback(async (action: string, payload?: unknown) => {
     const res = await fetch(`/api/cms/${action}`, {
@@ -35,11 +31,12 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
 
   const handleCredentialResponse = useCallback(
     async (response: any) => {
-      if (response?.credential) {
+      const token = response?.credential || response?.access_token;
+      if (token) {
         setBusy(true);
         setError('');
         try {
-          await api('google-login', { credential: response.credential });
+          await api('google-login', { credential: token });
           window.location.href = '/admin';
         } catch (err: any) {
           setError(err.message || 'Google authentication failed.');
@@ -51,7 +48,7 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
     [api]
   );
 
-  // 1. Fetch Google Client ID and load GSI script
+  // Load Google Identity Services script once
   useEffect(() => {
     let active = true;
 
@@ -61,27 +58,16 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
         if (!active || !data?.googleClientId) return;
         setGoogleClientId(data.googleClientId);
 
-        const win = window as any;
-        if (win.google?.accounts?.id) {
-          setGsiLoaded(true);
-          return;
-        }
-
-        const existing = document.getElementById('google-gsi-client');
-        if (!existing) {
-          const s = document.createElement('script');
-          s.id = 'google-gsi-client';
-          s.src = 'https://accounts.google.com/gsi/client';
-          s.async = true;
-          s.defer = true;
-          s.onload = () => {
-            if (active) setGsiLoaded(true);
-          };
-          document.body.appendChild(s);
-        } else {
-          existing.addEventListener('load', () => {
-            if (active) setGsiLoaded(true);
-          });
+        if (!(window as any).google?.accounts) {
+          const existing = document.getElementById('google-gsi-client');
+          if (!existing) {
+            const s = document.createElement('script');
+            s.id = 'google-gsi-client';
+            s.src = 'https://accounts.google.com/gsi/client';
+            s.async = true;
+            s.defer = true;
+            document.body.appendChild(s);
+          }
         }
       })
       .catch(() => {});
@@ -91,40 +77,7 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
     };
   }, []);
 
-  // 2. Initialize and render Google button once ready
-  useEffect(() => {
-    if (!googleClientId || !gsiLoaded || mode !== 'login') return;
-
-    const win = window as any;
-    if (!win.google?.accounts?.id) return;
-
-    try {
-      if (!gsiInitializedRef.current) {
-        win.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: handleCredentialResponse,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-          use_fedcm_for_prompt: false,
-        });
-        gsiInitializedRef.current = true;
-      }
-
-      if (googleBtnRef.current) {
-        googleBtnRef.current.innerHTML = '';
-        win.google.accounts.id.renderButton(googleBtnRef.current, {
-          type: 'icon',
-          shape: 'circle',
-          size: 'large',
-          theme: 'outline',
-        });
-      }
-    } catch (e) {
-      console.warn('GSI renderButton error:', e);
-    }
-  }, [googleClientId, gsiLoaded, mode, handleCredentialResponse]);
-
-  const handleGoogleLoginFallback = () => {
+  const handleGoogleLogin = () => {
     if (!googleClientId) {
       setError(
         'Google Sign-In requires NEXT_PUBLIC_GOOGLE_CLIENT_ID to be configured. You can sign in with your email and password above.'
@@ -132,17 +85,46 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
       return;
     }
     const win = window as any;
-    if (win.google?.accounts?.id) {
-      if (!gsiInitializedRef.current) {
-        win.google.accounts.id.initialize({
+
+    // 1. Try Google OAuth2 popup client (opens clean popup, no iframe replacement, matches circular UI permanently)
+    if (win.google?.accounts?.oauth2) {
+      try {
+        const client = win.google.accounts.oauth2.initTokenClient({
           client_id: googleClientId,
-          callback: handleCredentialResponse,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-          use_fedcm_for_prompt: false,
+          scope: 'email profile openid',
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse?.access_token) {
+              setBusy(true);
+              setError('');
+              try {
+                await api('google-login', { credential: tokenResponse.access_token });
+                window.location.href = '/admin';
+              } catch (err: any) {
+                setError(err.message || 'Google authentication failed.');
+              } finally {
+                setBusy(false);
+              }
+            } else if (tokenResponse?.error) {
+              setError(tokenResponse.error_description || 'Google sign-in was canceled.');
+            }
+          },
         });
-        gsiInitializedRef.current = true;
+        client.requestAccessToken();
+        return;
+      } catch (err) {
+        console.warn('OAuth2 client init failed, trying ID prompt fallback', err);
       }
+    }
+
+    // 2. Fallback to ID prompt if oauth2 is not available
+    if (win.google?.accounts?.id) {
+      win.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleCredentialResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        use_fedcm_for_prompt: false,
+      });
       win.google.accounts.id.prompt();
     } else {
       setError('Loading Google authentication service... please try again in a moment.');
@@ -278,12 +260,12 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
             <span>or</span>
           </div>
 
-          {/* Official Google Identity Services circular button */}
-          <div ref={googleBtnRef} className="cms-google-container">
+          {/* Centered Circular Google button */}
+          <div className="cms-google-container">
             <button
               type="button"
               className="cms-google-circle-btn"
-              onClick={handleGoogleLoginFallback}
+              onClick={handleGoogleLogin}
               disabled={busy}
               title="Sign in with Google"
               aria-label="Sign in with Google"
