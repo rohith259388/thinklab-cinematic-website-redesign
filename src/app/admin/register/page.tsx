@@ -8,3 +8,4 @@ export const metadata = {
 export default function RegisterPage() {
   return <AuthCard initialMode="register" />;
 }
+
