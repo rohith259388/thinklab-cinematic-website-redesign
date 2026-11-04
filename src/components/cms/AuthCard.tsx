@@ -113,13 +113,10 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
       if (googleBtnRef.current) {
         googleBtnRef.current.innerHTML = '';
         win.google.accounts.id.renderButton(googleBtnRef.current, {
-          type: 'standard',
-          theme: 'outline',
+          type: 'icon',
+          shape: 'circle',
           size: 'large',
-          text: 'continue_with',
-          shape: 'rectangular',
-          logo_alignment: 'left',
-          width: 320,
+          theme: 'outline',
         });
       }
     } catch (e) {
@@ -281,13 +278,15 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
             <span>or</span>
           </div>
 
-          {/* Official Google Identity Services button */}
+          {/* Official Google Identity Services circular button */}
           <div ref={googleBtnRef} className="cms-google-container">
             <button
               type="button"
-              className="cms-google-btn"
+              className="cms-google-circle-btn"
               onClick={handleGoogleLoginFallback}
               disabled={busy}
+              title="Sign in with Google"
+              aria-label="Sign in with Google"
             >
               <svg className="cms-google-icon" viewBox="0 0 24 24">
                 <path
@@ -307,7 +306,6 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                 />
               </svg>
-              Continue with Google
             </button>
           </div>
 

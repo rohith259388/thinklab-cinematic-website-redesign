@@ -702,6 +702,27 @@
   margin: 0 auto !important;
 }
 
+.cms-google-circle-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+  padding: 0 !important;
+  margin: 0 auto !important;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.cms-google-circle-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  background: #f7f7f9 !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
 .cms-google-btn {
   display: flex !important;
   align-items: center;
