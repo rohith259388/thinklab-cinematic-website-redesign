@@ -3,7 +3,19 @@ import { randomUUID } from "node:crypto";
 import data from "../live-content.json";
 import { emptyContent, type Document, type Content, type Kind } from "./schema";
 
-const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+export function normalizeMongoUri(rawUri: string): string {
+  // Cloudflare Workers (workerd) lacks native DNS SRV resolution for mongodb+srv://
+  // Automatically convert cluster0.hkuapuu.mongodb.net to direct replicaSet shard hosts
+  if (rawUri.startsWith("mongodb+srv://") && rawUri.includes("cluster0.hkuapuu.mongodb.net")) {
+    const match = rawUri.match(/^mongodb\+srv:\/\/([^:]+):([^@]+)@cluster0\.hkuapuu\.mongodb\.net\/?([^?]*)(.*)$/);
+    if (match) {
+      const [, user, pass, dbName] = match;
+      const db = dbName || "thinklab";
+      return `mongodb://${user}:${pass}@ac-yirlxrd-shard-00-00.hkuapuu.mongodb.net:27017,ac-yirlxrd-shard-00-01.hkuapuu.mongodb.net:27017,ac-yirlxrd-shard-00-02.hkuapuu.mongodb.net:27017/${db}?ssl=true&replicaSet=atlas-ogeyta-shard-0&authSource=admin&retryWrites=true&w=majority`;
+    }
+  }
+  return rawUri;
+}
 
 const g = globalThis as typeof globalThis & {
   __cmsMongoClient?: MongoClient;
@@ -13,9 +25,11 @@ const g = globalThis as typeof globalThis & {
 
 export async function getDb(): Promise<Db> {
   if (g.__cmsMongoDb) return g.__cmsMongoDb;
-  if (!uri) {
-    throw new Error("CMS database is not configured. Set MONGODB_URI in .env.local.");
+  const rawUri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+  if (!rawUri) {
+    throw new Error("CMS database is not configured. Set MONGODB_URI in environment variables.");
   }
+  const uri = normalizeMongoUri(rawUri);
   if (!g.__cmsMongoClient) {
     g.__cmsMongoClient = new MongoClient(uri);
     await g.__cmsMongoClient.connect();

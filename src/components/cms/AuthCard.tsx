@@ -24,9 +24,18 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
       headers: { 'Content-Type': 'application/json' },
       body: payload !== undefined ? JSON.stringify(payload) : undefined,
     });
-    const data = await res.json().catch(() => ({}));
+    const text = await res.text().catch(() => '');
+    let data: any = {};
+    try {
+      data = JSON.parse(text);
+    } catch {}
     if (!res.ok) {
-      throw new Error(data?.error || 'Authentication request failed.');
+      throw new Error(
+        data?.error ||
+          (res.status === 500
+            ? 'Server encountered an error. Please try again.'
+            : 'Authentication request failed.')
+      );
     }
     return data;
   }, []);
