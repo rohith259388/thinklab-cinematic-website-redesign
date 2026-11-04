@@ -42,9 +42,11 @@ if (!email.includes('@')) {
 
 async function seed() {
   console.log('Connecting to PostgreSQL database...');
+  const isLocal = databaseUrl.includes('localhost') || databaseUrl.includes('127.0.0.1');
   const pool = new Pool({
     connectionString: databaseUrl,
-    connectionTimeoutMillis: 5000,
+    connectionTimeoutMillis: 10000,
+    ssl: isLocal ? false : { rejectUnauthorized: false },
   });
 
   try {

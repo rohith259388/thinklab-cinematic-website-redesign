@@ -11,10 +11,14 @@ export function database() {
     throw new Error(
       "CMS database is not configured. Set DATABASE_URL in .env.local.",
     );
+  const isLocal =
+    process.env.DATABASE_URL.includes('localhost') ||
+    process.env.DATABASE_URL.includes('127.0.0.1');
   return (g.cmsPool ??= new Pool({
     connectionString: process.env.DATABASE_URL,
     max: 8,
-    connectionTimeoutMillis: 5000,
+    connectionTimeoutMillis: 10000,
+    ssl: isLocal ? false : { rejectUnauthorized: false },
   }));
 }
 export async function initialize() {

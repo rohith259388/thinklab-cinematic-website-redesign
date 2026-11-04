@@ -112,8 +112,8 @@ export default async function HomePage() {
                     <Reveal delay={0.15}>
                       <Link href="/about" className="round-link">
                         <CmsText field="home.intro.cta">Meet the minds</CmsText>{" "}
-                        <span>
-                          <ArrowUpRight size={20} />
+                        <span className="round-arrow">
+                          <ArrowUpRight size={18} />
                         </span>
                       </Link>
                     </Reveal>
@@ -166,8 +166,8 @@ export default async function HomePage() {
                   </p>
                   <Link href="/projects" className="round-link">
                     <CmsText field="home.projects.cta">View All Projects</CmsText>{" "}
-                    <span>
-                      <ArrowUpRight size={20} />
+                    <span className="round-arrow">
+                      <ArrowUpRight size={18} />
                     </span>
                   </Link>
                 </Reveal>
@@ -246,8 +246,8 @@ export default async function HomePage() {
                   </p>
                   <Link href="/services" className="round-link">
                     <CmsText field="home.services.cta">View All Services</CmsText>{" "}
-                    <span>
-                      <ArrowUpRight size={20} />
+                    <span className="round-arrow">
+                      <ArrowUpRight size={18} />
                     </span>
                   </Link>
                   <div className="capability-mark" aria-hidden="true">
@@ -343,8 +343,8 @@ export default async function HomePage() {
                   </p>
                   <Link href="/reviews" className="round-link">
                     <CmsText field="home.testimonials.cta">View All Reviews</CmsText>{" "}
-                    <span>
-                      <ArrowUpRight size={20} />
+                    <span className="round-arrow">
+                      <ArrowUpRight size={18} />
                     </span>
                   </Link>
                 </Reveal>
@@ -378,8 +378,8 @@ export default async function HomePage() {
                   </p>
                   <Link href="/blog" className="round-link">
                     <CmsText field="home.insights.cta">Read Blogs</CmsText>{" "}
-                    <span>
-                      <ArrowUpRight size={20} />
+                    <span className="round-arrow">
+                      <ArrowUpRight size={18} />
                     </span>
                   </Link>
                 </Reveal>
