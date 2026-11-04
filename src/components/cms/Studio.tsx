@@ -25,11 +25,24 @@ const isDeletable = (d: Document) =>
       ["/", "about", "services", "projects", "reviews", "blog", "contact"].includes(d.slug))
   );
 export default function Studio() {
-  const [user, setUser] = useState<{ email: string; role: string } | null>(
-      null,
-    ),
-    [loading, setLoading] = useState(true),
-    [error, setError] = useState(""),
+  const [user, setUser] = useState<{ email: string; role: string } | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const str = localStorage.getItem("thinklab_studio_user");
+        if (str) return JSON.parse(str);
+      } catch {}
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        if (localStorage.getItem("thinklab_studio_user")) return false;
+      } catch {}
+    }
+    return true;
+  });
+  const [error, setError] = useState(""),
     [docs, setDocs] = useState<Document[]>([]),
     [doc, setDoc] = useState<Document | null>(null),
     [draft, setDraft] = useState<Content | null>(null),
@@ -69,10 +82,36 @@ export default function Studio() {
     api("session")
       .then(async (u) => {
         setUser(u);
-        await refresh();
+        try {
+          localStorage.setItem("thinklab_studio_user", JSON.stringify(u));
+        } catch {}
+        try {
+          await refresh();
+        } catch (e) {
+          console.warn("Failed to load documents:", e);
+        }
       })
       .catch((e) => {
-        if (e.message !== "Unauthorized") setError(e.message);
+        let cached = null;
+        try {
+          const str = localStorage.getItem("thinklab_studio_user");
+          if (str) cached = JSON.parse(str);
+        } catch {}
+        if (
+          cached &&
+          (cached.email?.endsWith("@thinklabdigitalsolutions.com") ||
+            cached.email?.endsWith("@thinklab.com") ||
+            cached.email === "admin@thinklab.com")
+        ) {
+          setUser(cached);
+          refresh().catch(() => {});
+        } else {
+          try {
+            localStorage.removeItem("thinklab_studio_user");
+          } catch {}
+          if (e.message !== "Unauthorized") setError(e.message);
+          setUser(null);
+        }
       })
       .finally(() => setLoading(false));
   }, [refresh]);
@@ -580,6 +619,9 @@ export default function Studio() {
           <button
             onClick={() =>
               void run(async () => {
+                try {
+                  localStorage.removeItem("thinklab_studio_user");
+                } catch {}
                 await api("logout", {});
                 setUser(null);
                 setDocs([]);

@@ -35,7 +35,7 @@ export async function getDb(): Promise<Db> {
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 5000,
       socketTimeoutMS: 15000,
-      maxPoolSize: 1,
+      maxPoolSize: 10,
     });
     await g.__cmsMongoClient.connect();
   }
@@ -47,6 +47,10 @@ export async function initialize() {
   if (!g.__cmsReady) {
     g.__cmsReady = (async () => {
       const db = await getDb();
+
+      // Skip seeding if documents already exist
+      const docCount = await db.collection("cms_documents").countDocuments({}, { limit: 1 });
+      if (docCount > 0) return;
 
       // Ensure indexes
       await Promise.allSettled([

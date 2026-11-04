@@ -48,7 +48,10 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
         setBusy(true);
         setError('');
         try {
-          await api('google-login', { credential: token });
+          const res = await api('google-login', { credential: token });
+          if (res?.user) {
+            try { localStorage.setItem('thinklab_studio_user', JSON.stringify(res.user)); } catch {}
+          }
           window.location.href = '/admin';
         } catch (err: any) {
           setError(err.message || 'Google authentication failed.');
@@ -130,7 +133,10 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
               setBusy(true);
               setError('');
               try {
-                await api('google-login', { credential: tokenResponse.access_token });
+                const res = await api('google-login', { credential: tokenResponse.access_token });
+                if (res?.user) {
+                  try { localStorage.setItem('thinklab_studio_user', JSON.stringify(res.user)); } catch {}
+                }
                 window.location.href = '/admin';
               } catch (err: any) {
                 setError(err.message || 'Google authentication failed.');
@@ -170,7 +176,10 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
     setBusy(true);
     setError('');
     try {
-      await api('login', Object.fromEntries(f));
+      const res = await api('login', Object.fromEntries(f));
+      if (res?.user) {
+        try { localStorage.setItem('thinklab_studio_user', JSON.stringify(res.user)); } catch {}
+      }
       window.location.href = '/admin';
     } catch (err: any) {
       setError(err.message || 'Invalid email or password.');
@@ -225,7 +234,10 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
     setBusy(true);
     setError('');
     try {
-      await api('verify-otp', { email: regEmail, otp });
+      const res = await api('verify-otp', { email: regEmail, otp });
+      if (res?.user) {
+        try { localStorage.setItem('thinklab_studio_user', JSON.stringify(res.user)); } catch {}
+      }
       window.location.href = '/admin';
     } catch (err: any) {
       setError(err.message || 'Invalid verification code.');

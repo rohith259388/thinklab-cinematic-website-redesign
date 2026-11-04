@@ -54,9 +54,9 @@ export async function GET(req: NextRequest) {
 
     const token = getTokenFromReq(req);
     const u = await requireUser(false, token);
-    const db = await getDb();
-
     if (action === "session") return json(u);
+
+    const db = await getDb();
     if (action === "media") {
       const mediaList = await db
         .collection("cms_media")
