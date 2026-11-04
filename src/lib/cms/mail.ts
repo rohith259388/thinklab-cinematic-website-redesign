@@ -96,3 +96,4 @@ export async function sendOtpEmail(email: string, otp: string): Promise<{ succes
   // If no third-party API is configured yet, the code is still available in logs
   return { success: true };
 }
+
