@@ -685,6 +685,23 @@
 .cms-auth-divider span {
   padding: 0 12px;
 }
+.cms-google-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  margin: 4px 0 12px;
+}
+.cms-google-container > div {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+.cms-google-container iframe {
+  margin: 0 auto !important;
+}
+
 .cms-google-btn {
   display: flex !important;
   align-items: center;
