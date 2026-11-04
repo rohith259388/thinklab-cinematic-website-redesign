@@ -14,6 +14,7 @@ import {
   emptyContent,
   documentPath,
 } from "@/lib/cms/schema";
+import { sendOtpEmail } from "@/lib/cms/mail";
 import sharp from "sharp";
 import { revalidatePath } from "next/cache";
 
@@ -24,8 +25,20 @@ const json = (v: unknown, status = 200) =>
 
 export async function GET(req: NextRequest) {
   try {
-    const u = await requireUser();
     const action = req.nextUrl.pathname.split("/").pop();
+
+    // Public auth configuration (Google Client ID, allowed domain)
+    if (action === "auth-config") {
+      return json({
+        googleClientId:
+          process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+          process.env.GOOGLE_CLIENT_ID ||
+          "",
+        allowedDomain: "thinklabdigitalsolutions.com",
+      });
+    }
+
+    const u = await requireUser();
     const db = await getDb();
 
     if (action === "session") return json(u);
@@ -150,7 +163,199 @@ export async function POST(req: NextRequest) {
     if (!b || typeof b !== "object" || Array.isArray(b))
       throw new Error("Invalid request");
 
-    if (action === "login" || action === "setup") {
+    // 1. Step 1 of registration: validate email/password and dispatch OTP
+    if (action === "register-otp") {
+      const email = String(b.email || "").toLowerCase().trim();
+      const password = String(b.password || "");
+      const confirmPassword = String(b.confirmPassword || "");
+
+      if (!email.includes("@")) throw new Error("Please enter a valid email address.");
+      if (!email.endsWith("@thinklabdigitalsolutions.com")) {
+        throw new Error("Registration is restricted to @thinklabdigitalsolutions.com email addresses.");
+      }
+      if (password.length < 8) {
+        throw new Error("Password must be at least 8 characters long.");
+      }
+      if (password !== confirmPassword) {
+        throw new Error("Passwords do not match.");
+      }
+
+      const existingUser = await db.collection("cms_users").findOne({ email });
+      if (existingUser) {
+        throw new Error("An account with this email already exists. Please sign in.");
+      }
+
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpHash = hashToken(otp);
+      const tempPasswordHash = hashPassword(password);
+      const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      await db.collection("cms_otp_verifications").updateOne(
+        { email },
+        {
+          $set: {
+            email,
+            otpHash,
+            tempPasswordHash,
+            expires,
+            updatedAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
+
+      await sendOtpEmail(email, otp);
+
+      return json({
+        ok: true,
+        message: `Verification code sent to ${email}`,
+        debugOtp: process.env.NODE_ENV !== "production" ? otp : undefined,
+      });
+    }
+
+    // 2. Resend OTP code
+    if (action === "resend-otp") {
+      const email = String(b.email || "").toLowerCase().trim();
+      if (!email || !email.endsWith("@thinklabdigitalsolutions.com")) {
+        throw new Error("Invalid email address.");
+      }
+      const pending = await db.collection("cms_otp_verifications").findOne({ email });
+      if (!pending) {
+        throw new Error("No pending registration found for this email. Please register again.");
+      }
+
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpHash = hashToken(otp);
+      const expires = new Date(Date.now() + 10 * 60 * 1000);
+
+      await db.collection("cms_otp_verifications").updateOne(
+        { email },
+        { $set: { otpHash, expires, updatedAt: new Date() } }
+      );
+
+      await sendOtpEmail(email, otp);
+      return json({
+        ok: true,
+        message: "New verification code sent.",
+        debugOtp: process.env.NODE_ENV !== "production" ? otp : undefined,
+      });
+    }
+
+    // 3. Step 2 of registration: verify OTP code and create account
+    if (action === "verify-otp") {
+      const email = String(b.email || "").toLowerCase().trim();
+      const otp = String(b.otp || "").trim();
+
+      if (!email || !otp) throw new Error("Email and OTP code are required.");
+
+      const record = await db.collection("cms_otp_verifications").findOne({ email });
+      if (!record) {
+        throw new Error("No pending verification found. Please register again.");
+      }
+
+      if (new Date() > new Date(record.expires)) {
+        throw new Error("Verification code has expired. Please request a new code.");
+      }
+
+      if (hashToken(otp) !== record.otpHash) {
+        throw new Error("Invalid verification code. Please check and try again.");
+      }
+
+      const existingUser = await db.collection("cms_users").findOne({ email });
+      let userId = existingUser ? String(existingUser.id) : randomUUID();
+      let userRole = existingUser ? String(existingUser.role) : "editor";
+
+      if (!existingUser) {
+        const userCount = await db.collection("cms_users").countDocuments();
+        userRole = userCount === 0 ? "admin" : "editor";
+        await db.collection("cms_users").insertOne({
+          id: userId,
+          email,
+          password: record.tempPasswordHash,
+          role: userRole,
+          createdAt: new Date(),
+        });
+      }
+
+      await db.collection("cms_otp_verifications").deleteOne({ email });
+
+      const token = randomBytes(32).toString("hex");
+      await db.collection("cms_sessions").insertOne({
+        token: hashToken(token),
+        user_id: userId,
+        expires: new Date(Date.now() + 8 * 3600 * 1000),
+      });
+
+      const response = json({ ok: true, user: { id: userId, email, role: userRole } });
+      response.cookies.set("cms_session", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 28800,
+      });
+      return response;
+    }
+
+    // 4. Google Login authentication
+    if (action === "google-login") {
+      const credential = String(b.credential || "");
+      if (!credential) throw new Error("Google credential token required.");
+
+      const verifyRes = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
+      );
+      if (!verifyRes.ok) {
+        throw new Error("Google authentication failed or token expired. Please try again.");
+      }
+      const payload = await verifyRes.json();
+      const email = String(payload.email || "").toLowerCase().trim();
+      const emailVerified = payload.email_verified === "true" || payload.email_verified === true;
+
+      if (!emailVerified) {
+        throw new Error("Google account email is not verified.");
+      }
+
+      const existingGoogleUser = await db.collection("cms_users").findOne({ email });
+      let googleUserId = existingGoogleUser ? String(existingGoogleUser.id) : randomUUID();
+      let googleUserRole = existingGoogleUser ? String(existingGoogleUser.role) : "editor";
+
+      if (!existingGoogleUser) {
+        if (!email.endsWith("@thinklabdigitalsolutions.com")) {
+          throw new Error("Google Sign-In is restricted to @thinklabdigitalsolutions.com accounts.");
+        }
+        const userCount = await db.collection("cms_users").countDocuments();
+        googleUserRole = userCount === 0 ? "admin" : "editor";
+        await db.collection("cms_users").insertOne({
+          id: googleUserId,
+          email,
+          password: hashPassword(randomBytes(32).toString("hex")),
+          role: googleUserRole,
+          googleSub: payload.sub,
+          createdAt: new Date(),
+        });
+      }
+
+      const token = randomBytes(32).toString("hex");
+      await db.collection("cms_sessions").insertOne({
+        token: hashToken(token),
+        user_id: googleUserId,
+        expires: new Date(Date.now() + 8 * 3600 * 1000),
+      });
+
+      const response = json({ ok: true, user: { id: googleUserId, email, role: googleUserRole } });
+      response.cookies.set("cms_session", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 28800,
+      });
+      return response;
+    }
+
+    // 5. Standard Email & Password Sign In
+    if (action === "login") {
       if (
         typeof b.email !== "string" ||
         b.email.length > 254 ||
@@ -160,27 +365,6 @@ export async function POST(req: NextRequest) {
       )
         throw new Error("Invalid credentials");
       const email = b.email.toLowerCase().trim();
-
-      if (action === "setup") {
-        if (
-          !process.env.CMS_SETUP_SECRET ||
-          process.env.CMS_SETUP_SECRET.length < 32 ||
-          !timingSecret(b.secret, process.env.CMS_SETUP_SECRET)
-        )
-          throw new Error("Invalid setup secret");
-        if (b.password.length < 14)
-          throw new Error("Use a password of at least 14 characters");
-
-        const existing = await db.collection("cms_users").countDocuments();
-        if (existing > 0) throw new Error("Setup is already complete");
-
-        await db.collection("cms_users").insertOne({
-          id: randomUUID(),
-          email,
-          password: hashPassword(b.password),
-          role: "admin",
-        });
-      }
 
       const key = hashToken(email);
       const now = new Date();
@@ -260,7 +444,7 @@ export async function POST(req: NextRequest) {
         b.email.length > 254 ||
         !b.email.includes("@") ||
         typeof b.password !== "string" ||
-        b.password.length < 14 ||
+        b.password.length < 8 ||
         b.password.length > 200
       )
         throw new Error("Invalid user");
@@ -270,6 +454,7 @@ export async function POST(req: NextRequest) {
         email: b.email.trim().toLowerCase(),
         password: hashPassword(b.password),
         role: b.role,
+        createdAt: new Date(),
       });
       return json({ ok: true });
     }
