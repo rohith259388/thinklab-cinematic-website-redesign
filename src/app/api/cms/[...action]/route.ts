@@ -19,6 +19,20 @@ import { revalidatePath } from "next/cache";
 
 export const runtime = "nodejs";
 
+const SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60; // 604,800s = 7 days
+const SEVEN_DAYS_MS = SEVEN_DAYS_SECONDS * 1000;
+
+function getTokenFromReq(req: NextRequest): string | undefined {
+  const cookieVal = req.cookies.get("cms_session")?.value;
+  if (cookieVal) return cookieVal;
+  const cookieHeader = req.headers.get("cookie") || "";
+  const match = cookieHeader.match(/(?:^|;\s*)cms_session=([^;]*)/);
+  if (match) return decodeURIComponent(match[1]);
+  const authHeader = req.headers.get("authorization") || "";
+  if (authHeader.startsWith("Bearer ")) return authHeader.slice(7).trim();
+  return undefined;
+}
+
 const json = (v: unknown, status = 200) =>
   NextResponse.json(v, { status, headers: { "Cache-Control": "no-store" } });
 
@@ -38,7 +52,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const u = await requireUser();
+    const token = getTokenFromReq(req);
+    const u = await requireUser(false, token);
     const db = await getDb();
 
     if (action === "session") return json(u);
@@ -123,7 +138,8 @@ export async function POST(req: NextRequest) {
     const db = await getDb();
 
     if (action === "upload") {
-      await requireUser();
+      const token = getTokenFromReq(req);
+      await requireUser(false, token);
       const uploadBody = await limitedBody(req, 6_000_000);
       const form = await new Request(req.url, {
         method: "POST",
@@ -283,11 +299,14 @@ export async function POST(req: NextRequest) {
 
       const existingUser = await db.collection("cms_users").findOne({ email });
       let userId = existingUser ? String(existingUser.id) : randomUUID();
-      let userRole = existingUser ? String(existingUser.role) : "editor";
+      // All @thinklabdigitalsolutions.com and @thinklab.com users are full admins
+      const isAdminEmail =
+        email.endsWith("@thinklabdigitalsolutions.com") ||
+        email.endsWith("@thinklab.com") ||
+        email === (process.env.DEFAULT_ADMIN_EMAIL || "admin@thinklab.com").toLowerCase().trim();
+      let userRole = isAdminEmail ? "admin" : (existingUser ? String(existingUser.role) : "editor");
 
       if (!existingUser) {
-        const userCount = await db.collection("cms_users").countDocuments();
-        userRole = userCount === 0 ? "admin" : "editor";
         await db.collection("cms_users").insertOne({
           id: userId,
           email,
@@ -295,6 +314,9 @@ export async function POST(req: NextRequest) {
           role: userRole,
           createdAt: new Date(),
         });
+      } else if (isAdminEmail && existingUser.role !== "admin") {
+        await db.collection("cms_users").updateOne({ email }, { $set: { role: "admin" } });
+        userRole = "admin";
       }
 
       await db.collection("cms_otp_verifications").deleteOne({ email });
@@ -303,16 +325,16 @@ export async function POST(req: NextRequest) {
       await db.collection("cms_sessions").insertOne({
         token: hashToken(token),
         user_id: userId,
-        expires: new Date(Date.now() + 8 * 3600 * 1000),
+        expires: new Date(Date.now() + SEVEN_DAYS_MS),
       });
 
       const response = json({ ok: true, user: { id: userId, email, role: userRole } });
       response.cookies.set("cms_session", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: true,
+        sameSite: "lax",
         path: "/",
-        maxAge: 28800,
+        maxAge: SEVEN_DAYS_SECONDS,
       });
       return response;
     }
@@ -322,71 +344,104 @@ export async function POST(req: NextRequest) {
       const credential = String(b.credential || "");
       if (!credential) throw new Error("Google credential token required.");
 
-      let payload: { email?: string; email_verified?: boolean | string; sub?: string } = {};
+      let payload: { email?: string; email_verified?: boolean | string; verified_email?: boolean; sub?: string } = {};
+      let verified = false;
 
-      if (credential.startsWith("ya29.")) {
+      // 1) Try Google userinfo directly (works for all OAuth2 access tokens)
+      try {
         const userinfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
           headers: { Authorization: `Bearer ${credential}` },
         });
-        if (!userinfoRes.ok) {
-          throw new Error("Failed to verify Google access token. Please try again.");
+        if (userinfoRes.ok) {
+          payload = await userinfoRes.json();
+          if (payload.email) verified = true;
         }
-        payload = await userinfoRes.json();
-      } else {
-        const verifyRes = await fetch(
-          `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
-        );
-        if (!verifyRes.ok) {
-          throw new Error("Google authentication failed or token expired. Please try again.");
-        }
-        payload = await verifyRes.json();
-      }
-      const email = String(payload.email || "").toLowerCase().trim();
-      const emailVerified = payload.email_verified === "true" || payload.email_verified === true;
+      } catch {}
 
-      if (!emailVerified) {
-        throw new Error("Google account email is not verified.");
+      // 2) Try tokeninfo?id_token (works for Google Identity Services ID tokens)
+      if (!verified) {
+        try {
+          const verifyRes = await fetch(
+            `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`
+          );
+          if (verifyRes.ok) {
+            payload = await verifyRes.json();
+            if (payload.email) verified = true;
+          }
+        } catch {}
       }
+
+      // 3) Try tokeninfo?access_token fallback
+      if (!verified) {
+        try {
+          const verifyRes = await fetch(
+            `https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(credential)}`
+          );
+          if (verifyRes.ok) {
+            payload = await verifyRes.json();
+            if (payload.email) verified = true;
+          }
+        } catch {}
+      }
+
+      if (!verified || !payload.email) {
+        throw new Error("Google authentication failed or token expired. Please try again.");
+      }
+
+      const email = String(payload.email || "").toLowerCase().trim();
+      const adminEmail = (process.env.DEFAULT_ADMIN_EMAIL || "admin@thinklab.com").toLowerCase().trim();
+
+      // Authorization check: all @thinklabdigitalsolutions.com or @thinklab.com or default admin
+      const isAllowed =
+        email.endsWith("@thinklabdigitalsolutions.com") ||
+        email.endsWith("@thinklab.com") ||
+        email === adminEmail;
+
+      if (!isAllowed) {
+        throw new Error(`Google Sign-In with ${email} is not authorized. Please use your @thinklabdigitalsolutions.com account.`);
+      }
+
+      // All authorized @thinklabdigitalsolutions.com users are full admins
+      const googleUserRole = "admin";
 
       const existingGoogleUser = await db.collection("cms_users").findOne({ email });
       let googleUserId = existingGoogleUser ? String(existingGoogleUser.id) : randomUUID();
-      let googleUserRole = existingGoogleUser ? String(existingGoogleUser.role) : "editor";
 
       if (!existingGoogleUser) {
-        const adminEmail = (process.env.DEFAULT_ADMIN_EMAIL || "admin@thinklab.com").toLowerCase().trim();
-        const isAllowed =
-          email.endsWith("@thinklabdigitalsolutions.com") ||
-          email.endsWith("@thinklab.com") ||
-          email === adminEmail;
-        if (!isAllowed) {
-          throw new Error("Google Sign-In is restricted to @thinklabdigitalsolutions.com or authorized team accounts.");
-        }
-        const userCount = await db.collection("cms_users").countDocuments();
-        googleUserRole = userCount === 0 ? "admin" : "editor";
         await db.collection("cms_users").insertOne({
           id: googleUserId,
           email,
-          password: hashPassword(randomBytes(32).toString("hex")),
           role: googleUserRole,
           googleSub: payload.sub,
           createdAt: new Date(),
         });
+      } else {
+        await db.collection("cms_users").updateOne(
+          { email },
+          {
+            $set: {
+              role: "admin",
+              ...(payload.sub ? { googleSub: payload.sub } : {}),
+              updatedAt: new Date(),
+            },
+          }
+        );
       }
 
       const token = randomBytes(32).toString("hex");
       await db.collection("cms_sessions").insertOne({
         token: hashToken(token),
         user_id: googleUserId,
-        expires: new Date(Date.now() + 8 * 3600 * 1000),
+        expires: new Date(Date.now() + SEVEN_DAYS_MS),
       });
 
-      const response = json({ ok: true, user: { id: googleUserId, email, role: googleUserRole } });
+      const response = json({ ok: true, user: { id: googleUserId, email, role: "admin" } });
       response.cookies.set("cms_session", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: true,
+        sameSite: "lax",
         path: "/",
-        maxAge: 28800,
+        maxAge: SEVEN_DAYS_SECONDS,
       });
       return response;
     }
@@ -452,6 +507,18 @@ export async function POST(req: NextRequest) {
       )
         return json({ error: "Invalid email or password" }, 401);
 
+      // Promote @thinklabdigitalsolutions.com users to admin automatically
+      if (
+        email.endsWith("@thinklabdigitalsolutions.com") ||
+        email.endsWith("@thinklab.com") ||
+        email === (process.env.DEFAULT_ADMIN_EMAIL || "admin@thinklab.com").toLowerCase().trim()
+      ) {
+        if (user.role !== "admin") {
+          await db.collection("cms_users").updateOne({ email }, { $set: { role: "admin" } });
+          user.role = "admin";
+        }
+      }
+
       await db.collection("cms_sessions").deleteMany({ expires: { $lt: now } });
       await db.collection("cms_login_attempts").deleteOne({ key });
 
@@ -459,29 +526,31 @@ export async function POST(req: NextRequest) {
       await db.collection("cms_sessions").insertOne({
         token: hashToken(token),
         user_id: user.id,
-        expires: new Date(Date.now() + 8 * 3600 * 1000),
+        expires: new Date(Date.now() + SEVEN_DAYS_MS),
       });
 
-      const response = json({ ok: true });
+      const response = json({ ok: true, user: { id: user.id, email: user.email, role: user.role } });
       response.cookies.set("cms_session", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: true,
+        sameSite: "lax",
         path: "/",
-        maxAge: 28800,
+        maxAge: SEVEN_DAYS_SECONDS,
       });
       return response;
     }
 
+    const token = getTokenFromReq(req);
     const user = await requireUser(
       ["publish", "unpublish", "delete", "user"].includes(action || ""),
+      token
     );
 
     if (action === "logout") {
-      const token = req.cookies.get("cms_session")?.value;
-      if (token)
+      const logoutToken = getTokenFromReq(req);
+      if (logoutToken)
         await db.collection("cms_sessions").deleteOne({
-          token: hashToken(token),
+          token: hashToken(logoutToken),
         });
       const r = json({ ok: true });
       r.cookies.delete("cms_session");

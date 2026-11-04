@@ -23,6 +23,7 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
       method: payload !== undefined ? 'POST' : 'GET',
       headers: { 'Content-Type': 'application/json' },
       body: payload !== undefined ? JSON.stringify(payload) : undefined,
+      credentials: 'include',
     });
     const text = await res.text().catch(() => '');
     let data: any = {};

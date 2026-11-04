@@ -12,6 +12,7 @@ async function api(action: string, data?: unknown) {
     method: data === undefined ? "GET" : "POST",
     headers: data === undefined ? {} : { "Content-Type": "application/json" },
     body: data === undefined ? undefined : JSON.stringify(data),
+    credentials: "include",
   });
   const v = await r.json();
   if (!r.ok) throw new Error(v.error || "Request failed");
