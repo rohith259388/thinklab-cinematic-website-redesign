@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { randomBytes, randomUUID, scryptSync } from 'node:crypto';
-import { Pool } from 'pg';
+import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,10 +12,10 @@ const rootDir = path.resolve(__dirname, '..');
 // Load environment variables from .env.local
 dotenv.config({ path: path.join(rootDir, '.env.local') });
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) {
-  console.error('\n❌ ERROR: DATABASE_URL is not set.');
-  console.error('Please configure your PostgreSQL connection string in .env.local first.\n');
+const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+if (!uri) {
+  console.error('\n❌ ERROR: MONGODB_URI is not set.');
+  console.error('Please configure your MongoDB connection string in .env.local first.\n');
   process.exit(1);
 }
 
@@ -41,24 +41,19 @@ if (!email.includes('@')) {
 }
 
 async function seed() {
-  console.log('Connecting to PostgreSQL database...');
-  const isLocal = databaseUrl.includes('localhost') || databaseUrl.includes('127.0.0.1');
-  const pool = new Pool({
-    connectionString: databaseUrl,
-    connectionTimeoutMillis: 10000,
-    ssl: isLocal ? false : { rejectUnauthorized: false },
-  });
+  console.log('Connecting to MongoDB Atlas...');
+  const client = new MongoClient(uri);
 
   try {
-    // 1. Ensure cms_users table exists
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS cms_users (
-        id text PRIMARY KEY,
-        email text UNIQUE NOT NULL,
-        password text NOT NULL,
-        role text NOT NULL CHECK(role IN ('admin','publisher','editor'))
-      );
-    `);
+    await client.connect();
+    const db = client.db('thinklab');
+
+    // 1. Ensure indexes
+    await Promise.allSettled([
+      db.collection('cms_users').createIndex({ email: 1 }, { unique: true }),
+      db.collection('cms_documents').createIndex({ kind: 1, slug: 1 }, { unique: true }),
+      db.collection('cms_sessions').createIndex({ token: 1 }, { unique: true }),
+    ]);
 
     // 2. Hash password with scrypt (matches src/lib/cms/auth.ts)
     const salt = randomBytes(16).toString('hex');
@@ -68,18 +63,25 @@ async function seed() {
     const normalizedEmail = email.toLowerCase().trim();
 
     // 3. Upsert admin user
-    await pool.query(
-      `INSERT INTO cms_users(id, email, password, role)
-       VALUES($1, $2, $3, 'admin')
-       ON CONFLICT (email)
-       DO UPDATE SET password = $3, role = 'admin'`,
-      [randomUUID(), normalizedEmail, storedHash]
+    await db.collection('cms_users').updateOne(
+      { email: normalizedEmail },
+      {
+        $set: {
+          password: storedHash,
+          role: 'admin',
+        },
+        $setOnInsert: {
+          id: randomUUID(),
+          email: normalizedEmail,
+        },
+      },
+      { upsert: true }
     );
 
     const origin = process.env.CMS_ORIGIN || 'http://localhost:3000';
 
     console.log('\n==================================================');
-    console.log('🎉 ThinkLab Studio Admin Account Ready!');
+    console.log('🎉 ThinkLab Studio Admin Account Ready on MongoDB!');
     console.log('==================================================');
     console.log(` Admin URL:  ${origin}/admin`);
     console.log(` Email:      ${normalizedEmail}`);
@@ -89,9 +91,8 @@ async function seed() {
     console.error('\n❌ Failed to seed admin user:', err.message);
     process.exit(1);
   } finally {
-    await pool.end();
+    await client.close();
   }
 }
 
 seed();
-

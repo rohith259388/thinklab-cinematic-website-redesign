@@ -16,7 +16,7 @@ import { validateContent } from "@/lib/cms/schema";
 const Context = createContext<{
   page: Content | null;
   global: Content | null;
-  previewId: string | null;
+  previewId?: string | null;
 }>({ page: null, global: null, previewId: null });
 export function CanvasProvider({
   children,
@@ -27,7 +27,7 @@ export function CanvasProvider({
   registerCanvas?: boolean;
   page: Content | null;
   global: Content | null;
-  previewId: string | null;
+  previewId?: string | null;
 }) {
   const [override, setOverride] = useState<{
     content: Content;

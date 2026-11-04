@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { leads } from '@/db/schema';
+import { getDb } from '@/db';
 import { SERVICES } from '@/lib/content';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -25,17 +25,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Unknown service selected.' }, { status: 422 });
     }
 
-    if (!process.env.DATABASE_URL) {
+    const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+    if (!uri) {
       return NextResponse.json({ ok: false, error: 'Online enquiries are temporarily unavailable. Please email info@thinklabdigitalsolutions.com or call +91 93475 80911.' }, { status: 503 });
     }
-    const { db } = await import('@/db');
-    await db.insert(leads).values({
+
+    const db = await getDb();
+    await db.collection('leads').insertOne({
       name: name.slice(0, 160),
       email: email.slice(0, 220),
       company: company?.slice(0, 220) ?? null,
       service,
       message: message.slice(0, 4000),
       source,
+      createdAt: new Date(),
     });
 
     return NextResponse.json({ ok: true, message: 'The idea has been received. We respond within one business day.' });

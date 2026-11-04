@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
-import { query, document } from './store';
+import { getDb, document } from './store';
 import { session } from './auth';
 import { emptyContent, type Content, type Kind, type Document } from './schema';
 import { projects, articles, careers } from '../live';
@@ -20,14 +20,30 @@ export const previewDocument = cache(async () => {
 });
 
 export async function publicDocuments(kind: Kind) {
-  if (!process.env.DATABASE_URL) return null;
+  const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+  if (!uri) return null;
   try {
-    return (
-      await query(
-        'SELECT * FROM cms_documents WHERE kind=$1 AND deleted=false AND published IS NOT NULL ORDER BY updated DESC',
-        [kind],
-      )
-    ).rows as Document[];
+    const db = await getDb();
+    const list = await db
+      .collection('cms_documents')
+      .find({
+        kind,
+        deleted: false,
+        published: { $ne: null },
+      })
+      .sort({ updated: -1 })
+      .toArray();
+
+    return list.map((d) => ({
+      id: d.id,
+      kind: d.kind,
+      slug: d.slug,
+      draft: d.draft,
+      published: d.published,
+      revision: d.revision ?? 1,
+      deleted: d.deleted ?? false,
+      updated: d.updated instanceof Date ? d.updated.toISOString() : String(d.updated || ''),
+    })) as Document[];
   } catch (err) {
     console.warn(`[cms] Database connection unavailable for ${kind}, using static content fallback.`);
     return null;
@@ -59,29 +75,28 @@ export async function entries(kind: 'projects' | 'blog' | 'careers') {
   return result;
 }
 
-export const siteContent = cache(async () => {
-  const h = await headers();
-  const path = h.get('x-cms-path') || '/';
-  const preview = await previewDocument();
-  let page: Content | null = null,
-    global: Content | null = null;
-  if (process.env.DATABASE_URL) {
-    try {
-      const rows = (
-        await query(
-          "SELECT * FROM cms_documents WHERE deleted=false AND ((kind='page' AND slug=$1) OR kind='global')",
-          [path === '/' ? '/' : path.slice(1)],
-        )
-      ).rows as Document[];
-      const pageDoc = rows.find((d) => d.kind === 'page');
-      if (pageDoc && !pageDoc.published && preview?.id !== pageDoc.id) notFound();
-      page = pageDoc?.published || null;
-      global = rows.find((d) => d.kind === 'global')?.published || null;
-    } catch (err) {
-      console.warn('[cms] Database connection unavailable, using static content fallback.');
-    }
+export async function siteContent(slug = '/') {
+  const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+  if (!uri) return { page: null, global: null };
+  try {
+    const db = await getDb();
+    const rows = await db
+      .collection('cms_documents')
+      .find({
+        deleted: false,
+        published: { $ne: null },
+        $or: [
+          { kind: 'page', slug },
+          { kind: 'global', slug: 'site' },
+        ],
+      })
+      .toArray();
+
+    const page = rows.find((r) => r.kind === 'page' && r.slug === slug)?.published as Content | null;
+    const global = rows.find((r) => r.kind === 'global' && r.slug === 'site')?.published as Content | null;
+    return { page: page || null, global: global || null };
+  } catch (err) {
+    console.warn('[cms] Database connection unavailable for siteContent, using defaults.');
+    return { page: null, global: null };
   }
-  if (preview && preview.kind !== 'global') page = preview.draft;
-  if (preview?.kind === 'global') global = preview.draft;
-  return { page, global, previewId: preview?.id || null };
-});
+}
