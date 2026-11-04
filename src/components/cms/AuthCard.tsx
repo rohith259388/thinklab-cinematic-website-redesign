@@ -50,27 +50,27 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
     [api]
   );
 
-  // Load Google Identity Services script once
+  // Load Google Identity Services script immediately on mount
   useEffect(() => {
     let active = true;
+
+    if (!(window as any).google?.accounts) {
+      const existing = document.getElementById('google-gsi-client');
+      if (!existing) {
+        const s = document.createElement('script');
+        s.id = 'google-gsi-client';
+        s.src = 'https://accounts.google.com/gsi/client';
+        s.async = true;
+        s.defer = true;
+        document.body.appendChild(s);
+      }
+    }
 
     fetch('/api/cms/auth-config')
       .then((r) => r.json())
       .then((data) => {
         if (!active || !data?.googleClientId) return;
         setGoogleClientId(data.googleClientId);
-
-        if (!(window as any).google?.accounts) {
-          const existing = document.getElementById('google-gsi-client');
-          if (!existing) {
-            const s = document.createElement('script');
-            s.id = 'google-gsi-client';
-            s.src = 'https://accounts.google.com/gsi/client';
-            s.async = true;
-            s.defer = true;
-            document.body.appendChild(s);
-          }
-        }
       })
       .catch(() => {});
 
@@ -79,8 +79,19 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
     };
   }, []);
 
-  const handleGoogleLogin = () => {
-    const activeClientId = googleClientId || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+  const handleGoogleLogin = async () => {
+    let activeClientId = googleClientId || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+    if (!activeClientId) {
+      try {
+        const res = await fetch('/api/cms/auth-config');
+        const data = await res.json();
+        if (data?.googleClientId) {
+          activeClientId = data.googleClientId;
+          setGoogleClientId(activeClientId);
+        }
+      } catch {}
+    }
+
     if (!activeClientId) {
       setError(
         'Google Sign-In requires NEXT_PUBLIC_GOOGLE_CLIENT_ID to be configured. You can sign in with your email and password above.'
@@ -88,6 +99,15 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
       return;
     }
     const win = window as any;
+
+    // Wait briefly if script is still initializing
+    if (!win.google?.accounts) {
+      let attempts = 0;
+      while (!win.google?.accounts && attempts < 10) {
+        await new Promise((r) => setTimeout(r, 150));
+        attempts++;
+      }
+    }
 
     // 1. Try Google OAuth2 popup client (opens clean popup, no iframe replacement, matches circular UI permanently)
     if (win.google?.accounts?.oauth2) {

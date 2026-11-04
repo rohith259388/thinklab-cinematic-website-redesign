@@ -1,0 +1,12 @@
+name = "thinklab-website"
+main = ".open-next/worker.js"
+compatibility_date = "2026-10-30"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+
+[vars]
+CMS_ORIGIN = "http://localhost:3000"
+CMS_SETUP_SECRET = "d6788bddb2d806a903824aae149b10591a40f5ea36ae3f54b1b18e40d992ed92"
+DEFAULT_ADMIN_EMAIL = "admin@thinklab.com"
+DEFAULT_ADMIN_PASSWORD = "AdminThinkLab2026!"
+MONGODB_URI = "mongodb+srv://samhith_db_user:SamhithThinklabs%40123@cluster0.hkuapuu.mongodb.net/thinklab?retryWrites=true&w=majority"
+NEXT_PUBLIC_GOOGLE_CLIENT_ID = "325993927136-77ovcct1qf1j8l3mfqukg9guqq0tdnmn.apps.googleusercontent.com"

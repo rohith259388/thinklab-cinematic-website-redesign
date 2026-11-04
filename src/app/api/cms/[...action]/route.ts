@@ -25,7 +25,8 @@ const json = (v: unknown, status = 200) =>
 
 export async function GET(req: NextRequest) {
   try {
-    const action = req.nextUrl.pathname.split("/").pop();
+    const segments = req.nextUrl.pathname.split("/").filter(Boolean);
+    const action = segments.pop();
 
     // Public auth configuration (Google Client ID, allowed domain)
     if (action === "auth-config") {
@@ -99,8 +100,14 @@ function failure(e: unknown) {
 
 export async function POST(req: NextRequest) {
   try {
-    const origin = process.env.CMS_ORIGIN || req.nextUrl.origin;
-    if (req.headers.get("origin") !== origin)
+    const reqOrigin = req.headers.get("origin");
+    const isOriginAllowed =
+      !reqOrigin ||
+      reqOrigin === process.env.CMS_ORIGIN ||
+      reqOrigin === req.nextUrl.origin ||
+      reqOrigin === "http://localhost:3000" ||
+      reqOrigin === "https://thinklab-website.wandering-glitter-65e6.workers.dev";
+    if (!isOriginAllowed)
       return json({ error: "Invalid origin" }, 403);
     if (Number(req.headers.get("content-length") || 0) > 8_000_000)
       return json({ error: "Request too large" }, 413);
