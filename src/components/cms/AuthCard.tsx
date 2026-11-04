@@ -14,7 +14,9 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
   const [error, setError] = useState('');
   const [infoMsg, setInfoMsg] = useState('');
   const [regEmail, setRegEmail] = useState('');
-  const [googleClientId, setGoogleClientId] = useState('');
+  const [googleClientId, setGoogleClientId] = useState(
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
+  );
 
   const api = useCallback(async (action: string, payload?: unknown) => {
     const res = await fetch(`/api/cms/${action}`, {
@@ -78,7 +80,8 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
   }, []);
 
   const handleGoogleLogin = () => {
-    if (!googleClientId) {
+    const activeClientId = googleClientId || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+    if (!activeClientId) {
       setError(
         'Google Sign-In requires NEXT_PUBLIC_GOOGLE_CLIENT_ID to be configured. You can sign in with your email and password above.'
       );
@@ -90,7 +93,7 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
     if (win.google?.accounts?.oauth2) {
       try {
         const client = win.google.accounts.oauth2.initTokenClient({
-          client_id: googleClientId,
+          client_id: activeClientId,
           scope: 'email profile openid',
           callback: async (tokenResponse: any) => {
             if (tokenResponse?.access_token) {
@@ -119,7 +122,7 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
     // 2. Fallback to ID prompt if oauth2 is not available
     if (win.google?.accounts?.id) {
       win.google.accounts.id.initialize({
-        client_id: googleClientId,
+        client_id: activeClientId,
         callback: handleCredentialResponse,
         auto_select: false,
         cancel_on_tap_outside: true,
