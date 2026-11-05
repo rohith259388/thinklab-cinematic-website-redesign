@@ -5,6 +5,7 @@ import {
   pbkdf2Sync,
 } from 'node:crypto';
 import { cookies } from 'next/headers';
+import { ObjectId } from 'mongodb';
 import { getDb } from './store';
 import type { Role } from './schema';
 
@@ -80,7 +81,6 @@ export async function session(tokenOverride?: string) {
     if (s.user_id) {
       userQuery.push({ id: s.user_id });
       try {
-        const { ObjectId } = await import('mongodb');
         if (ObjectId.isValid(s.user_id)) {
           userQuery.push({ _id: new ObjectId(s.user_id) });
         }
