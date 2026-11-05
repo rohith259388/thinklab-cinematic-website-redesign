@@ -20,47 +20,78 @@ export const previewDocument = cache(async () => {
 });
 
 async function withQuickTimeout<T>(promise: Promise<T>, ms = 2000): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error('DB lookup timed out')), ms)
-    ),
-  ]);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('DB lookup timed out')), ms);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
-export async function publicDocuments(kind: Kind) {
+// Every published document, kept in memory for a short time. Pages read from this
+// snapshot instead of querying MongoDB several times per request, so most page views
+// never touch the database. It holds plain data only (no sockets), which is safe to
+// share between requests on Cloudflare Workers. Publishing clears it in the isolate
+// that handled the publish; other isolates pick the change up within PUBLISHED_TTL_MS.
+const PUBLISHED_TTL_MS = 15_000;
+type Snapshot = { at: number; docs: Document[] };
+const snap = globalThis as typeof globalThis & { __cmsPublished?: Snapshot | null };
+
+export function invalidatePublishedCache() {
+  snap.__cmsPublished = null;
+}
+
+const toDocument = (d: Record<string, any>): Document =>
+  ({
+    id: d.id,
+    kind: d.kind,
+    slug: d.slug,
+    draft: null,
+    published: d.published,
+    revision: d.revision ?? 1,
+    deleted: false,
+    updated: d.updated instanceof Date ? d.updated.toISOString() : String(d.updated || ''),
+  }) as unknown as Document;
+
+/** Published documents, or null when no database is configured or it is unreachable. */
+const publishedDocuments = cache(async (): Promise<Document[] | null> => {
   const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
   if (!uri) return null;
+  const current = snap.__cmsPublished;
+  if (current && Date.now() - current.at < PUBLISHED_TTL_MS) return current.docs;
   try {
-    const list = await withQuickTimeout(
+    const rows = await withQuickTimeout(
       getDb().then((db) =>
         db
           .collection('cms_documents')
-          .find({
-            kind,
-            deleted: false,
-            published: { $ne: null },
-          })
+          .find(
+            { deleted: false, published: { $ne: null } },
+            { projection: { _id: 0, id: 1, kind: 1, slug: 1, published: 1, revision: 1, updated: 1 } },
+          )
           .sort({ updated: -1 })
-          .toArray()
+          .toArray(),
       ),
-      2000
+      4000,
     );
-
-    return list.map((d) => ({
-      id: d.id,
-      kind: d.kind,
-      slug: d.slug,
-      draft: d.draft,
-      published: d.published,
-      revision: d.revision ?? 1,
-      deleted: d.deleted ?? false,
-      updated: d.updated instanceof Date ? d.updated.toISOString() : String(d.updated || ''),
-    })) as Document[];
-  } catch (err) {
-    console.warn(`[cms] Database connection unavailable for ${kind}, using static content fallback.`);
+    const docs = rows.map(toDocument);
+    snap.__cmsPublished = { at: Date.now(), docs };
+    return docs;
+  } catch {
+    // Serve the last good snapshot rather than silently reverting to built-in defaults.
+    if (current) return current.docs;
+    console.warn('[cms] Database unavailable, using static content fallback.');
     return null;
   }
+});
+
+export async function publicDocuments(kind: Kind) {
+  const docs = await publishedDocuments();
+  return docs ? docs.filter((d) => d.kind === kind) : null;
 }
 
 export async function entries(kind: 'projects' | 'blog' | 'careers') {
@@ -88,57 +119,19 @@ export async function entries(kind: 'projects' | 'blog' | 'careers') {
   return result;
 }
 
-export async function siteContent(slug = '/') {
-  const preview = await previewDocument();
-  const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
-  if (!uri) {
-    return {
-      page: preview?.kind === 'page' ? preview.draft : null,
-      global: preview?.kind === 'global' ? preview.draft : null,
-      previewId: preview?.id || null,
-    };
-  }
-  try {
-    const rows = await withQuickTimeout(
-      getDb().then((db) =>
-        db
-          .collection('cms_documents')
-          .find({
-            deleted: false,
-            published: { $ne: null },
-            $or: [
-              { kind: 'page', slug },
-              { kind: 'global', slug: 'site' },
-            ],
-          })
-          .toArray()
-      ),
-      2000
-    );
-
-    let page = rows.find((r) => r.kind === 'page' && r.slug === slug)?.published as Content | null;
-    let global = rows.find((r) => r.kind === 'global' && r.slug === 'site')?.published as Content | null;
-
-    if (preview) {
-      if (preview.kind === 'page' && preview.slug === slug) {
-        page = preview.draft;
-      }
-      if (preview.kind === 'global') {
-        global = preview.draft;
-      }
-    }
-
-    return {
-      page: page || (preview?.kind === 'page' ? preview.draft : null),
-      global: global || (preview?.kind === 'global' ? preview.draft : null),
-      previewId: preview?.id || null,
-    };
-  } catch (err) {
-    console.warn('[cms] Database connection unavailable for siteContent, using defaults.');
-    return {
-      page: preview?.kind === 'page' ? preview.draft : null,
-      global: preview?.kind === 'global' ? preview.draft : null,
-      previewId: preview?.id || null,
-    };
-  }
+/** Page slug for the current request, derived from the path the proxy forwards. */
+async function currentSlug() {
+  const path = (await headers()).get('x-cms-path') || '/';
+  const clean = path.replace(/\/+$/, '') || '/';
+  return clean === '/' ? '/' : clean.slice(1);
 }
+
+export const siteContent = cache(async (slugOverride?: string) => {
+  const slug = slugOverride ?? (await currentSlug());
+  const [docs, preview] = await Promise.all([publishedDocuments(), previewDocument()]);
+  let page = (docs?.find((d) => d.kind === 'page' && d.slug === slug)?.published ?? null) as Content | null;
+  let global = (docs?.find((d) => d.kind === 'global' && d.slug === 'site')?.published ?? null) as Content | null;
+  if (preview?.kind === 'page' && preview.slug === slug) page = preview.draft;
+  if (preview?.kind === 'global') global = preview.draft;
+  return { page, global, previewId: preview?.id || null };
+});

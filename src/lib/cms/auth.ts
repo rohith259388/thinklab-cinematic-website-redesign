@@ -69,7 +69,9 @@ export async function session(tokenOverride?: string) {
   }
   const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
   if (!token || !uri) return null;
-  try {
+  // Database errors propagate on purpose: callers must not treat an outage as
+  // "logged out" (that would clear a valid 7-day session cookie).
+  {
     const db = await getDb();
     const tokenHash = hashToken(token);
     const s = await db.collection('cms_sessions').findOne({
@@ -101,8 +103,15 @@ export async function session(tokenOverride?: string) {
       userEmail === (process.env.DEFAULT_ADMIN_EMAIL || 'admin@thinklab.com').toLowerCase().trim();
     const finalRole: Role = isAdmin ? 'admin' : ((u.role as Role) || 'editor');
     return { id: u.id || String(u._id), email: u.email, role: finalRole };
+  }
+}
+
+/** Like session(), but treats a database outage as "unknown" (undefined) instead of throwing. */
+export async function trySession(tokenOverride?: string) {
+  try {
+    return await session(tokenOverride);
   } catch {
-    return null;
+    return undefined;
   }
 }
 

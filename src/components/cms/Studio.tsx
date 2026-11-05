@@ -124,14 +124,42 @@ const DEFAULT_PAGE_FIELDS: Record<string, { key: string; label: string; defaultV
   ],
 };
 
-export default function Studio() {
+const pickHome = (list?: Document[]) =>
+  list && list.length > 0
+    ? list.find((d) => d.slug === "/" || d.id === "page-home") || list[0]
+    : null;
+
+// Ends the session server-side (deletes it and expires the cookie), then always
+// lands on the login page, even if the request itself fails.
+async function signOut() {
+  try {
+    localStorage.removeItem("thinklab_studio_user");
+  } catch {}
+  try {
+    await fetch("/api/cms/logout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+      credentials: "include",
+    });
+  } catch {}
+  window.location.replace("/admin/login");
+}
+
+export default function Studio({
+  initialUser = null,
+  initialDocs,
+}: {
+  initialUser?: { email: string; role: string } | null;
+  initialDocs?: Document[];
+} = {}) {
   const [mounted, setMounted] = useState(false);
-  const [user, setUser] = useState<{ email: string; role: string } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<{ email: string; role: string } | null>(initialUser);
+  const [loading, setLoading] = useState(!(initialUser && initialDocs));
   const [error, setError] = useState(""),
-    [docs, setDocs] = useState<Document[]>([]),
-    [doc, setDoc] = useState<Document | null>(null),
-    [draft, setDraft] = useState<Content | null>(null),
+    [docs, setDocs] = useState<Document[]>(initialDocs ?? []),
+    [doc, setDoc] = useState<Document | null>(() => pickHome(initialDocs)),
+    [draft, setDraft] = useState<Content | null>(() => pickHome(initialDocs)?.draft ?? null),
     [tab, setTab] = useState<string>("page"),
     [fields, setFields] = useState<Field[]>([]),
     [selected, setSelected] = useState(""),
@@ -176,6 +204,8 @@ export default function Studio() {
 
 
   useEffect(() => {
+    // The server already verified the session and loaded documents.
+    if (initialUser && initialDocs) return;
     api("session")
       .then(async (u) => {
         setUser(u);
@@ -211,6 +241,7 @@ export default function Studio() {
         }
       })
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh]);
   const change = (next: Content) => {
     if (draft) {
@@ -589,19 +620,7 @@ export default function Studio() {
           type="button"
           className="cms-logout-btn"
           title="Sign out and erase 7-day session"
-          onClick={() =>
-            void run(async () => {
-              try {
-                localStorage.removeItem("thinklab_studio_user");
-              } catch {}
-              await api("logout", {});
-              setUser(null);
-              setDocs([]);
-              setDoc(null);
-              setDraft(null);
-              window.location.replace("/admin/login");
-            })
-          }
+          onClick={() => void signOut()}
         >
           Logout ⇥
         </button>
@@ -768,19 +787,7 @@ export default function Studio() {
             {user.email} · {user.role}
           </small>
           <button
-            onClick={() =>
-              void run(async () => {
-                try {
-                  localStorage.removeItem("thinklab_studio_user");
-                } catch {}
-                await api("logout", {});
-                setUser(null);
-                setDocs([]);
-                setDoc(null);
-                setDraft(null);
-                window.location.href = "/admin/login";
-              })
-            }
+            onClick={() => void signOut()}
           >
             Sign out
           </button>

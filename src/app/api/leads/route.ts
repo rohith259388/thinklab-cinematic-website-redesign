@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/db';
+import { getDb, releaseDb } from '@/db';
 import { SERVICES } from '@/lib/content';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -47,5 +47,7 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error('[leads] insert failed', err);
     return NextResponse.json({ ok: false, error: 'The laboratory is momentarily busy. Please try again.' }, { status: 500 });
+  } finally {
+    await releaseDb();
   }
 }

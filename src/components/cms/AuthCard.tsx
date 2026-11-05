@@ -87,27 +87,7 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
       })
       .catch(() => {});
 
-    // Check if already authenticated and auto-redirect to /admin
-    if (typeof window !== 'undefined' && window.location.pathname.includes('/admin/login')) {
-      api('session')
-        .then((u) => {
-          if (u?.email) {
-            try {
-              localStorage.setItem('thinklab_studio_user', JSON.stringify(u));
-            } catch {}
-            window.location.replace('/admin');
-          } else {
-            try {
-              localStorage.removeItem('thinklab_studio_user');
-            } catch {}
-          }
-        })
-        .catch(() => {
-          try {
-            localStorage.removeItem('thinklab_studio_user');
-          } catch {}
-        });
-    }
+    // "Already signed in" is handled on the server (login/register pages redirect to /admin).
 
     return () => {
       active = false;

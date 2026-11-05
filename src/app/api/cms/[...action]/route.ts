@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import { getDb, documents, document } from "@/lib/cms/store";
+import { getDb, documents, document, releaseDb } from "@/lib/cms/store";
+import { invalidatePublishedCache } from "@/lib/cms/public";
 import {
   hashPassword,
   verifyPassword,
@@ -37,6 +38,14 @@ const json = (v: unknown, status = 200) =>
   NextResponse.json(v, { status, headers: { "Cache-Control": "no-store" } });
 
 export async function GET(req: NextRequest) {
+  try {
+    return await handleGet(req);
+  } finally {
+    await releaseDb();
+  }
+}
+
+async function handleGet(req: NextRequest) {
   try {
     const segments = req.nextUrl.pathname.split("/").filter(Boolean);
     const action = segments.pop();
@@ -137,6 +146,14 @@ function failure(e: unknown, req?: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  try {
+    return await handlePost(req);
+  } finally {
+    await releaseDb();
+  }
+}
+
+async function handlePost(req: NextRequest) {
   try {
     const reqOrigin = req.headers.get("origin") || "";
     const isOriginAllowed =
@@ -598,13 +615,9 @@ export async function POST(req: NextRequest) {
       return response;
     }
 
-    const token = getTokenFromReq(req);
-    const user = await requireUser(
-      ["publish", "unpublish", "delete", "user"].includes(action || ""),
-      token
-    );
-
     if (action === "logout") {
+      // Handled before the auth check so an intentional logout always deletes the
+      // session and expires the cookie, even if the session is already invalid.
       const logoutToken = getTokenFromReq(req);
       if (logoutToken) {
         try {
@@ -625,6 +638,12 @@ export async function POST(req: NextRequest) {
       });
       return r;
     }
+
+    const token = getTokenFromReq(req);
+    const user = await requireUser(
+      ["publish", "unpublish", "delete", "user"].includes(action || ""),
+      token
+    );
 
     if (action === "user") {
       if (user.role !== "admin") throw new Error("Forbidden");
@@ -781,6 +800,7 @@ export async function POST(req: NextRequest) {
       action === "unpublish" ||
       action === "delete"
     ) {
+      invalidatePublishedCache();
       try {
         revalidatePath(documentPath(d as any));
       } catch (err) {

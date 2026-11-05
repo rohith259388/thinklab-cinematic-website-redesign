@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/cms/store';
+import { getDb, releaseDb } from '@/lib/cms/store';
 import { session } from '@/lib/cms/auth';
 
 export async function GET(
@@ -35,11 +35,17 @@ export async function GET(
       headers: {
         'Content-Type': mediaDoc.mime,
         'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'private, no-store',
+        // Asset ids are random UUIDs and their bytes never change, so published
+        // images can be cached by browsers and Cloudflare's edge indefinitely.
+        'Cache-Control': publicRef
+          ? 'public, max-age=31536000, immutable'
+          : 'private, no-store',
         'Content-Security-Policy': "default-src 'none'; sandbox",
       },
     });
   } catch {
     return new Response(null, { status: 503 });
+  } finally {
+    await releaseDb();
   }
 }

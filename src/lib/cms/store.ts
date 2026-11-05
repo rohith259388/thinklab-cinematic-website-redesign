@@ -1,4 +1,5 @@
 import { MongoClient, Db } from "mongodb";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { randomUUID } from "node:crypto";
 import data from "../live-content.json";
 import { emptyContent, type Document, type Content, type Kind } from "./schema";
@@ -17,49 +18,90 @@ export function normalizeMongoUri(rawUri: string): string {
   return rawUri;
 }
 
+const CLIENT_OPTIONS = {
+  serverSelectionTimeoutMS: 8000,
+  connectTimeoutMS: 8000,
+  socketTimeoutMS: 20000,
+  maxPoolSize: 1,
+  minPoolSize: 0,
+  serverMonitoringMode: "poll" as const,
+};
+
+// Cloudflare Workers forbids using a socket opened during one request from another
+// request: the second request hangs until the runtime kills it with a plain-text 500.
+// So on workerd every request gets its own client, keyed by that request's
+// ExecutionContext. Plain Node (next dev / next start) keeps one shared client.
+const isWorkerd =
+  typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
+
 const g = globalThis as typeof globalThis & {
   __cmsClientPromise?: Promise<MongoClient> | null;
 };
+const perRequest = new WeakMap<object, Promise<MongoClient>>();
 
-export async function getDb(): Promise<Db> {
+function requestContext(): { waitUntil(p: Promise<unknown>): void } | null {
+  try {
+    return (getCloudflareContext().ctx as { waitUntil(p: Promise<unknown>): void }) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function connect(): Promise<MongoClient> {
   const rawUri = process.env.MONGODB_URI || process.env.DATABASE_URL;
   if (!rawUri) {
     throw new Error("CMS database is not configured. Set MONGODB_URI in environment variables.");
   }
   const uri = normalizeMongoUri(rawUri);
-
-  if (!g.__cmsClientPromise) {
-    const client = new MongoClient(uri, {
-      serverSelectionTimeoutMS: 8000,
-      connectTimeoutMS: 8000,
-      socketTimeoutMS: 20000,
-      maxPoolSize: 5,
-    });
-    g.__cmsClientPromise = client.connect().catch((err) => {
-      g.__cmsClientPromise = null;
-      if (uri !== rawUri) {
-        const fallback = new MongoClient(rawUri, {
-          serverSelectionTimeoutMS: 8000,
-          connectTimeoutMS: 8000,
-          socketTimeoutMS: 20000,
-          maxPoolSize: 5,
-        });
-        g.__cmsClientPromise = fallback.connect().catch((fallbackErr) => {
-          g.__cmsClientPromise = null;
-          throw fallbackErr;
-        });
-        return g.__cmsClientPromise;
-      }
-      throw err;
-    });
-  }
-
   try {
-    const client = await g.__cmsClientPromise;
-    return client.db("thinklab");
+    return await new MongoClient(uri, CLIENT_OPTIONS).connect();
   } catch (err) {
-    g.__cmsClientPromise = null;
-    throw err;
+    if (uri === rawUri) throw err;
+    return await new MongoClient(rawUri, CLIENT_OPTIONS).connect();
+  }
+}
+
+export async function getClient(): Promise<MongoClient> {
+  if (!isWorkerd) {
+    if (!g.__cmsClientPromise) {
+      g.__cmsClientPromise = connect().catch((err) => {
+        g.__cmsClientPromise = null;
+        throw err;
+      });
+    }
+    return g.__cmsClientPromise;
+  }
+  const ctx = requestContext();
+  if (!ctx) return connect();
+  let p = perRequest.get(ctx);
+  if (!p) {
+    p = connect();
+    perRequest.set(ctx, p);
+    p.catch(() => perRequest.delete(ctx));
+  }
+  return p;
+}
+
+export async function getDb(): Promise<Db> {
+  return (await getClient()).db("thinklab");
+}
+
+/**
+ * Close this request's client on Workers (no-op on Node, where the client is shared).
+ * Only call it from code that owns the whole request (API route handlers). Rendering
+ * code never needs it: workerd closes a request's sockets when the request ends.
+ */
+export async function releaseDb(): Promise<void> {
+  if (!isWorkerd) return;
+  const ctx = requestContext();
+  const p = ctx && perRequest.get(ctx);
+  if (!p) return;
+  perRequest.delete(ctx);
+  const closing = p.then((c) => c.close()).catch(() => {});
+  try {
+    ctx.waitUntil(closing);
+  } catch {
+    await closing;
   }
 }
 
