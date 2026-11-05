@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import type { Kind, Content } from '@/lib/cms/schema';
+import ImageField from './ImageField';
 import {
   buildProjectContent,
   buildBlogContent,
@@ -36,7 +37,7 @@ export default function TemplateModal({
   const [slug, setSlug] = useState('');
   const [category, setCategory] = useState(kind === 'blog' ? 'Strategy' : '');
   const [tags, setTags] = useState(kind === 'projects' ? 'Design · Development · Strategy' : '');
-  const [image, setImage] = useState(assets[0] ? `/api/cms-media/${assets[0].id}` : '');
+  const [image, setImage] = useState('');
   const [summary, setSummary] = useState('');
   const [date, setDate] = useState(
     kind === 'blog'
@@ -141,6 +142,7 @@ export default function TemplateModal({
           date,
           apply,
           summary,
+          image,
           responsibilities,
           requirements,
           benefits,
@@ -231,36 +233,22 @@ export default function TemplateModal({
                   </div>
                 </div>
 
-                <div className="cms-form-grid">
-                  <div className="cms-form-group">
-                    <label>Cover Image</label>
-                    {assets.length > 0 ? (
-                      <select value={image} onChange={(e) => setImage(e.target.value)}>
-                        <option value="">Select an uploaded media asset...</option>
-                        {assets.map((a) => (
-                          <option key={a.id} value={`/api/cms-media/${a.id}`}>
-                            {a.name}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        placeholder="/images/live/project.webp or media ID"
-                        value={image}
-                        onChange={(e) => setImage(e.target.value)}
-                      />
-                    )}
-                  </div>
-                  <div className="cms-form-group">
-                    <label>Live URL (Optional)</label>
-                    <input
-                      type="text"
-                      placeholder="https://client-site.com"
-                      value={source}
-                      onChange={(e) => setSource(e.target.value)}
-                    />
-                  </div>
+                <ImageField
+                  label="Cover Image (Cloudinary URL or PC Upload)"
+                  value={image}
+                  onChange={setImage}
+                  assets={assets}
+                  disabled={busy}
+                />
+
+                <div className="cms-form-group full">
+                  <label>Live URL (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="https://client-site.com"
+                    value={source}
+                    onChange={(e) => setSource(e.target.value)}
+                  />
                 </div>
 
                 <div className="cms-form-group full">
@@ -368,26 +356,13 @@ export default function TemplateModal({
                   </div>
                 </div>
 
-                <div className="cms-form-group full">
-                  <label>Cover Image</label>
-                  {assets.length > 0 ? (
-                    <select value={image} onChange={(e) => setImage(e.target.value)}>
-                      <option value="">Select an uploaded media asset...</option>
-                      {assets.map((a) => (
-                        <option key={a.id} value={`/api/cms-media/${a.id}`}>
-                          {a.name}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      placeholder="/images/live/blog.webp or media ID"
-                      value={image}
-                      onChange={(e) => setImage(e.target.value)}
-                    />
-                  )}
-                </div>
+                <ImageField
+                  label="Cover Image (Cloudinary URL or PC Upload)"
+                  value={image}
+                  onChange={setImage}
+                  assets={assets}
+                  disabled={busy}
+                />
 
                 <div className="cms-form-group full">
                   <label>Article Summary / Abstract</label>
@@ -490,6 +465,14 @@ export default function TemplateModal({
                     onChange={(e) => setSummary(e.target.value)}
                   />
                 </div>
+
+                <ImageField
+                  label="Featured Image (Optional — Cloudinary URL or PC Upload)"
+                  value={image}
+                  onChange={setImage}
+                  assets={assets}
+                  disabled={busy}
+                />
 
                 <div className="cms-form-group full">
                   <label>Key Responsibilities (one per line)</label>

@@ -76,7 +76,8 @@ export function safeUrl(value: string, image = false) {
   if (image)
     return (
       /^\/images\/[a-zA-Z0-9_./-]+$/.test(value) ||
-      /^\/api\/cms-media\/[a-f0-9-]+$/.test(value)
+      /^\/api\/cms-media\/[a-f0-9-]+$/.test(value) ||
+      /^https?:\/\/[^\s\\]+$/i.test(value)
     );
   return (
     /^\/(?!\/)[^\s\\]*$/.test(value) ||

@@ -41,6 +41,7 @@ export interface CareerTemplateInput {
   date: string;
   apply: string;
   summary: string;
+  image?: string;
   responsibilities?: string;
   requirements?: string;
   benefits?: string;
@@ -157,6 +158,7 @@ export function buildBlogContent(input: BlogTemplateInput): Content {
 export function buildCareerContent(input: CareerTemplateInput): Content {
   const content = emptyContent(input.title);
   content.summary = input.summary || `Join the Thinklab team as ${input.title}.`;
+  content.image = input.image || '';
   content.category = input.department || 'Engineering';
   content.tags = `${input.department}, ${input.type || 'Full-time'}`;
   content.date = input.date || 'Immediate';

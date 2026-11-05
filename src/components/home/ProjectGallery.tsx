@@ -51,7 +51,7 @@ function ProjectTile({ project, index }: { project: ProjectCard; index: number }
             <div className="project-parallax">
               <div className="project-landscape" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div>
               <div className="project-brand-plane" ref={plane}>
-                <div className="project-brand-sheet"><Image unoptimized={project.image.startsWith('/api/cms-media/')} src={project.image} alt="" fill sizes="(max-width: 700px) 75vw, 36vw" className="brand-image" /></div>
+                <div className="project-brand-sheet"><Image unoptimized={project.image.startsWith('/api/cms-media/') || project.image.startsWith('http')} src={project.image} alt="" fill sizes="(max-width: 700px) 75vw, 36vw" className="brand-image" /></div>
               </div>
             </div>
           </div>

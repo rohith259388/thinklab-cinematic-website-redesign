@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ['*.loca.lt', 'cold-ends-divide.loca.lt', '*.pinggy.link', '*.trycloudflare.com'],
   // pg loads pg-cloudflare's real socket only under the workerd export condition, which file tracing skips.
   outputFileTracingIncludes: { '/*': ['./node_modules/pg-cloudflare/**/*'] },
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '**' },
+      { protocol: 'http', hostname: '**' },
+    ],
+  },
   async redirects() {
     const fixed = [['/about-us', '/about'], ['/contact-us', '/contact'], ['/case-studies', '/projects'], ['/blogs', '/blog']];
     const entries = [

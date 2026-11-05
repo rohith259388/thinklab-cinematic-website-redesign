@@ -3,6 +3,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Document, type Content, type Kind, documentPath } from "@/lib/cms/schema";
 import TemplateModal from "./TemplateModal";
+import ImageField from "./ImageField";
 import "./studio.css";
 import AuthCard from "./AuthCard";
 type Field = { key: string; value: string; global: boolean };
@@ -1403,7 +1404,13 @@ export default function Studio() {
                 ) : (
                   <>
                     {field("summary", "Summary", true)}
-                    {field("image", "Image path (or select in Media)")}
+                    <ImageField
+                      label="Cover Image (Cloudinary URL or PC Upload)"
+                      value={draft.image || ""}
+                      onChange={(newUrl) => change({ ...draft, image: newUrl })}
+                      assets={assets}
+                      disabled={busy}
+                    />
                     {field("alt", "Image description")}
                     {field("category", "Category")}
                     {field("tags", "Tags, separated by commas")}
