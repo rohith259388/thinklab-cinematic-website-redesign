@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Document, type Content, type Kind, documentPath } from "@/lib/cms/schema";
 import TemplateModal from "./TemplateModal";
 import "./studio.css";
@@ -24,7 +24,85 @@ const isDeletable = (d: Document) =>
     (d.kind === "page" &&
       ["/", "about", "services", "projects", "reviews", "blog", "contact"].includes(d.slug))
   );
+
+function formatFieldLabel(key: string): string {
+  const parts = key.split(".");
+  return parts
+    .map((p) => {
+      if (!isNaN(Number(p))) return `#${Number(p) + 1}`;
+      return p.charAt(0).toUpperCase() + p.slice(1);
+    })
+    .join(" › ");
+}
+
+const DEFAULT_PAGE_FIELDS: Record<string, { key: string; label: string; defaultValue: string }[]> = {
+  "/": [
+    { key: "home.intro.kicker", label: "Intro Kicker", defaultValue: "CURIOUS MINDS. SHARED AMBITION." },
+    { key: "home.intro.title", label: "Intro Title", defaultValue: "About Thinklab" },
+    { key: "home.intro.accent", label: "Intro Accent", defaultValue: "Digital Solutions." },
+    { key: "home.intro.body1", label: "Intro Body 1", defaultValue: "We are an independent digital studio helping ambitious brands turn complex ideas into digital momentum." },
+    { key: "home.intro.body2", label: "Intro Body 2", defaultValue: "Strategy, design, and engineering aligned to create websites and software that command attention." },
+    { key: "home.intro.cta", label: "Intro CTA Button", defaultValue: "Meet the minds" },
+    { key: "home.projects.kicker", label: "Projects Kicker", defaultValue: "THINKING MADE TANGIBLE." },
+    { key: "home.projects.title", label: "Projects Title", defaultValue: "Projects" },
+    { key: "home.projects.body", label: "Projects Body", defaultValue: "Explore our latest case studies and digital work." },
+    { key: "home.projects.cta", label: "Projects CTA Button", defaultValue: "View All Projects" },
+    { key: "home.philosophy.kicker", label: "Philosophy Kicker", defaultValue: "WHY THINKLAB DIGITAL SOLUTIONS STANDS OUT" },
+    { key: "home.philosophy.title", label: "Philosophy Title", defaultValue: "What if became what's next?" },
+    { key: "home.services.kicker", label: "Services Kicker", defaultValue: "CONNECTED BY DESIGN." },
+    { key: "home.services.title", label: "Services Title", defaultValue: "Different skills." },
+    { key: "home.services.accent", label: "Services Accent", defaultValue: "One big picture." },
+    { key: "home.services.cta", label: "Services CTA Button", defaultValue: "View All Services" },
+    { key: "home.process.kicker", label: "Process Kicker", defaultValue: "FROM POSSIBILITY TO PROGRESS." },
+    { key: "home.process.title", label: "Process Title", defaultValue: "Great work. No guesswork." },
+    { key: "hero.finale.title", label: "Journey Finale Title", defaultValue: "This is Thinklab" },
+  ],
+  "about": [
+    { key: "hero.kicker", label: "Hero Kicker", defaultValue: "ABOUT THINKLAB" },
+    { key: "hero.title", label: "Hero Title", defaultValue: "Curious minds." },
+    { key: "hero.accent", label: "Hero Accent", defaultValue: "Real ambition." },
+    { key: "hero.body", label: "Hero Body", defaultValue: "We are strategists, designers and engineers with one shared belief: your next big idea deserves a team that cares as much as you do." },
+    { key: "about.pillar.0.title", label: "Pillar 1 Title", defaultValue: "History & Heritage" },
+    { key: "about.pillar.0.body", label: "Pillar 1 Body", defaultValue: "Founded with a vision to redefine digital products." },
+    { key: "about.pillar.1.title", label: "Pillar 2 Title", defaultValue: "Our Mission" },
+    { key: "about.pillar.1.body", label: "Pillar 2 Body", defaultValue: "To deliver transformative digital experiences." },
+    { key: "about.pillar.2.title", label: "Pillar 3 Title", defaultValue: "Our Vision" },
+    { key: "about.pillar.2.body", label: "Pillar 3 Body", defaultValue: "Empowering global businesses with next-generation web platforms." },
+    { key: "about.brands.label", label: "Brands Section Label", defaultValue: "TRUSTED BY AMBITIOUS TEAMS" },
+  ],
+  "services": [
+    { key: "hero.kicker", label: "Hero Kicker", defaultValue: "OUR CAPABILITIES" },
+    { key: "hero.title", label: "Hero Title", defaultValue: "Capabilities." },
+    { key: "hero.accent", label: "Hero Accent", defaultValue: "Delivered with precision." },
+    { key: "hero.body", label: "Hero Body", defaultValue: "From full-scale digital engineering to brand transformation and growth marketing." },
+    { key: "services.intro.kicker", label: "Intro Kicker", defaultValue: "CORE SERVICES" },
+    { key: "services.intro.title", label: "Intro Title", defaultValue: "Built for modern scale" },
+  ],
+  "contact": [
+    { key: "hero.kicker", label: "Hero Kicker", defaultValue: "LET'S BUILD SOMETHING" },
+    { key: "hero.title", label: "Hero Title", defaultValue: "Start a conversation." },
+    { key: "hero.accent", label: "Hero Accent", defaultValue: "We are ready." },
+    { key: "hero.body", label: "Hero Body", defaultValue: "Tell us about your project, timeline and ambitions. We will get back to you within 24 hours." },
+    { key: "contact.info.heading", label: "Contact Info Heading", defaultValue: "Direct channels" },
+    { key: "contact.form.heading", label: "Form Heading", defaultValue: "Send an enquiry" },
+  ],
+  "site": [
+    { key: "header.descriptor", label: "Header Descriptor", defaultValue: "Ideas into impact. Independent digital studio." },
+    { key: "header.cta", label: "Header CTA Button", defaultValue: "Let's talk" },
+    { key: "footer.eyebrow", label: "Footer Eyebrow", defaultValue: "NEXT STEPS" },
+    { key: "footer.subheading", label: "Footer Subheading", defaultValue: "Let's build something enduring together." },
+    { key: "footer.cta.line1", label: "Footer CTA Line 1", defaultValue: "Have an idea?" },
+    { key: "footer.cta.line2", label: "Footer CTA Line 2", defaultValue: "Let's talk." },
+    { key: "footer.locations.heading", label: "Locations Heading", defaultValue: "STUDIOS" },
+    { key: "footer.location.1", label: "Studio Location 1", defaultValue: "Vijayawada, AP, India" },
+    { key: "footer.location.2", label: "Studio Location 2", defaultValue: "Mascot, Sydney, Australia" },
+    { key: "footer.contact.heading", label: "Contact Heading", defaultValue: "COMMUNICATIONS" },
+    { key: "footer.email.label", label: "Email Address", defaultValue: "info@thinklabdigitalsolutions.com" },
+  ],
+};
+
 export default function Studio() {
+  const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<{ email: string; role: string } | null>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -68,6 +146,17 @@ export default function Studio() {
     past = useRef<Content[]>([]),
     future = useRef<Content[]>([]),
     latest = useRef(draft);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isUserAdmin = Boolean(
+    user?.role === "admin" ||
+    user?.email?.endsWith("@thinklabdigitalsolutions.com") ||
+    user?.email?.endsWith("@thinklab.com") ||
+    user?.email === "admin@thinklab.com"
+  );
   useEffect(() => {
     latest.current = draft;
   }, [draft]);
@@ -86,7 +175,15 @@ export default function Studio() {
           localStorage.setItem("thinklab_studio_user", JSON.stringify(u));
         } catch {}
         try {
-          await refresh();
+          const list = await refresh();
+          if (list && list.length > 0) {
+            setDoc((current) => {
+              if (current) return current;
+              const home = list.find((d: Document) => d.slug === "/" || d.id === "page-home") || list[0];
+              setDraft(home.draft);
+              return home;
+            });
+          }
         } catch (e) {
           console.warn("Failed to load documents:", e);
         }
@@ -104,7 +201,16 @@ export default function Studio() {
             cached.email === "admin@thinklab.com")
         ) {
           setUser(cached);
-          refresh().catch(() => {});
+          refresh().then((list) => {
+            if (list && list.length > 0) {
+              setDoc((current) => {
+                if (current) return current;
+                const home = list.find((d: Document) => d.slug === "/" || d.id === "page-home") || list[0];
+                setDraft(home.draft);
+                return home;
+              });
+            }
+          }).catch(() => {});
         } else {
           try {
             localStorage.removeItem("thinklab_studio_user");
@@ -371,6 +477,27 @@ export default function Studio() {
     return () => observer.disconnect();
   }, [doc, tab]);
   const zoom = Math.min(1, canvasWidth / size);
+  const availableFields = useMemo(() => {
+    if (!doc) return [];
+    const map = new Map<string, { key: string; label: string; defaultValue?: string }>();
+    const defaults =
+      DEFAULT_PAGE_FIELDS[doc.slug] ||
+      DEFAULT_PAGE_FIELDS[doc.id] ||
+      (doc.slug === "/" ? DEFAULT_PAGE_FIELDS["/"] : []);
+    defaults.forEach((f) => map.set(f.key, f));
+    if (draft?.fields) {
+      Object.keys(draft.fields).forEach((key) => {
+        if (!map.has(key)) {
+          map.set(key, { key, label: formatFieldLabel(key) });
+        }
+      });
+    }
+    fields.forEach((f) => {
+      map.set(f.key, { key: f.key, label: formatFieldLabel(f.key) });
+    });
+    return Array.from(map.values());
+  }, [doc, draft?.fields, fields]);
+
   const field = (key: keyof Content, label: string, multiline = false) =>
     draft && (
       <label className="cms-field">
@@ -388,7 +515,7 @@ export default function Studio() {
         )}
       </label>
     );
-  if (loading) return <div className="cms-login">Loading Thinklab Studio…</div>;
+  if (!mounted || loading) return <div className="cms-login">Loading Thinklab Studio…</div>;
   if (!user) return <AuthCard initialMode="login" />;
 
   return (
@@ -438,7 +565,7 @@ export default function Studio() {
         </button>
         <button
           className="cms-primary"
-          disabled={!doc || busy || user.role === "editor"}
+          disabled={!doc || busy || (!isUserAdmin && user.role === "editor")}
           onClick={() =>
             void run(async () => {
               const d = await save();
@@ -728,7 +855,7 @@ export default function Studio() {
                     Edit alt text
                   </button>
                   <button
-                    disabled={user.role === "editor"}
+                    disabled={!isUserAdmin && user.role === "editor"}
                     onClick={() => {
                       if (confirm("Delete this unused asset?"))
                         void run(async () => {
@@ -786,7 +913,7 @@ export default function Studio() {
               </select>
             </label>
             <button
-              disabled={busy || user.role !== "admin"}
+              disabled={busy || !isUserAdmin}
               className="cms-primary"
             >
               Create user
@@ -1007,6 +1134,56 @@ export default function Studio() {
                     </>
                   )}
                 {["page", "global"].includes(doc.kind) && (
+                  <div style={{ marginTop: 20, marginBottom: 20, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 16 }}>
+                    <h2 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+                      Page Text ({availableFields.length} fields)
+                    </h2>
+                    <p className="cms-hint" style={{ marginBottom: 14 }}>
+                      Edit any text on this page directly. Changes reflect in your preview and save to draft.
+                    </p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                      {availableFields.map((f) => {
+                        const val =
+                          draft.fields[f.key] ??
+                          fields.find((x) => x.key === f.key)?.value ??
+                          f.defaultValue ??
+                          "";
+                        return (
+                          <label className="cms-field" key={f.key} style={{ margin: 0 }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                fontSize: 11,
+                                color: "rgba(255,255,255,0.75)",
+                                marginBottom: 4,
+                              }}
+                            >
+                              <strong>{f.label}</strong>
+                              <code style={{ fontSize: 9, opacity: 0.5 }}>{f.key}</code>
+                            </div>
+                            <textarea
+                              value={val}
+                              rows={val.length > 60 ? 3 : 1}
+                              placeholder={f.defaultValue || `Enter ${f.label}`}
+                              onChange={(e) =>
+                                change({
+                                  ...draft,
+                                  fields: {
+                                    ...draft.fields,
+                                    [f.key]: e.target.value,
+                                  },
+                                })
+                              }
+                            />
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {["page", "global"].includes(doc.kind) && (
                   <>
                     <h2>Additional sections</h2>
                     {selected.startsWith("section.") && (
@@ -1178,10 +1355,49 @@ export default function Studio() {
                 <h2>Entry content</h2>
                 {field("title", "Title")}
                 {["page", "global"].includes(doc.kind) ? (
-                  <p className="cms-hint">
-                    Edit the page’s visible text and layout in Design. This
-                    title identifies the document in your workspace.
-                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
+                    <p className="cms-hint">
+                      Edit page text directly below or switch to the Design tab for visual previews.
+                    </p>
+                    {availableFields.map((f) => {
+                      const val =
+                        draft.fields[f.key] ??
+                        fields.find((x) => x.key === f.key)?.value ??
+                        f.defaultValue ??
+                        "";
+                      return (
+                        <label className="cms-field" key={f.key} style={{ margin: 0 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              fontSize: 11,
+                              color: "rgba(255,255,255,0.75)",
+                              marginBottom: 4,
+                            }}
+                          >
+                            <strong>{f.label}</strong>
+                            <code style={{ fontSize: 9, opacity: 0.5 }}>{f.key}</code>
+                          </div>
+                          <textarea
+                            value={val}
+                            rows={val.length > 60 ? 3 : 1}
+                            placeholder={f.defaultValue || `Enter ${f.label}`}
+                            onChange={(e) =>
+                              change({
+                                ...draft,
+                                fields: {
+                                  ...draft.fields,
+                                  [f.key]: e.target.value,
+                                },
+                              })
+                            }
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
                 ) : (
                   <>
                     {field("summary", "Summary", true)}
@@ -1254,7 +1470,7 @@ export default function Studio() {
                 )}
                 <hr />
                 <button
-                  disabled={busy || user.role === "editor" || !doc.published}
+                  disabled={busy || (!isUserAdmin && user.role === "editor") || !doc.published}
                   onClick={() => {
                     if (confirm("Unpublish this entry?"))
                       void run(() => operation("unpublish"));
@@ -1263,7 +1479,7 @@ export default function Studio() {
                   Unpublish
                 </button>
                 <button
-                  disabled={busy || user.role === "editor"}
+                  disabled={busy || (!isUserAdmin && user.role === "editor")}
                   onClick={() => {
                     if (
                       confirm(

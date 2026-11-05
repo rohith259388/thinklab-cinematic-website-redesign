@@ -89,8 +89,15 @@ export async function entries(kind: 'projects' | 'blog' | 'careers') {
 }
 
 export async function siteContent(slug = '/') {
+  const preview = await previewDocument();
   const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
-  if (!uri) return { page: null, global: null };
+  if (!uri) {
+    return {
+      page: preview?.kind === 'page' ? preview.draft : null,
+      global: preview?.kind === 'global' ? preview.draft : null,
+      previewId: preview?.id || null,
+    };
+  }
   try {
     const rows = await withQuickTimeout(
       getDb().then((db) =>
@@ -109,11 +116,29 @@ export async function siteContent(slug = '/') {
       2000
     );
 
-    const page = rows.find((r) => r.kind === 'page' && r.slug === slug)?.published as Content | null;
-    const global = rows.find((r) => r.kind === 'global' && r.slug === 'site')?.published as Content | null;
-    return { page: page || null, global: global || null };
+    let page = rows.find((r) => r.kind === 'page' && r.slug === slug)?.published as Content | null;
+    let global = rows.find((r) => r.kind === 'global' && r.slug === 'site')?.published as Content | null;
+
+    if (preview) {
+      if (preview.kind === 'page' && preview.slug === slug) {
+        page = preview.draft;
+      }
+      if (preview.kind === 'global') {
+        global = preview.draft;
+      }
+    }
+
+    return {
+      page: page || (preview?.kind === 'page' ? preview.draft : null),
+      global: global || (preview?.kind === 'global' ? preview.draft : null),
+      previewId: preview?.id || null,
+    };
   } catch (err) {
     console.warn('[cms] Database connection unavailable for siteContent, using defaults.');
-    return { page: null, global: null };
+    return {
+      page: preview?.kind === 'page' ? preview.draft : null,
+      global: preview?.kind === 'global' ? preview.draft : null,
+      previewId: preview?.id || null,
+    };
   }
 }
