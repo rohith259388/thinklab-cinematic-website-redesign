@@ -523,14 +523,26 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      if (
-        !user ||
-        !verifyPassword(
-          b.password,
-          user.password || hashPassword("invalid-credentials"),
-        )
-      )
+      if (!user) {
         return json({ error: "Invalid email or password" }, 401);
+      }
+
+      if (!user.password) {
+        if (user.googleSub) {
+          return json(
+            {
+              error:
+                "This account is linked to Google Sign-In. Please click the Google button below to sign in.",
+            },
+            400
+          );
+        }
+        return json({ error: "No password set. Please use Register to set your password." }, 400);
+      }
+
+      if (!verifyPassword(b.password, user.password)) {
+        return json({ error: "Invalid email or password" }, 401);
+      }
 
       // Promote @thinklabdigitalsolutions.com users to admin automatically
       if (
