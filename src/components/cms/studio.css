@@ -957,3 +957,22 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+
+/* Prominent Toolbar Logout Button */
+.cms-logout-btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #ff9999 !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-left: 8px !important;
+}
+.cms-logout-btn:hover {
+  background: rgba(255, 80, 80, 0.18) !important;
+  border-color: rgba(255, 80, 80, 0.45) !important;
+  color: #ffffff !important;
+}

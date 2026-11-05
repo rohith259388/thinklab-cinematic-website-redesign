@@ -87,6 +87,30 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
       })
       .catch(() => {});
 
+    // Check if already authenticated and auto-redirect to /admin
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/admin/login')) {
+      try {
+        const cached = localStorage.getItem('thinklab_studio_user');
+        if (cached) {
+          const u = JSON.parse(cached);
+          if (u?.email) {
+            window.location.replace('/admin');
+            return;
+          }
+        }
+      } catch {}
+      api('session')
+        .then((u) => {
+          if (u?.email) {
+            try {
+              localStorage.setItem('thinklab_studio_user', JSON.stringify(u));
+            } catch {}
+            window.location.replace('/admin');
+          }
+        })
+        .catch(() => {});
+    }
+
     return () => {
       active = false;
     };

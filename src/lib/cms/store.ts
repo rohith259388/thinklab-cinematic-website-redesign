@@ -31,13 +31,33 @@ export async function getDb(): Promise<Db> {
   }
   const uri = normalizeMongoUri(rawUri);
   if (!g.__cmsMongoClient) {
-    g.__cmsMongoClient = new MongoClient(uri, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
+    const client = new MongoClient(uri, {
+      serverSelectionTimeoutMS: 6000,
+      connectTimeoutMS: 6000,
       socketTimeoutMS: 15000,
       maxPoolSize: 10,
     });
-    await g.__cmsMongoClient.connect();
+    try {
+      await client.connect();
+      g.__cmsMongoClient = client;
+    } catch (err: any) {
+      if (uri !== rawUri) {
+        try {
+          const fallbackClient = new MongoClient(rawUri, {
+            serverSelectionTimeoutMS: 6000,
+            connectTimeoutMS: 6000,
+            socketTimeoutMS: 15000,
+            maxPoolSize: 10,
+          });
+          await fallbackClient.connect();
+          g.__cmsMongoClient = fallbackClient;
+        } catch {
+          throw err;
+        }
+      } else {
+        throw err;
+      }
+    }
   }
   g.__cmsMongoDb = g.__cmsMongoClient.db("thinklab");
   return g.__cmsMongoDb;

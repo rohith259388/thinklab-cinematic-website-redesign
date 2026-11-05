@@ -517,7 +517,12 @@ export default function Studio() {
       </label>
     );
   if (!mounted || loading) return <div className="cms-login">Loading Thinklab Studio…</div>;
-  if (!user) return <AuthCard initialMode="login" />;
+  if (!user) {
+    if (typeof window !== "undefined") {
+      window.location.replace("/admin/login");
+    }
+    return <div className="cms-login">Redirecting to login…</div>;
+  }
 
   return (
     <div className="cms-app">
@@ -584,6 +589,26 @@ export default function Studio() {
           }
         >
           Publish ↗
+        </button>
+        <button
+          type="button"
+          className="cms-logout-btn"
+          title="Sign out and erase 7-day session"
+          onClick={() =>
+            void run(async () => {
+              try {
+                localStorage.removeItem("thinklab_studio_user");
+              } catch {}
+              await api("logout", {});
+              setUser(null);
+              setDocs([]);
+              setDoc(null);
+              setDraft(null);
+              window.location.replace("/admin/login");
+            })
+          }
+        >
+          Logout ⇥
         </button>
       </header>
       {error && (

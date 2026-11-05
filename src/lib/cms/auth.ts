@@ -1,8 +1,8 @@
 import {
   randomBytes,
-  scryptSync,
   timingSafeEqual,
   createHash,
+  pbkdf2Sync,
 } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { getDb } from './store';
@@ -11,17 +11,51 @@ import type { Role } from './schema';
 export const hashToken = (s: string) =>
   createHash('sha256').update(s).digest('hex');
 
-export function hashPassword(password: string) {
+export function hashPassword(password: string): string {
   const salt = randomBytes(16).toString('hex');
-  return salt + ':' + scryptSync(password, salt, 64).toString('hex');
+  const hash = pbkdf2Sync(password, salt, 1000, 32, 'sha256').toString('hex');
+  return `pbkdf2:${salt}:${hash}`;
 }
 
-export function verifyPassword(password: string, hash: string) {
-  const [salt, key] = hash.split(':');
-  if (!salt || !key) return false;
-  const actual = scryptSync(password, salt, 64),
-    expected = Buffer.from(key, 'hex');
-  return actual.length === expected.length && timingSafeEqual(actual, expected);
+export function verifyPassword(password: string, storedHash: string): boolean {
+  if (!storedHash || !password) return false;
+
+  // Modern PBKDF2 format (fast & 100% compatible with Cloudflare Workers / workerd)
+  if (storedHash.startsWith('pbkdf2:')) {
+    const parts = storedHash.split(':');
+    const salt = parts[1];
+    const key = parts[2];
+    if (!salt || !key) return false;
+    const actual = pbkdf2Sync(password, salt, 1000, 32, 'sha256');
+    const expected = Buffer.from(key, 'hex');
+    return actual.length === expected.length && timingSafeEqual(actual, expected);
+  }
+
+  // Legacy format: salt:key
+  const parts = storedHash.split(':');
+  if (parts.length === 2) {
+    const [salt, key] = parts;
+    try {
+      const { scryptSync } = require('node:crypto');
+      if (typeof scryptSync === 'function') {
+        const actual = scryptSync(password, salt, 64);
+        const expected = Buffer.from(key, 'hex');
+        if (actual.length === expected.length && timingSafeEqual(actual, expected)) {
+          return true;
+        }
+      }
+    } catch {}
+
+    try {
+      const actualPbk = pbkdf2Sync(password, salt, 1000, 32, 'sha256');
+      const expected = Buffer.from(key, 'hex');
+      if (actualPbk.length === expected.length && timingSafeEqual(actualPbk, expected)) {
+        return true;
+      }
+    } catch {}
+  }
+
+  return false;
 }
 
 export async function session(tokenOverride?: string) {

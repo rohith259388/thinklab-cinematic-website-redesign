@@ -548,12 +548,22 @@ export async function POST(req: NextRequest) {
 
     if (action === "logout") {
       const logoutToken = getTokenFromReq(req);
-      if (logoutToken)
-        await db.collection("cms_sessions").deleteOne({
-          token: hashToken(logoutToken),
-        });
+      if (logoutToken) {
+        try {
+          await db.collection("cms_sessions").deleteOne({
+            token: hashToken(logoutToken),
+          });
+        } catch {}
+      }
       const r = json({ ok: true });
-      r.cookies.delete("cms_session");
+      r.cookies.set("cms_session", "", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 0,
+        expires: new Date(0),
+      });
       return r;
     }
 
