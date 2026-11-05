@@ -126,23 +126,8 @@ const DEFAULT_PAGE_FIELDS: Record<string, { key: string; label: string; defaultV
 
 export default function Studio() {
   const [mounted, setMounted] = useState(false);
-  const [user, setUser] = useState<{ email: string; role: string } | null>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const str = localStorage.getItem("thinklab_studio_user");
-        if (str) return JSON.parse(str);
-      } catch {}
-    }
-    return null;
-  });
-  const [loading, setLoading] = useState(() => {
-    if (typeof window !== "undefined") {
-      try {
-        if (localStorage.getItem("thinklab_studio_user")) return false;
-      } catch {}
-    }
-    return true;
-  });
+  const [user, setUser] = useState<{ email: string; role: string } | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(""),
     [docs, setDocs] = useState<Document[]>([]),
     [doc, setDoc] = useState<Document | null>(null),

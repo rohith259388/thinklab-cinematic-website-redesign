@@ -81,11 +81,11 @@ export async function GET(req: NextRequest) {
     }
     return json(await documents());
   } catch (e) {
-    return failure(e);
+    return failure(e, req);
   }
 }
 
-function failure(e: unknown) {
+function failure(e: unknown, req?: NextRequest) {
   const errStr = e instanceof Error ? e.message : String(e || "");
   const isTimeout =
     errStr.includes("timed out") ||
@@ -111,7 +111,7 @@ function failure(e: unknown) {
             ? 503
             : 400;
   console.error("[cms]", status);
-  return json(
+  const resp = json(
     {
       error:
         status === 503
@@ -122,6 +122,18 @@ function failure(e: unknown) {
     },
     status,
   );
+  if (status === 401) {
+    const isSecure = req ? req.nextUrl.protocol === "https:" : true;
+    resp.cookies.set("cms_session", "", {
+      httpOnly: true,
+      secure: isSecure,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+      expires: new Date(0),
+    });
+  }
+  return resp;
 }
 
 export async function POST(req: NextRequest) {
@@ -788,7 +800,7 @@ export async function POST(req: NextRequest) {
 
     return json(await document(b.id));
   } catch (e) {
-    return failure(e);
+    return failure(e, req);
   }
 }
 
