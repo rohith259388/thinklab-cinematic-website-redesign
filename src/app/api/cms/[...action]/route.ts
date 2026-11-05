@@ -75,6 +75,10 @@ export async function GET(req: NextRequest) {
         .toArray();
       return json(versions);
     }
+    if (action === "documents") {
+      const kind = req.nextUrl.searchParams.get("kind") || undefined;
+      return json(await documents(kind));
+    }
     return json(await documents());
   } catch (e) {
     return failure(e);

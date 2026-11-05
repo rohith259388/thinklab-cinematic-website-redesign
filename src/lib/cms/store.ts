@@ -20,106 +20,125 @@ export function normalizeMongoUri(rawUri: string): string {
 const g = globalThis as typeof globalThis & {
   __cmsMongoClient?: MongoClient;
   __cmsMongoDb?: Db;
-  __cmsReady?: Promise<void>;
 };
 
+let hasSeeded = false;
+
 export async function getDb(): Promise<Db> {
-  if (g.__cmsMongoDb) return g.__cmsMongoDb;
   const rawUri = process.env.MONGODB_URI || process.env.DATABASE_URL;
   if (!rawUri) {
     throw new Error("CMS database is not configured. Set MONGODB_URI in environment variables.");
   }
   const uri = normalizeMongoUri(rawUri);
-  if (!g.__cmsMongoClient) {
-    const client = new MongoClient(uri, {
-      serverSelectionTimeoutMS: 6000,
-      connectTimeoutMS: 6000,
-      socketTimeoutMS: 15000,
-      maxPoolSize: 10,
-    });
+
+  // If a client already exists in this worker instance, verify connection is still alive
+  if (g.__cmsMongoClient && g.__cmsMongoDb) {
     try {
-      await client.connect();
-      g.__cmsMongoClient = client;
-    } catch (err: any) {
-      if (uri !== rawUri) {
-        try {
-          const fallbackClient = new MongoClient(rawUri, {
-            serverSelectionTimeoutMS: 6000,
-            connectTimeoutMS: 6000,
-            socketTimeoutMS: 15000,
-            maxPoolSize: 10,
-          });
-          await fallbackClient.connect();
-          g.__cmsMongoClient = fallbackClient;
-        } catch {
-          throw err;
-        }
-      } else {
+      await g.__cmsMongoDb.command({ ping: 1 });
+      return g.__cmsMongoDb;
+    } catch {
+      // Stale or dead socket in Cloudflare edge; clean up and reconnect
+      try {
+        await g.__cmsMongoClient.close(true);
+      } catch {}
+      g.__cmsMongoClient = undefined;
+      g.__cmsMongoDb = undefined;
+    }
+  }
+
+  const client = new MongoClient(uri, {
+    serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 5000,
+    socketTimeoutMS: 15000,
+    maxPoolSize: 2,
+    minPoolSize: 0,
+    maxIdleTimeMS: 5000,
+  });
+
+  try {
+    await client.connect();
+    g.__cmsMongoClient = client;
+    g.__cmsMongoDb = client.db("thinklab");
+    return g.__cmsMongoDb;
+  } catch (err: any) {
+    if (uri !== rawUri) {
+      try {
+        const fallbackClient = new MongoClient(rawUri, {
+          serverSelectionTimeoutMS: 5000,
+          connectTimeoutMS: 5000,
+          socketTimeoutMS: 15000,
+          maxPoolSize: 2,
+          minPoolSize: 0,
+          maxIdleTimeMS: 5000,
+        });
+        await fallbackClient.connect();
+        g.__cmsMongoClient = fallbackClient;
+        g.__cmsMongoDb = fallbackClient.db("thinklab");
+        return g.__cmsMongoDb;
+      } catch {
         throw err;
       }
     }
+    throw err;
   }
-  g.__cmsMongoDb = g.__cmsMongoClient.db("thinklab");
-  return g.__cmsMongoDb;
 }
 
 export async function initialize() {
-  if (!g.__cmsReady) {
-    g.__cmsReady = (async () => {
-      const db = await getDb();
+  if (hasSeeded) return;
+  try {
+    const db = await getDb();
+    const docCount = await db.collection("cms_documents").countDocuments({}, { limit: 1 });
+    if (docCount > 0) {
+      hasSeeded = true;
+      return;
+    }
 
-      // Skip seeding if documents already exist
-      const docCount = await db.collection("cms_documents").countDocuments({}, { limit: 1 });
-      if (docCount > 0) return;
+    // Ensure indexes
+    await Promise.allSettled([
+      db.collection("cms_documents").createIndex({ kind: 1, slug: 1 }, { unique: true }),
+      db.collection("cms_documents").createIndex({ id: 1 }, { unique: true }),
+      db.collection("cms_users").createIndex({ email: 1 }, { unique: true }),
+      db.collection("cms_sessions").createIndex({ token: 1 }, { unique: true }),
+      db.collection("cms_media").createIndex({ id: 1 }, { unique: true }),
+      db.collection("cms_login_attempts").createIndex({ key: 1 }, { unique: true }),
+    ]);
 
-      // Ensure indexes
-      await Promise.allSettled([
-        db.collection("cms_documents").createIndex({ kind: 1, slug: 1 }, { unique: true }),
-        db.collection("cms_documents").createIndex({ id: 1 }, { unique: true }),
-        db.collection("cms_users").createIndex({ email: 1 }, { unique: true }),
-        db.collection("cms_sessions").createIndex({ token: 1 }, { unique: true }),
-        db.collection("cms_media").createIndex({ id: 1 }, { unique: true }),
-        db.collection("cms_login_attempts").createIndex({ key: 1 }, { unique: true }),
-      ]);
-
-      // Seed collections from live-content.json
-      for (const [kind, entries] of Object.entries({
-        projects: data.projects,
-        blog: data.articles,
-        careers: data.careers,
-      })) {
-        for (const e of entries) {
-          const slug = e.slug;
-          const value = { ...emptyContent(), ...e, alt: e.title };
-          await seed(db, kind as Kind, slug, value);
-        }
+    // Seed collections from live-content.json
+    for (const [kind, entries] of Object.entries({
+      projects: data.projects,
+      blog: data.articles,
+      careers: data.careers,
+    })) {
+      for (const e of entries) {
+        const slug = e.slug;
+        const value = { ...emptyContent(), ...e, alt: e.title };
+        await seed(db, kind as Kind, slug, value);
       }
+    }
 
-      for (const slug of [
-        "/",
-        "about",
-        "services",
-        "projects",
-        "reviews",
-        "blog",
-        "careers",
-        "contact",
-      ]) {
-        await seed(
-          db,
-          "page",
-          slug,
-          emptyContent(slug === "/" ? "Home" : slug),
-        );
-      }
+    for (const slug of [
+      "/",
+      "about",
+      "services",
+      "projects",
+      "reviews",
+      "blog",
+      "careers",
+      "contact",
+    ]) {
+      await seed(
+        db,
+        "page",
+        slug,
+        emptyContent(slug === "/" ? "Home" : slug),
+      );
+    }
 
-      await seed(db, "global", "site", emptyContent("Shared website content"));
-    })().catch((e) => {
-      g.__cmsReady = undefined;
-      throw e;
-    });
+    await seed(db, "global", "site", emptyContent("Shared website content"));
+    hasSeeded = true;
+  } catch (e) {
+    console.warn("[cms] initialize notice:", e);
   }
-  return g.__cmsReady;
 }
 
 async function seed(db: Db, kind: Kind, slug: string, value: Content) {

@@ -633,6 +633,7 @@ export default function Studio() {
             key={key}
             onClick={() => {
               setTab(key);
+              if (docs.length === 0) void refresh();
               if (key === "media")
                 void run(async () => setAssets(await api("media")));
             }}
