@@ -769,9 +769,21 @@ export async function POST(req: NextRequest) {
       action === "unpublish" ||
       action === "delete"
     ) {
-      revalidatePath(documentPath(d as any));
-      revalidatePath("/", "layout");
-      revalidatePath("/sitemap.xml");
+      try {
+        revalidatePath(documentPath(d as any));
+      } catch (err) {
+        console.warn("[cms] revalidatePath single skipped:", err);
+      }
+      try {
+        revalidatePath("/", "layout");
+      } catch (err) {
+        console.warn("[cms] revalidatePath layout skipped:", err);
+      }
+      try {
+        revalidatePath("/sitemap.xml");
+      } catch (err) {
+        console.warn("[cms] revalidatePath sitemap skipped:", err);
+      }
     }
 
     return json(await document(b.id));

@@ -212,12 +212,17 @@ export default function Studio() {
         }
       })
       .catch((e) => {
-        try {
-          localStorage.removeItem("thinklab_studio_user");
-        } catch {}
-        setUser(null);
-        if (typeof window !== "undefined") {
-          window.location.replace("/admin/login");
+        const msg = e instanceof Error ? e.message : String(e || "");
+        if (msg.includes("Unauthorized") || msg.includes("Session expired") || msg.includes("401")) {
+          try {
+            localStorage.removeItem("thinklab_studio_user");
+          } catch {}
+          setUser(null);
+          if (typeof window !== "undefined") {
+            window.location.replace("/admin/login");
+          }
+        } else {
+          console.warn("[Studio] Session check warning:", msg);
         }
       })
       .finally(() => setLoading(false));
@@ -302,7 +307,7 @@ export default function Studio() {
     setDoc(updated);
     setDraft(updated.draft);
     setStatus("Saved");
-    await refresh();
+    setDocs((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
     return updated as Document;
   };
   const operation = async (action: string, extra: object = {}) => {
@@ -316,7 +321,11 @@ export default function Studio() {
     setDraft(updated.deleted ? null : updated.draft);
     setStatus("Saved");
     setFrameVersion((v) => v + 1);
-    await refresh();
+    setDocs((prev) =>
+      updated.deleted
+        ? prev.filter((item) => item.id !== updated.id)
+        : prev.map((item) => (item.id === updated.id ? updated : item))
+    );
   };
   const deleteDocument = async (id: string, revision: number, title: string) => {
     const itemType = tab === "projects" ? "project" : tab === "blog" ? "insight" : tab === "careers" ? "career" : "entry";
@@ -581,8 +590,9 @@ export default function Studio() {
                   revision: d.revision,
                 });
                 setDoc(updated);
+                setDraft(updated.draft);
                 setStatus("Published");
-                await refresh();
+                setDocs((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
                 setFrameVersion((v) => v + 1);
               }
             })
