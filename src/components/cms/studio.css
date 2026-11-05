@@ -583,19 +583,20 @@
 }
 
 
-/* Document list with quick delete & clean rows */
+/* Document list with clean row layout & corner trash icon */
 .cms-document-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 4px;
-  margin: 3px 0;
+  gap: 6px;
+  margin: 2px 0;
+  padding: 1px 4px 1px 6px;
   border-radius: 6px;
   transition: background 0.15s ease;
-  padding: 1px 4px 1px 2px;
+  position: relative;
 }
 .cms-document-row:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
 }
 .cms-document-item {
   flex: 1;
@@ -606,42 +607,60 @@
   border: 0 !important;
   background: none !important;
   text-align: left;
-  padding: 7px 8px !important;
+  padding: 6px 2px !important;
   cursor: pointer;
-  color: inherit;
-  font-size: 12px;
+  color: #dedee3;
+  font-size: 12.5px;
+  font-weight: 400;
+}
+.cms-document-item:hover {
+  color: #ffffff;
+}
+.cms-document-item.active {
+  color: #ffffff;
+  font-weight: 500;
 }
 .cms-doc-title {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 125px;
+  letter-spacing: -0.01em;
 }
+.cms-delete-icon-btn,
 .cms-delete-quick-btn {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 4px !important;
-  background: rgba(235, 75, 75, 0.12) !important;
-  border: 1px solid rgba(235, 75, 75, 0.28) !important;
-  color: #ff9999 !important;
-  padding: 3px 7px !important;
-  font-size: 10.5px !important;
-  line-height: 1 !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  padding: 0 !important;
   border-radius: 4px !important;
+  border: none !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.3) !important;
   cursor: pointer;
-  opacity: 0.85;
-  transition: opacity 0.2s, background 0.2s, color 0.2s;
   flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
-.cms-delete-quick-btn:hover {
+.cms-document-row:hover .cms-delete-icon-btn,
+.cms-document-row:hover .cms-delete-quick-btn,
+.cms-document-row:focus-within .cms-delete-icon-btn,
+.cms-document-row:focus-within .cms-delete-quick-btn {
   opacity: 1;
-  background: rgba(235, 75, 75, 0.3) !important;
-  border-color: rgba(235, 75, 75, 0.6) !important;
-  color: #ffffff !important;
 }
+.cms-delete-icon-btn:hover,
+.cms-delete-quick-btn:hover {
+  color: #ff5c5c !important;
+  background: rgba(255, 75, 75, 0.15) !important;
+}
+.cms-delete-icon-btn svg,
 .cms-delete-quick-btn svg {
-  flex-shrink: 0;
+  display: block;
 }
+
 .cms-revert-btn {
   background: #2a2336 !important;
   border-color: #5d4380 !important;
