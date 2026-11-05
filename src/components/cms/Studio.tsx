@@ -15,8 +15,30 @@ async function api(action: string, data?: unknown) {
     body: data === undefined ? undefined : JSON.stringify(data),
     credentials: "include",
   });
-  const v = await r.json();
-  if (!r.ok) throw new Error(v.error || "Request failed");
+  const text = await r.text();
+  let v: any = {};
+  try {
+    v = text ? JSON.parse(text) : {};
+  } catch {
+    if (r.status === 401) {
+      try {
+        localStorage.removeItem("thinklab_studio_user");
+      } catch {}
+      window.location.replace("/admin/login");
+      throw new Error("Session expired. Redirecting to login...");
+    }
+    throw new Error(!r.ok ? `Server error (${r.status})` : "Invalid response from server");
+  }
+  if (!r.ok) {
+    if (r.status === 401) {
+      try {
+        localStorage.removeItem("thinklab_studio_user");
+      } catch {}
+      window.location.replace("/admin/login");
+      throw new Error(v.error || "Session expired. Redirecting to login...");
+    }
+    throw new Error(v.error || "Request failed");
+  }
   return v;
 }
 const isDeletable = (d: Document) =>
@@ -190,34 +212,12 @@ export default function Studio() {
         }
       })
       .catch((e) => {
-        let cached = null;
         try {
-          const str = localStorage.getItem("thinklab_studio_user");
-          if (str) cached = JSON.parse(str);
+          localStorage.removeItem("thinklab_studio_user");
         } catch {}
-        if (
-          cached &&
-          (cached.email?.endsWith("@thinklabdigitalsolutions.com") ||
-            cached.email?.endsWith("@thinklab.com") ||
-            cached.email === "admin@thinklab.com")
-        ) {
-          setUser(cached);
-          refresh().then((list) => {
-            if (list && list.length > 0) {
-              setDoc((current) => {
-                if (current) return current;
-                const home = list.find((d: Document) => d.slug === "/" || d.id === "page-home") || list[0];
-                setDraft(home.draft);
-                return home;
-              });
-            }
-          }).catch(() => {});
-        } else {
-          try {
-            localStorage.removeItem("thinklab_studio_user");
-          } catch {}
-          if (e.message !== "Unauthorized") setError(e.message);
-          setUser(null);
+        setUser(null);
+        if (typeof window !== "undefined") {
+          window.location.replace("/admin/login");
         }
       })
       .finally(() => setLoading(false));

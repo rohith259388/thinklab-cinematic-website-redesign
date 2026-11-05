@@ -76,7 +76,21 @@ export async function session(tokenOverride?: string) {
       expires: { $gt: new Date() },
     });
     if (!s) return null;
-    const u = await db.collection('cms_users').findOne({ id: s.user_id });
+    const userQuery: any[] = [];
+    if (s.user_id) {
+      userQuery.push({ id: s.user_id });
+      try {
+        const { ObjectId } = await import('mongodb');
+        if (ObjectId.isValid(s.user_id)) {
+          userQuery.push({ _id: new ObjectId(s.user_id) });
+        }
+      } catch {}
+      userQuery.push({ _id: s.user_id });
+    }
+    if (s.email) {
+      userQuery.push({ email: s.email });
+    }
+    const u = userQuery.length > 0 ? await db.collection('cms_users').findOne({ $or: userQuery }) : null;
     if (!u) return null;
     const userEmail = String(u.email || '').toLowerCase().trim();
     // All @thinklabdigitalsolutions.com and @thinklab.com users have full admin editing rights
@@ -86,7 +100,7 @@ export async function session(tokenOverride?: string) {
       userEmail.endsWith('@thinklab.com') ||
       userEmail === (process.env.DEFAULT_ADMIN_EMAIL || 'admin@thinklab.com').toLowerCase().trim();
     const finalRole: Role = isAdmin ? 'admin' : ((u.role as Role) || 'editor');
-    return { id: u.id, email: u.email, role: finalRole };
+    return { id: u.id || String(u._id), email: u.email, role: finalRole };
   } catch {
     return null;
   }

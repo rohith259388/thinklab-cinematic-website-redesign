@@ -122,19 +122,22 @@ function failure(e: unknown) {
 
 export async function POST(req: NextRequest) {
   try {
-    const reqOrigin = req.headers.get("origin");
+    const reqOrigin = req.headers.get("origin") || "";
     const isOriginAllowed =
       !reqOrigin ||
       reqOrigin === process.env.CMS_ORIGIN ||
       reqOrigin === req.nextUrl.origin ||
-      reqOrigin === "http://localhost:3000" ||
-      reqOrigin === "https://thinklab-website.wandering-glitter-65e6.workers.dev";
+      reqOrigin.includes("thinklabdigitalsolutions.com") ||
+      reqOrigin.includes("thinklab.com") ||
+      reqOrigin.includes("workers.dev") ||
+      reqOrigin.includes("localhost") ||
+      reqOrigin.includes("127.0.0.1");
     if (!isOriginAllowed)
       return json({ error: "Invalid origin" }, 403);
     if (Number(req.headers.get("content-length") || 0) > 8_000_000)
       return json({ error: "Request too large" }, 413);
 
-    const action = req.nextUrl.pathname.split("/").pop();
+    const action = req.nextUrl.pathname.split("/").filter(Boolean).pop();
     const db = await getDb();
 
     if (action === "upload") {
@@ -298,13 +301,15 @@ export async function POST(req: NextRequest) {
       }
 
       const existingUser = await db.collection("cms_users").findOne({ email });
-      let userId = existingUser ? String(existingUser.id) : randomUUID();
+      const userId =
+        existingUser?.id ||
+        (existingUser?._id ? String(existingUser._id) : randomUUID());
       // All @thinklabdigitalsolutions.com and @thinklab.com users are full admins
       const isAdminEmail =
         email.endsWith("@thinklabdigitalsolutions.com") ||
         email.endsWith("@thinklab.com") ||
         email === (process.env.DEFAULT_ADMIN_EMAIL || "admin@thinklab.com").toLowerCase().trim();
-      let userRole = isAdminEmail ? "admin" : (existingUser ? String(existingUser.role) : "editor");
+      const userRole = isAdminEmail ? "admin" : (existingUser ? String(existingUser.role) : "editor");
 
       if (!existingUser) {
         await db.collection("cms_users").insertOne({
@@ -314,9 +319,18 @@ export async function POST(req: NextRequest) {
           role: userRole,
           createdAt: new Date(),
         });
-      } else if (isAdminEmail && existingUser.role !== "admin") {
-        await db.collection("cms_users").updateOne({ email }, { $set: { role: "admin" } });
-        userRole = "admin";
+      } else {
+        await db.collection("cms_users").updateOne(
+          { email },
+          {
+            $set: {
+              id: userId,
+              ...(isAdminEmail ? { role: "admin" } : {}),
+              ...(record.tempPasswordHash ? { password: record.tempPasswordHash } : {}),
+              updatedAt: new Date(),
+            },
+          }
+        );
       }
 
       await db.collection("cms_otp_verifications").deleteOne({ email });
@@ -325,13 +339,15 @@ export async function POST(req: NextRequest) {
       await db.collection("cms_sessions").insertOne({
         token: hashToken(token),
         user_id: userId,
+        email,
         expires: new Date(Date.now() + SEVEN_DAYS_MS),
       });
 
       const response = json({ ok: true, user: { id: userId, email, role: userRole } });
+      const isSecure = req.nextUrl.protocol === "https:";
       response.cookies.set("cms_session", token, {
         httpOnly: true,
-        secure: true,
+        secure: isSecure,
         sameSite: "lax",
         path: "/",
         maxAge: SEVEN_DAYS_SECONDS,
@@ -405,7 +421,9 @@ export async function POST(req: NextRequest) {
       const googleUserRole = "admin";
 
       const existingGoogleUser = await db.collection("cms_users").findOne({ email });
-      let googleUserId = existingGoogleUser ? String(existingGoogleUser.id) : randomUUID();
+      const googleUserId =
+        existingGoogleUser?.id ||
+        (existingGoogleUser?._id ? String(existingGoogleUser._id) : randomUUID());
 
       if (!existingGoogleUser) {
         await db.collection("cms_users").insertOne({
@@ -420,6 +438,7 @@ export async function POST(req: NextRequest) {
           { email },
           {
             $set: {
+              id: googleUserId,
               role: "admin",
               ...(payload.sub ? { googleSub: payload.sub } : {}),
               updatedAt: new Date(),
@@ -432,13 +451,15 @@ export async function POST(req: NextRequest) {
       await db.collection("cms_sessions").insertOne({
         token: hashToken(token),
         user_id: googleUserId,
+        email,
         expires: new Date(Date.now() + SEVEN_DAYS_MS),
       });
 
       const response = json({ ok: true, user: { id: googleUserId, email, role: "admin" } });
+      const isSecure = req.nextUrl.protocol === "https:";
       response.cookies.set("cms_session", token, {
         httpOnly: true,
-        secure: true,
+        secure: isSecure,
         sameSite: "lax",
         path: "/",
         maxAge: SEVEN_DAYS_SECONDS,
@@ -519,20 +540,29 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      const userId =
+        user.id || (user._id ? String(user._id) : randomUUID());
+      if (!user.id) {
+        await db.collection("cms_users").updateOne({ email }, { $set: { id: userId } });
+        user.id = userId;
+      }
+
       await db.collection("cms_sessions").deleteMany({ expires: { $lt: now } });
       await db.collection("cms_login_attempts").deleteOne({ key });
 
       const token = randomBytes(32).toString("hex");
       await db.collection("cms_sessions").insertOne({
         token: hashToken(token),
-        user_id: user.id,
+        user_id: userId,
+        email: user.email,
         expires: new Date(Date.now() + SEVEN_DAYS_MS),
       });
 
-      const response = json({ ok: true, user: { id: user.id, email: user.email, role: user.role } });
+      const response = json({ ok: true, user: { id: userId, email: user.email, role: user.role } });
+      const isSecure = req.nextUrl.protocol === "https:";
       response.cookies.set("cms_session", token, {
         httpOnly: true,
-        secure: true,
+        secure: isSecure,
         sameSite: "lax",
         path: "/",
         maxAge: SEVEN_DAYS_SECONDS,
@@ -556,9 +586,10 @@ export async function POST(req: NextRequest) {
         } catch {}
       }
       const r = json({ ok: true });
+      const isSecure = req.nextUrl.protocol === "https:";
       r.cookies.set("cms_session", "", {
         httpOnly: true,
-        secure: true,
+        secure: isSecure,
         sameSite: "lax",
         path: "/",
         maxAge: 0,
@@ -744,19 +775,33 @@ function timingSecret(a: unknown, b: string) {
 }
 
 async function limitedBody(req: Request, limit: number) {
-  const reader = req.body?.getReader();
-  if (!reader) return Buffer.alloc(0);
-  const parts: Uint8Array[] = [];
-  let size = 0;
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    size += value.byteLength;
-    if (size > limit) {
-      await reader.cancel();
-      throw new Error("Request too large");
+  try {
+    if (req.body) {
+      const reader = req.body.getReader();
+      const parts: Uint8Array[] = [];
+      let size = 0;
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > limit) {
+          await reader.cancel();
+          throw new Error("Request too large");
+        }
+        parts.push(value);
+      }
+      return Buffer.concat(parts);
     }
-    parts.push(value);
+  } catch (err: any) {
+    if (err?.message === "Request too large") throw err;
   }
-  return Buffer.concat(parts);
+
+  try {
+    const text = await req.text();
+    if (text.length > limit) throw new Error("Request too large");
+    return Buffer.from(text, "utf8");
+  } catch (err: any) {
+    if (err?.message === "Request too large") throw err;
+    return Buffer.alloc(0);
+  }
 }
