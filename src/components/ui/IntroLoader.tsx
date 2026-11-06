@@ -8,28 +8,28 @@ import { motion } from '@/lib/motion';
  * thinklab identity assembly.
  *
  *  0.00s  A single node ignites.
- *  0.25s  It expands into a neural network with travelling data packets.
- *  1.05s  Service nodes are tagged, then fade.
- *  1.45s  Every particle falls inward and assembles the wordmark.
- *  2.30s  The particles resolve into the flat white "thinklab®" lockup.
- *  3.00s  Hold on the final logo.
- *  3.35s  Circular bubble expands from the center, revealing the Home page underneath!
+ *  0.35s  It expands into a neural network with travelling data packets.
+ *  1.35s  Service nodes are tagged and stay readable.
+ *  2.45s  Every particle falls inward and assembles the wordmark.
+ *  3.70s  The particles resolve into the flat white "thinklab®" lockup.
+ *  4.50s  Hold on the final logo.
+ *  5.10s  Circular bubble expands from the center, revealing the Home page underneath!
  */
 
 const TIMELINE = {
-  expandStart: 250,
-  edgesFadeStart: 1300,
-  labelStart: 1050,
-  labelStep: 70,
-  labelFadeStart: 1380,
-  dustStart: 700,
-  gatherStart: 1450,
-  gatherDuration: 900,
-  lockStart: 2300,
-  lockEnd: 2650,
-  dustFadeStart: 2350,
-  end: 3000,
-  holdBeforeReveal: 350, // brief pause on assembled logo before portal burst
+  expandStart: 350,
+  edgesFadeStart: 2000,
+  labelStart: 1350,
+  labelStep: 100,
+  labelFadeStart: 2350,
+  dustStart: 900,
+  gatherStart: 2450,
+  gatherDuration: 1350,
+  lockStart: 3700,
+  lockEnd: 4200,
+  dustFadeStart: 3800,
+  end: 4500,
+  holdBeforeReveal: 600, // graceful pause on assembled logo before portal burst
 } as const;
 
 const SERVICE_LABELS = ['Websites', 'SEO', 'Marketing', 'Branding', 'CRM', 'AI'];
@@ -158,12 +158,12 @@ export default function IntroLoader() {
       let y = p.ry + Math.cos(t * 0.001 + p.phase) * 3;
 
       if (p.hub) {
-        const e = easeOutCubic(clamp((t - TIMELINE.expandStart - p.hubIndex * 6) / 900));
+        const e = easeOutCubic(clamp((t - TIMELINE.expandStart - p.hubIndex * 8) / 1200));
         x = lerp(cx, x, e);
         y = lerp(cy, y, e);
       }
 
-      const g = easeInOutCubic(clamp((t - TIMELINE.gatherStart - p.delay * 250) / TIMELINE.gatherDuration));
+      const g = easeInOutCubic(clamp((t - TIMELINE.gatherStart - p.delay * 350) / TIMELINE.gatherDuration));
       if (g > 0) {
         const wobble = Math.sin(g * Math.PI) * p.swirl;
         x = lerp(x, p.tx, g) + Math.cos(p.phase) * wobble;
@@ -345,14 +345,14 @@ export default function IntroLoader() {
     const render = (t: number) => {
       ctx.clearRect(0, 0, W, H);
 
-      const edgesFade = 1 - clamp((t - TIMELINE.edgesFadeStart) / 450);
+      const edgesFade = 1 - clamp((t - TIMELINE.edgesFadeStart) / 550);
       if (edgesFade > 0.01) {
         ctx.lineWidth = 1;
         for (const e of edges) {
           const pA = particles[e.a];
           const pB = particles[e.b];
-          const appearA = clamp((t - TIMELINE.expandStart - pA.hubIndex * 6) / 400);
-          const appearB = clamp((t - TIMELINE.expandStart - pB.hubIndex * 6) / 400);
+          const appearA = clamp((t - TIMELINE.expandStart - pA.hubIndex * 8) / 500);
+          const appearB = clamp((t - TIMELINE.expandStart - pB.hubIndex * 8) / 500);
           const alpha = appearA * appearB * edgesFade * 0.28;
           if (alpha <= 0.01) continue;
 
@@ -365,7 +365,7 @@ export default function IntroLoader() {
           ctx.lineTo(bx, by);
           ctx.stroke();
 
-          const pulse = (t * 0.001 * e.speed + e.offset) % 1;
+          const pulse = (t * 0.00075 * e.speed + e.offset) % 1;
           const px = lerp(ax, bx, pulse);
           const py = lerp(ay, by, pulse);
           ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 2.2})`;
@@ -375,14 +375,14 @@ export default function IntroLoader() {
         }
       }
 
-      const dustFade = 1 - clamp((t - TIMELINE.dustFadeStart) / 300);
+      const dustFade = 1 - clamp((t - TIMELINE.dustFadeStart) / 450);
       const lockP = clamp((t - TIMELINE.lockStart) / (TIMELINE.lockEnd - TIMELINE.lockStart));
-      const whiten = clamp((t - TIMELINE.gatherStart) / (TIMELINE.gatherDuration + 200));
+      const whiten = clamp((t - TIMELINE.gatherStart) / (TIMELINE.gatherDuration + 250));
 
       for (const p of particles) {
         const [x, y] = positionOf(p, t);
         if (p.hub) {
-          const appear = p.hubIndex === 0 ? clamp(t / 300) : clamp((t - TIMELINE.expandStart - p.hubIndex * 6) / 250);
+          const appear = p.hubIndex === 0 ? clamp(t / 400) : clamp((t - TIMELINE.expandStart - p.hubIndex * 8) / 350);
           const a = appear * dustFade;
           if (a <= 0.01) continue;
           ctx.fillStyle = `rgba(135, 65, 244, ${0.16 * a * (1 - whiten)})`;
@@ -394,7 +394,7 @@ export default function IntroLoader() {
           ctx.arc(x, y, lerp(2.6, 1.5, lockP), 0, Math.PI * 2);
           ctx.fill();
         } else {
-          const appear = clamp((t - TIMELINE.dustStart - p.appear) / 500);
+          const appear = clamp((t - TIMELINE.dustStart - p.appear) / 700);
           const a = appear * dustFade * 0.9;
           if (a <= 0.01) continue;
           const rgb = mixRGB(p.rgb, [255, 255, 255], whiten);
@@ -408,8 +408,8 @@ export default function IntroLoader() {
       for (const p of particles) {
         if (!p.label) continue;
         const labelA =
-          clamp((t - TIMELINE.labelStart - p.labelIndex * TIMELINE.labelStep) / 250) *
-          (1 - clamp((t - TIMELINE.labelFadeStart) / 150));
+          clamp((t - TIMELINE.labelStart - p.labelIndex * TIMELINE.labelStep) / 350) *
+          (1 - clamp((t - TIMELINE.labelFadeStart) / 250));
         if (labelA <= 0.01) continue;
 
         const [x, y] = positionOf(p, t);
@@ -482,7 +482,7 @@ export default function IntroLoader() {
 
       gsap.to(portalState, {
         radius: maxPortalRadius,
-        duration: 1.45,
+        duration: 1.65,
         ease: 'power2.inOut',
         onUpdate: () => {
           const r = portalState.radius;
