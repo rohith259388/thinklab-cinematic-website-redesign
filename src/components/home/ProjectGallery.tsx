@@ -26,38 +26,10 @@ export interface ProjectGalleryProps {
   mode?: 'stacked' | 'grid';
 }
 
-const THEME_ACCENTS = [
-  {
-    bg: 'radial-gradient(ellipse at 85% 15%, rgba(139, 92, 246, 0.18), transparent 70%)',
-    glow: 'rgba(139, 92, 246, 0.4)',
-    border: 'rgba(139, 92, 246, 0.25)',
-    pill: '#a78bfa',
-    badgeBg: 'rgba(139, 92, 246, 0.12)',
-  },
-  {
-    bg: 'radial-gradient(ellipse at 85% 15%, rgba(245, 158, 11, 0.18), transparent 70%)',
-    glow: 'rgba(245, 158, 11, 0.4)',
-    border: 'rgba(245, 158, 11, 0.25)',
-    pill: '#fbbf24',
-    badgeBg: 'rgba(245, 158, 11, 0.12)',
-  },
-  {
-    bg: 'radial-gradient(ellipse at 85% 15%, rgba(16, 185, 129, 0.18), transparent 70%)',
-    glow: 'rgba(16, 185, 129, 0.4)',
-    border: 'rgba(16, 185, 129, 0.25)',
-    pill: '#34d399',
-    badgeBg: 'rgba(16, 185, 129, 0.12)',
-  },
-  {
-    bg: 'radial-gradient(ellipse at 85% 15%, rgba(244, 63, 94, 0.18), transparent 70%)',
-    glow: 'rgba(244, 63, 94, 0.4)',
-    border: 'rgba(244, 63, 94, 0.25)',
-    pill: '#fb7185',
-    badgeBg: 'rgba(244, 63, 94, 0.12)',
-  },
-];
-
-/** 3D Tilting Brand Visual Showcase */
+/**
+ * 3D Tilting Brand Visual Showcase
+ * Pristine white card matching the user's reference design with consistent editorial styling.
+ */
 function StackedProjectCard({
   project,
   index,
@@ -70,7 +42,6 @@ function StackedProjectCard({
   cardRef: (el: HTMLElement | null) => void;
 }) {
   const planeRef = useRef<HTMLDivElement>(null);
-  const theme = THEME_ACCENTS[index % THEME_ACCENTS.length];
 
   const handlePointerMove = (e: PointerEvent<HTMLAnchorElement>) => {
     if (e.pointerType !== 'mouse' || matchMedia('(prefers-reduced-motion: reduce)').matches || !planeRef.current) return;
@@ -103,79 +74,73 @@ function StackedProjectCard({
 
   const tagsList = project.tags
     .split(/[·•]/)
-    .map(t => t.trim())
-    .filter(t => t.length > 0 && !t.includes('archive'));
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0 && !t.includes('archive'));
 
   return (
     <article
       ref={cardRef}
-      className="project-stacked-card sticky w-full max-w-5xl mx-auto rounded-[24px] sm:rounded-[30px] md:rounded-[36px] overflow-hidden border border-white/10 bg-[#0c0c14]/95 backdrop-blur-2xl shadow-[0_30px_70px_-15px_rgba(0,0,0,0.85)] group transition-all duration-500 hover:border-white/25"
+      className="project-stacked-card sticky w-full max-w-7xl mx-auto rounded-[24px] sm:rounded-[32px] md:rounded-[40px] overflow-hidden border border-[#20211f]/10 bg-white shadow-[0_20px_50px_-15px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] group transition-all duration-500 hover:border-[#20211f]/20 hover:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.10)]"
       style={{
         top: `clamp(75px, 9vh, 96px)`,
         zIndex: index + 1,
         transformOrigin: 'top center',
-        willChange: 'transform, filter',
+        willChange: 'transform',
       }}
     >
-      {/* Dynamic atmospheric ambient glow */}
+      {/* Subtle warm ambient illumination */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-80"
-        style={{ background: theme.bg }}
-        aria-hidden="true"
-      />
-
-      {/* Photorealistic dark depth occlusion overlay animated by ScrollTrigger */}
-      <div
-        className="card-stack-overlay pointer-events-none absolute inset-0 bg-[#07070b] opacity-0 z-30 transition-opacity"
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          background: 'radial-gradient(ellipse at 85% 15%, rgba(244, 63, 94, 0.05), transparent 70%)',
+        }}
         aria-hidden="true"
       />
 
       {/* Inner Card Container */}
-      <div className="relative z-10 p-6 sm:p-8 md:p-10 lg:p-12 flex flex-col justify-between min-h-[460px] md:min-h-[480px]">
+      <div className="relative z-10 p-7 sm:p-9 md:p-12 lg:p-14 flex flex-col justify-between min-h-[460px] md:min-h-[480px]">
         {/* Top Header */}
-        <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 md:pb-5">
+        <div className="flex items-center justify-between border-b border-[#20211f]/10 pb-4 md:pb-5">
           <div className="flex items-center gap-3">
             <span
-              className="font-mono text-xs sm:text-sm font-semibold tracking-widest px-3 py-1 rounded-full border"
-              style={{
-                color: theme.pill,
-                backgroundColor: theme.badgeBg,
-                borderColor: theme.border,
-              }}
+              className="font-mono text-xs sm:text-sm font-semibold tracking-widest px-3.5 py-1 rounded-full border border-[#fecdd3] bg-[#fff1f2] text-[#e11d48]"
             >
               {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
             </span>
-            <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-white/50">
+            <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-[#73766d]">
               {project.category || 'Selected Work'}
             </span>
           </div>
-          <span className="hidden sm:inline-block text-[10px] font-mono tracking-[0.25em] text-white/40 uppercase">
+          <span className="hidden sm:inline-block text-[10px] font-mono tracking-[0.25em] text-[#8e9086] uppercase">
             THINKLAB® COLLABORATION
           </span>
         </div>
 
         {/* Content & Visual Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 items-center my-auto py-5">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center my-auto py-6">
           {/* Left Column: Title, Description, Tags */}
           <div className="md:col-span-7 flex flex-col justify-center">
-            <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light tracking-tight text-white group-hover:text-white/90 transition-colors leading-[1.15]">
-              <Link href={project.href} className="focus:outline-none hover:underline decoration-white/30 underline-offset-8">
+            <h3 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight text-[#20211f] group-hover:text-[#e11d48] transition-colors leading-[1.15]">
+              <Link
+                href={project.href}
+                className="focus:outline-none hover:underline decoration-[#20211f]/30 underline-offset-8"
+              >
                 {project.title}
               </Link>
             </h3>
 
             {project.summary && (
-              <p className="mt-4 text-sm sm:text-base text-white/70 font-light leading-relaxed line-clamp-3 md:line-clamp-4 max-w-xl">
+              <p className="mt-4 text-sm sm:text-base md:text-lg text-[#5a5c54] font-light leading-relaxed line-clamp-3 md:line-clamp-4 max-w-2xl">
                 {project.summary}
               </p>
             )}
 
             {tagsList.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-5">
+              <div className="flex flex-wrap gap-2 mt-6">
                 {tagsList.map((tag, t) => (
                   <span
                     key={t}
-                    className="text-[10px] sm:text-[11px] font-mono tracking-wider uppercase px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-white/60"
+                    className="text-[10px] sm:text-[11px] font-mono tracking-wider uppercase px-3.5 py-1.5 rounded-full bg-[#f4f5ee] border border-[#20211f]/10 text-[#4a4c43]"
                   >
                     {tag}
                   </span>
@@ -188,15 +153,17 @@ function StackedProjectCard({
           <div className="md:col-span-5 flex items-center justify-center">
             <Link
               href={project.href}
-              className="relative w-full aspect-[16/11] rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-4 sm:p-6 flex items-center justify-center group/visual shadow-inner"
+              className="relative w-full aspect-[16/11] rounded-2xl overflow-hidden border border-[#20211f]/10 bg-gradient-to-br from-[#f8f9f4] via-[#f1f3ec] to-[#e8eae0] p-5 sm:p-7 flex items-center justify-center group/visual shadow-inner"
               onPointerMove={handlePointerMove}
               onPointerLeave={handlePointerLeave}
               aria-label={`View ${project.title} project showcase`}
             >
-              {/* Radial glow underneath image */}
+              {/* Subtle radial aura underneath image */}
               <div
-                className="absolute inset-0 opacity-40 group-hover/visual:opacity-70 transition-opacity pointer-events-none"
-                style={{ background: `radial-gradient(circle at center, ${theme.glow}, transparent 70%)` }}
+                className="absolute inset-0 opacity-40 group-hover/visual:opacity-75 transition-opacity pointer-events-none"
+                style={{
+                  background: 'radial-gradient(circle at center, rgba(244, 63, 94, 0.15), transparent 70%)',
+                }}
               />
 
               {/* 3D Tilting Sheet */}
@@ -208,9 +175,9 @@ function StackedProjectCard({
                   src={project.image}
                   alt={project.title}
                   fill
-                  sizes="(max-width: 768px) 85vw, 35vw"
+                  sizes="(max-width: 768px) 85vw, 40vw"
                   unoptimized={project.image.startsWith('/api/cms-media/') || project.image.startsWith('http')}
-                  className="object-contain p-2 filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.7)] group-hover/visual:scale-105 transition-transform duration-700 ease-out"
+                  className="object-contain p-2 filter drop-shadow-[0_18px_32px_rgba(0,0,0,0.14)] group-hover/visual:scale-105 transition-transform duration-700 ease-out"
                 />
               </div>
             </Link>
@@ -218,20 +185,18 @@ function StackedProjectCard({
         </div>
 
         {/* Bottom Bar: Action link & indicator */}
-        <div className="flex items-center justify-between border-t border-white/[0.08] pt-4 md:pt-5">
+        <div className="flex items-center justify-between border-t border-[#20211f]/10 pt-4 md:pt-5">
           <Link
             href={project.href}
-            className="inline-flex items-center gap-2.5 text-xs sm:text-sm font-mono uppercase tracking-wider text-white hover:text-white/80 transition-all group/btn"
+            className="inline-flex items-center gap-3 text-xs sm:text-sm font-mono uppercase tracking-wider text-[#20211f] hover:text-[#e11d48] transition-all group/btn"
           >
-            <span>Explore Case Study</span>
-            <span
-              className="w-8 h-8 rounded-full bg-white/10 group-hover/btn:bg-white group-hover/btn:text-black flex items-center justify-center transition-all duration-300 transform group-hover/btn:translate-x-1 group-hover/btn:-translate-y-0.5"
-            >
+            <span className="font-semibold">Explore Case Study</span>
+            <span className="w-8 h-8 rounded-full bg-[#20211f] text-white group-hover/btn:bg-[#e11d48] flex items-center justify-center transition-all duration-300 transform group-hover/btn:translate-x-1 group-hover/btn:-translate-y-0.5 shadow-sm">
               <ArrowUpRight size={16} />
             </span>
           </Link>
 
-          <span className="text-[11px] font-mono tracking-widest text-white/40">
+          <span className="text-[11px] font-mono tracking-widest text-[#8e9086]">
             [ 0{index + 1} ]
           </span>
         </div>
@@ -261,9 +226,8 @@ function StackedProjectDeck({ projects }: { projects: ProjectCard[] }) {
         if (i === cards.length - 1) return; // Last card stays pinned on top at scale 1.0
 
         const nextCard = cards[i + 1];
-        // Scale down smoothly: e.g. 4 cards -> card 0 targets 0.865, card 1 targets 0.91, card 2 targets 0.955
-        const targetScale = 1 - (cards.length - 1 - i) * 0.045;
-        const overlay = card.querySelector<HTMLElement>('.card-stack-overlay');
+        // Scale down smoothly: e.g. 4 cards -> card 0 targets 0.88, card 1 targets 0.92, card 2 targets 0.96
+        const targetScale = 1 - (cards.length - 1 - i) * 0.04;
 
         // Linear scroll-driven scale down as subsequent cards stack over
         gsap.to(card, {
@@ -278,22 +242,6 @@ function StackedProjectDeck({ projects }: { projects: ProjectCard[] }) {
             scrub: true,
           },
         });
-
-        // Ambient dark occlusion overlay fading in behind newer cards
-        if (overlay) {
-          const targetOpacity = 0.45 * ((cards.length - 1 - i) / (cards.length - 1));
-          gsap.to(overlay, {
-            opacity: targetOpacity,
-            ease: 'none',
-            scrollTrigger: {
-              trigger: nextCard,
-              endTrigger: lastCard,
-              start: 'top 85%',
-              end: 'top 96px',
-              scrub: true,
-            },
-          });
-        }
       });
 
       ScrollTrigger.refresh();
@@ -305,7 +253,7 @@ function StackedProjectDeck({ projects }: { projects: ProjectCard[] }) {
   return (
     <div
       ref={rootRef}
-      className="project-stacked-deck relative w-full flex flex-col gap-14 sm:gap-18 md:gap-24 my-8 md:my-14 pb-16 md:pb-24"
+      className="project-stacked-deck relative w-full flex flex-col gap-14 sm:gap-20 md:gap-28 my-8 md:my-14 pb-16 md:pb-24"
     >
       {projects.map((project, index) => (
         <StackedProjectCard
