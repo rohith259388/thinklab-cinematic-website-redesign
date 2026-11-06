@@ -606,6 +606,19 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .header-light .menu-toggle { border-color: #20211f40; background: #20211f08; }
 
 /* Project gallery: cinematic reveals, dimensional brand boards and rolling type. */
+.project-stacked-deck {
+  position: relative;
+  width: 100%;
+}
+.project-stacked-card {
+  position: -webkit-sticky;
+  position: sticky;
+  transform-origin: top center;
+  -webkit-transform-origin: top center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  isolation: isolate;
+}
 .project-heading-count { display: inline-block; font: 11px var(--font-mono); letter-spacing: 0; vertical-align: top; margin: 12px 0 0 18px; color: #73766d; }
 .project-gallery { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 62px 24px; }
 .project-card { display: block; outline-offset: 8px; }

@@ -172,7 +172,7 @@ export default async function HomePage() {
                   </Link>
                 </Reveal>
               </div>
-              <ProjectGallery projects={projectCards.slice(0, 4)} />
+              <ProjectGallery projects={projectCards.slice(0, 4)} mode="stacked" />
             </section>
 
             {/* 5. BRAND PHILOSOPHY / WHY CHOOSE US */}
