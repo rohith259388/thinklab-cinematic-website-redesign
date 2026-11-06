@@ -384,28 +384,23 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .journey-caption { position: absolute; left: 3.5vw; bottom: 14%; max-width: 370px; z-index: 10; pointer-events: auto; }
 .journey-caption .micro-label { color: #c5b0ff; }
 .journey-caption p { font-size: clamp(24px,3vw,44px); line-height: 1.13; letter-spacing: -.045em; margin-top: 15px; }
-.journey-finale { position: absolute; bottom: 14%; width: 100%; text-align: center; z-index: 10; pointer-events: auto; }
-.journey-finale .micro-label { color: #c5b0ff; letter-spacing: 0.1em; transition: letter-spacing 0.2s ease-out; }
+.journey-finale { position: absolute; bottom: 14%; width: 100%; text-align: center; z-index: 10; pointer-events: none; }
+.journey-finale .micro-label { color: #c5b0ff; font-family: var(--font-plex), monospace; letter-spacing: 0.12em; display: block; }
 .journey-finale p {
+  letter-spacing: -0.07em;
   margin-top: 14px;
   font-size: clamp(40px, 8vw, 110px);
-  letter-spacing: -0.02em;
   line-height: 1;
+  font-weight: 400;
   display: inline-flex;
   align-items: baseline;
   justify-content: center;
-  will-change: transform, letter-spacing;
 }
+.journey-finale p span,
 .journey-finale p span.journey-finale-badge {
-  font-size: 0.25em;
   vertical-align: super;
+  font-size: 0.25em;
   margin-left: 4px;
-  display: inline-block;
-}
-.journey-finale-char {
-  display: inline-block;
-  will-change: transform, opacity;
-  transform-origin: center center;
 }
 .journey-progress { position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: #ffffff15; }
 

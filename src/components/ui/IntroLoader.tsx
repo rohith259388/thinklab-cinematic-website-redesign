@@ -122,6 +122,9 @@ export default function IntroLoader() {
   useEffect(() => {
     // Lock scroll during intro animation
     document.documentElement.style.overflow = 'hidden';
+    if (typeof window !== 'undefined') {
+      window.__lenis?.stop();
+    }
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -495,6 +498,9 @@ export default function IntroLoader() {
         onComplete: () => {
           stop();
           document.documentElement.style.overflow = '';
+          if (typeof window !== 'undefined') {
+            window.__lenis?.start();
+          }
           setGone(true);
         },
       });
