@@ -50,9 +50,6 @@ When sharing or cloning this repository, follow these 3 steps to access the admi
    ```bash
    npm run seed:admin
    ```
-   This initializes the admin account with default static credentials:
-   - **Email:** `admin@thinklab.com`
-   - **Password:** `AdminThinkLab2026!` *(Note: passwords must be ≥ 14 characters)*
 
    *(Optional: pass custom credentials with `npm run seed:admin -- --email user@example.com --password YourPasswordHere123`)*
 
