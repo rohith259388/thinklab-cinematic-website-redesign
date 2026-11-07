@@ -8,7 +8,8 @@ import { motion } from '@/lib/motion';
  * ThinkLab SVG Logo Intro Loader
  *
  * Sequence:
- *  1. FIRST: Line with the bulb comes (connecting line draws down, bulb illuminates).
+ *  1. FIRST: Connecting line DRAWS down smoothly from top to the bulb,
+ *     and as it connects, the bulb illuminates.
  *  2. AFTER THAT: Text ("THINKLAB", "DIGITAL SOLUTIONS") and chart symbol fade in from left to right.
  *  3. AT LAST: Border draws starting from D in DIGITAL and last S in SOLUTIONS,
  *     wrapping symmetrically around the left and right sides to meet at top center.
@@ -34,6 +35,7 @@ export default function IntroLoader() {
   const [gone, setGone] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const stemRef = useRef<SVGPathElement>(null);
+  const stemMaskRef = useRef<SVGPathElement>(null);
   const bulbGroupRef = useRef<SVGGElement>(null);
   const textGroupRef = useRef<SVGGElement>(null);
   const borderPathRef = useRef<SVGPathElement>(null);
@@ -49,16 +51,21 @@ export default function IntroLoader() {
     }
 
     const stem = stemRef.current;
+    const stemMask = stemMaskRef.current;
     const bulbGroup = bulbGroupRef.current;
     const textGroup = textGroupRef.current;
     const borderPath = borderPathRef.current;
     const maskLeft = borderMaskLeftRef.current;
     const maskRight = borderMaskRightRef.current;
-    if (!stem || !bulbGroup || !textGroup || !borderPath || !maskLeft || !maskRight) return;
+    if (!stem || !stemMask || !bulbGroup || !textGroup || !borderPath || !maskLeft || !maskRight) return;
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // Measure exact lengths for border mask paths
+    // Measure exact lengths for stroke masks
+    const lenStem = stemMask.getTotalLength() || 140;
+    stemMask.style.strokeDasharray = `${lenStem}`;
+    stemMask.style.strokeDashoffset = `${lenStem}`;
+
     const lenLeft = maskLeft.getTotalLength() || 2500;
     const lenRight = maskRight.getTotalLength() || 2500;
     maskLeft.style.strokeDasharray = `${lenLeft}`;
@@ -67,7 +74,6 @@ export default function IntroLoader() {
     maskRight.style.strokeDashoffset = `${lenRight}`;
 
     // Initial hidden states
-    stem.style.clipPath = 'inset(0 0 100% 0)';
     stem.style.opacity = '0';
     bulbGroup.style.opacity = '0';
 
@@ -86,21 +92,27 @@ export default function IntroLoader() {
     tlRef.current = tl;
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 1: First, the line with the bulb comes
+    // STEP 1: First, the connecting line DRAWS down to the bulb
     // ─────────────────────────────────────────────────────────────
-    // Connecting stem draws downward from top
-    tl.set(stem, { opacity: 1 }, 0.05);
+    const stemStartTime = 0.1;
+    const stemDuration = 0.7;
+
+    // Reveal stem element under stroke mask
+    tl.set(stem, { opacity: 1 }, stemStartTime);
+
+    // Physically draw the connecting line downward using strokeDashoffset
     tl.to(
-      stem,
+      stemMask,
       {
-        clipPath: 'inset(0 0 0% 0)',
-        duration: 0.45,
-        ease: 'power2.out',
+        strokeDashoffset: 0,
+        duration: stemDuration,
+        ease: 'power1.inOut',
       },
-      0.05
+      stemStartTime
     );
 
-    // Bulb illuminates as the stem connects
+    // Bulb illuminates right as the drawn line reaches the bulb socket
+    const bulbStartTime = stemStartTime + stemDuration - 0.08;
     tl.to(
       bulbGroup,
       {
@@ -108,13 +120,13 @@ export default function IntroLoader() {
         duration: 0.55,
         ease: 'power2.out',
       },
-      0.18
+      bulbStartTime
     );
 
     // ─────────────────────────────────────────────────────────────
     // STEP 2: After that, the text fades in
     // ─────────────────────────────────────────────────────────────
-    const textStartTime = 0.8;
+    const textStartTime = bulbStartTime + 0.55 + 0.15;
 
     tl.to(
       textGroup,
@@ -209,8 +221,8 @@ export default function IntroLoader() {
     };
 
     if (reduceMotion) {
-      stem.style.clipPath = 'inset(0 0 0 0%)';
       stem.style.opacity = '1';
+      stemMask.style.strokeDashoffset = '0';
       bulbGroup.style.opacity = '1';
       textGroup.style.clipPath = 'inset(0 0 0 0%)';
       textGroup.style.opacity = '1';
@@ -253,6 +265,22 @@ export default function IntroLoader() {
               <stop offset="100%" stopColor="#392078" />
             </linearGradient>
 
+            {/* Mask to physically draw the connecting line down from top to the bulb */}
+            <mask id="stemDrawMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1563" height="1563">
+              <rect width="1563" height="1563" fill="#000000" />
+              <path
+                ref={stemMaskRef}
+                d="M 598.5 508 L 598.5 645"
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth="30"
+                strokeLinecap="round"
+                strokeDasharray="140"
+                strokeDashoffset="140"
+                style={{ strokeDasharray: 140, strokeDashoffset: 140 }}
+              />
+            </mask>
+
             {/* Mask to draw the actual SVG border path starting from D in digital and last S in solution */}
             <mask id="borderDrawMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1563" height="1563">
               <rect width="1563" height="1563" fill="#000000" />
@@ -286,13 +314,14 @@ export default function IntroLoader() {
           </defs>
 
           {/* 1. LINE WITH BULB: Comes FIRST */}
-          {/* Vertical connecting line */}
+          {/* Vertical connecting line: DRAWS down via stemDrawMask */}
           <path
             ref={stemRef}
             d={STEM_PATH}
             fill="#FFFFFF"
             fillRule="evenodd"
-            style={{ opacity: 0, clipPath: 'inset(0 0 100% 0)' }}
+            mask="url(#stemDrawMask)"
+            style={{ opacity: 0 }}
           />
 
           {/* Bulb (collar, highlights, base, and gradient bulb) */}
