@@ -120,7 +120,7 @@ function StackedProjectCard({
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center my-auto py-6">
           {/* Left Column: Title, Description, Tags */}
           <div className="md:col-span-7 flex flex-col justify-center">
-            <h3 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight text-[#20211f] group-hover:text-[#e11d48] transition-colors leading-[1.15]">
+            <h3 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight text-[#1a1b18] group-hover:text-[#e11d48] transition-colors leading-[1.15]">
               <Link
                 href={project.href}
                 className="focus:outline-none hover:underline decoration-[#20211f]/30 underline-offset-8"
@@ -130,7 +130,7 @@ function StackedProjectCard({
             </h3>
 
             {project.summary && (
-              <p className="mt-4 text-sm sm:text-base md:text-lg text-[#5a5c54] font-light leading-relaxed line-clamp-3 md:line-clamp-4 max-w-2xl">
+              <p className="mt-4 text-sm sm:text-base md:text-lg text-[#4a4c43] font-normal leading-relaxed line-clamp-3 md:line-clamp-4 max-w-2xl">
                 {project.summary}
               </p>
             )}
@@ -140,7 +140,7 @@ function StackedProjectCard({
                 {tagsList.map((tag, t) => (
                   <span
                     key={t}
-                    className="text-[10px] sm:text-[11px] font-mono tracking-wider uppercase px-3.5 py-1.5 rounded-full bg-[#f4f5ee] border border-[#20211f]/10 text-[#4a4c43]"
+                    className="text-[10px] sm:text-[11px] font-mono tracking-wider uppercase px-3.5 py-1.5 rounded-full bg-[#f4f5ee] border border-[#20211f]/15 text-[#20211f]"
                   >
                     {tag}
                   </span>
@@ -149,11 +149,11 @@ function StackedProjectCard({
             )}
           </div>
 
-          {/* Right Column: 3D Tilting Brand Showcase */}
+          {/* Right Column: 3D Tilting Brand Showcase with White Card Sheet around the Logo */}
           <div className="md:col-span-5 flex items-center justify-center">
             <Link
               href={project.href}
-              className="relative w-full aspect-[16/11] rounded-2xl overflow-hidden border border-[#20211f]/10 bg-gradient-to-br from-[#f8f9f4] via-[#f1f3ec] to-[#e8eae0] p-5 sm:p-7 flex items-center justify-center group/visual shadow-inner"
+              className="relative w-full aspect-[16/11] rounded-2xl overflow-hidden border border-[#20211f]/10 bg-gradient-to-br from-[#f8f9f4] via-[#f1f3ec] to-[#e8eae0] p-4 sm:p-6 flex items-center justify-center group/visual shadow-inner"
               onPointerMove={handlePointerMove}
               onPointerLeave={handlePointerLeave}
               aria-label={`View ${project.title} project showcase`}
@@ -162,23 +162,25 @@ function StackedProjectCard({
               <div
                 className="absolute inset-0 opacity-40 group-hover/visual:opacity-75 transition-opacity pointer-events-none"
                 style={{
-                  background: 'radial-gradient(circle at center, rgba(244, 63, 94, 0.15), transparent 70%)',
+                  background: 'radial-gradient(circle at center, rgba(244, 63, 94, 0.12), transparent 70%)',
                 }}
               />
 
-              {/* 3D Tilting Sheet */}
+              {/* 3D Tilting White Card Sheet around the logo (reference project card) */}
               <div
                 ref={planeRef}
-                className="relative w-full h-full flex items-center justify-center transition-transform will-change-transform"
+                className="relative w-[90%] h-[86%] bg-white rounded-xl sm:rounded-2xl border border-black/[0.06] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden flex items-center justify-center p-6 sm:p-8 transition-transform will-change-transform group-hover/visual:scale-[1.03] duration-500 ease-out"
               >
-                <Image
-                  src={project.image}
-                  alt={project.title}
-                  fill
-                  sizes="(max-width: 768px) 85vw, 40vw"
-                  unoptimized={project.image.startsWith('/api/cms-media/') || project.image.startsWith('http')}
-                  className="object-contain p-2 filter drop-shadow-[0_18px_32px_rgba(0,0,0,0.14)] group-hover/visual:scale-105 transition-transform duration-700 ease-out"
-                />
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <Image
+                    src={project.image}
+                    alt={project.title}
+                    fill
+                    sizes="(max-width: 768px) 85vw, 40vw"
+                    unoptimized={project.image.startsWith('/api/cms-media/') || project.image.startsWith('http')}
+                    className="object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.08)] transition-transform duration-700 ease-out"
+                  />
+                </div>
               </div>
             </Link>
           </div>
