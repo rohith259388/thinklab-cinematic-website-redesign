@@ -35,6 +35,7 @@ export default function IntroLoader() {
   const [gone, setGone] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const textGroupRef = useRef<SVGGElement>(null);
+  const borderPathRef = useRef<SVGPathElement>(null);
   const borderMaskPathRef = useRef<SVGPathElement>(null);
   const stemRef = useRef<SVGPathElement>(null);
   const bulbGroupRef = useRef<SVGGElement>(null);
@@ -48,10 +49,11 @@ export default function IntroLoader() {
     }
 
     const textGroup = textGroupRef.current;
+    const borderPath = borderPathRef.current;
     const borderMaskPath = borderMaskPathRef.current;
     const stem = stemRef.current;
     const bulbGroup = bulbGroupRef.current;
-    if (!textGroup || !borderMaskPath || !stem || !bulbGroup) return;
+    if (!textGroup || !borderPath || !borderMaskPath || !stem || !bulbGroup) return;
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -107,6 +109,7 @@ export default function IntroLoader() {
 
     // STEP 2: Border draws from right to left around to right
     // (Stem and bulb remain completely invisible)
+    tl.set(borderPath, { opacity: 1 }, borderStartTime);
     tl.to(
       borderMaskPath,
       {
@@ -189,6 +192,7 @@ export default function IntroLoader() {
     if (reduceMotion) {
       textGroup.style.clipPath = 'inset(0 0 0 0%)';
       textGroup.style.opacity = '1';
+      borderPath.style.opacity = '1';
       borderMaskPath.style.strokeDashoffset = '0';
       stem.style.clipPath = 'inset(0 0 0 0%)';
       stem.style.opacity = '1';
@@ -240,21 +244,26 @@ export default function IntroLoader() {
                 strokeWidth="50"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                strokeDasharray="4000"
+                strokeDashoffset="4000"
+                style={{ strokeDasharray: 4000, strokeDashoffset: 4000 }}
               />
             </mask>
           </defs>
 
           {/* 1. TEXT & CHART: Fades in from LEFT to RIGHT first (no border, no stem, no bulb) */}
-          <g ref={textGroupRef} style={{ opacity: 0 }}>
+          <g ref={textGroupRef} style={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}>
             <path d={TEXT_PATH} fill="#FFFFFF" fillRule="evenodd" />
           </g>
 
           {/* 2. ORIGINAL SVG RECTANGLE BORDER: Draws from right to left around to right ONLY after text fades in */}
           <path
+            ref={borderPathRef}
             d={BORDER_PATH}
             fill="#FFFFFF"
             fillRule="evenodd"
             mask="url(#borderDrawMask)"
+            style={{ opacity: 0 }}
           />
 
           {/* 3. VERTICAL CONNECTING LINE: Draws downward from the border to the bulb */}
@@ -263,7 +272,7 @@ export default function IntroLoader() {
             d={STEM_PATH}
             fill="#FFFFFF"
             fillRule="evenodd"
-            style={{ opacity: 0 }}
+            style={{ opacity: 0, clipPath: 'inset(0 0 100% 0)' }}
           />
 
           {/* 4. BULB: Appears at last (collar, highlights, base, and gradient bulb) */}
