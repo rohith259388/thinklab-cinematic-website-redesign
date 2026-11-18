@@ -1,24 +1,42 @@
 #!/usr/bin/env python3
 """
 ThinkLab Digital Solutions - Lead Notification Dispatcher
-Sends clean, professional, high-deliverability email alerts to admin (info@thinklabdigitalsolutions.com)
-whenever a visitor submits the website contact form.
 
-Aesthetic: White & warm beige editorial luxury palette.
-Spam Prevention: Clean semantic HTML (no spam-trigger SVG scripts or CSS hacks),
-matching From/Auth headers, RFC 2822 timestamps, Message-ID, and direct Reply-To.
+Sends an admin notification (ADMIN_NOTIFICATION_EMAIL) whenever a visitor
+submits the website contact form.
+
+Deliverability notes
+--------------------
+Inbox placement is decided mostly by DNS authentication, not by this script:
+  * SPF  : the domain's SPF record must authorise Google  -> include:_spf.google.com
+  * DKIM : Google Workspace DKIM must be enabled (google._domainkey TXT record)
+  * DMARC: the domain publishes p=quarantine, so a message that fails BOTH
+           SPF and DKIM alignment is sent straight to spam.
+What the script does on its side:
+  * From address == authenticated SMTP account (aligned with SPF/DKIM)
+  * RFC 5322 Date + Message-ID, proper multipart/alternative with plain text
+  * All visitor input is HTML-escaped and header-sanitised
+  * No hidden content, scripts, tracking pixels or external images
+
+Usage
+-----
+  echo '{"name": ...}' | python send_lead_email.py   # send (used by /api/leads)
+  python send_lead_email.py --test                    # send a sample lead
+  python send_lead_email.py --preview                 # render sample, don't send
 """
 
 import sys
 import os
 import json
-import uuid
+import html
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import formatdate, make_msgid
+from email.utils import formatdate, make_msgid, formataddr, parseaddr
+from urllib.parse import quote
 from pathlib import Path
 from datetime import datetime
+
 
 # ---------------------------------------------------------------------------
 # Load .env / .env.local
@@ -33,11 +51,10 @@ def load_env_file(filepath: Path):
                 if not line or line.startswith('#') or '=' not in line:
                     continue
                 k, v = line.split('=', 1)
-                k = k.strip()
-                v = v.strip().strip("'").strip('"')
-                os.environ[k] = v
+                os.environ[k.strip()] = v.strip().strip("'").strip('"')
     except Exception as e:
         print(f"[send_lead_email] Warning loading {filepath}: {e}", file=sys.stderr)
+
 
 current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent
@@ -53,201 +70,210 @@ SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
 SMTP_USER = os.environ.get('SMTP_USER', os.environ.get('EMAIL_USER', '')).strip()
 raw_pass = os.environ.get('SMTP_PASS', os.environ.get('SMTP_PASSWORD', os.environ.get('EMAIL_PASS', ''))).strip()
 
-# Clean Google App Password: strip spaces if 16-character format
-if len(raw_pass.replace(' ', '')) == 16:
-    SMTP_PASS = raw_pass.replace(' ', '')
-else:
-    SMTP_PASS = raw_pass
+# Google App Passwords are shown as "abcd efgh ijkl mnop" - strip the spaces
+SMTP_PASS = raw_pass.replace(' ', '') if len(raw_pass.replace(' ', '')) == 16 else raw_pass
 
-# For high deliverability, sender address MUST match SMTP_USER to pass Gmail/SPF/DMARC checks
-# Display name can still be branded as "ThinkLab Digital Solutions"
-if SMTP_USER:
-    DEFAULT_FROM = f"ThinkLab Notifications <{SMTP_USER}>"
-else:
-    DEFAULT_FROM = f"ThinkLab Notifications <{ADMIN_EMAIL}>"
-
-SMTP_FROM = os.environ.get('SMTP_FROM', DEFAULT_FROM)
 SMTP_SECURE = os.environ.get('SMTP_SECURE', 'false').lower() in ('true', '1', 'yes') or SMTP_PORT == 465
+SITE_URL = os.environ.get('SITE_URL', 'https://www.thinklabdigitalsolutions.com').rstrip('/')
+
+
+def sender_header() -> str:
+    """Display name from SMTP_FROM, but the address is ALWAYS the authenticated
+    account so SPF/DKIM/DMARC stay aligned."""
+    display, addr = parseaddr(os.environ.get('SMTP_FROM', ''))
+    if not display or (addr and addr.lower() != SMTP_USER.lower()):
+        display = display or 'ThinkLab Website'
+    return formataddr((display, SMTP_USER or ADMIN_EMAIL))
+
 
 # ---------------------------------------------------------------------------
-# Clean White & Beige Professional Editorial Template
+# Helpers
 # ---------------------------------------------------------------------------
+def clean(value, fallback: str = '') -> str:
+    """Normalise a payload field to a stripped string."""
+    if value is None:
+        return fallback
+    value = str(value).strip()
+    return value or fallback
+
+
+def header_safe(value: str, limit: int = 120) -> str:
+    """Strip CR/LF so visitor input can never inject extra email headers."""
+    return ' '.join(value.split())[:limit]
+
+
+def lead_fields(data: dict) -> dict:
+    return {
+        'name': clean(data.get('name'), 'Website visitor'),
+        'email': clean(data.get('email')),
+        'company': clean(data.get('company'), 'Not provided'),
+        'service': clean(data.get('service'), 'General enquiry'),
+        'message': clean(data.get('message'), 'No message provided.'),
+        'source': clean(data.get('source'), 'contact').replace('-', ' ').title(),
+        'created_at': clean(data.get('createdAt'), datetime.now().strftime('%d %b %Y, %I:%M %p')),
+    }
+
+
+# ---------------------------------------------------------------------------
+# HTML template  (white & warm-beige editorial palette)
+#   canvas #f7f6f2 · card #ffffff · inset #faf9f6 · hairline #ece9e2
+#   ink #18181b · body #2b2a27 · muted #8c887b · chip #eeece5
+# ---------------------------------------------------------------------------
+FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+
+
+def detail_row(label: str, value_html: str, last: bool = False) -> str:
+    border = '' if last else 'border-bottom: 1px solid #ece9e2;'
+    return f"""
+                <tr>
+                  <td class="stack label-cell" width="34%" valign="top" style="padding: 14px 0; {border} font-family: {MONO}; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #8c887b;">{label}</td>
+                  <td class="stack" valign="top" style="padding: 14px 0; {border} font-family: {FONT}; font-size: 15px; line-height: 1.5; color: #18181b;">{value_html}</td>
+                </tr>"""
+
+
 def generate_html_template(data: dict) -> str:
-    name = data.get('name', 'Anonymous Visitor')
-    email = data.get('email', 'N/A')
-    company = data.get('company') or 'Individual / Direct'
-    service = data.get('service') or 'General Enquiry'
-    message = data.get('message', 'No details provided.')
-    source = data.get('source', 'Website Contact Form')
-    created_at = data.get('createdAt') or datetime.now().strftime('%d %B %Y, %I:%M %p IST')
+    f = lead_fields(data)
+    e = {k: html.escape(v) for k, v in f.items()}  # escaped copies for HTML
+    first_name = html.escape(f['name'].split()[0])
+    message_html = e['message'].replace('\n', '<br>')
 
-    formatted_message = message.replace('\n', '<br>')
+    preheader = html.escape(f"{f['service']} · {' '.join(f['message'].split())[:110]}")
 
-    return f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+    reply_subject = quote(f"Re: Your enquiry with ThinkLab Digital Solutions")
+    reply_href = f"mailto:{quote(f['email'], safe='@.+-_')}?subject={reply_subject}" if f['email'] else ''
+    email_html = (f'<a href="{reply_href}" style="color: #18181b; text-decoration: underline; '
+                  f'text-decoration-color: #cfcabd;">{e["email"]}</a>') if f['email'] else 'Not provided'
+
+    rows = ''.join([
+        detail_row('Name', f'<strong style="font-weight: 600;">{e["name"]}</strong>'),
+        detail_row('Email', email_html),
+        detail_row('Company', e['company']),
+        detail_row('Service',
+                   f'<span style="display: inline-block; padding: 3px 11px; background-color: #eeece5; '
+                   f'border: 1px solid #ded9cd; border-radius: 999px; font-size: 13px; font-weight: 600; '
+                   f'color: #433f38;">{e["service"]}</span>'),
+        detail_row('Received', e['created_at']),
+        detail_row('Source', f"{e['source']} form", last=True),
+    ])
+
+    reply_button = f"""
+              <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin: 0 0 4px 0;">
+                <tr>
+                  <td align="center" bgcolor="#18181b" style="border-radius: 10px;">
+                    <a href="{reply_href}" style="display: inline-block; padding: 14px 26px; font-family: {FONT}; font-size: 14px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 10px;">Reply to {first_name}&nbsp;&rarr;</a>
+                  </td>
+                </tr>
+              </table>""" if reply_href else ''
+
+    return f"""<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>New Project Enquiry | ThinkLab</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>New enquiry from {e['name']}</title>
   <style type="text/css">
-    body {{
-      margin: 0;
-      padding: 0;
-      background-color: #f7f6f2;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      color: #1a1a1a;
-      -webkit-font-smoothing: antialiased;
-    }}
-    table {{
-      border-collapse: separate;
-    }}
-    @media only screen and (max-width: 600px) {{
-      .mobile-pad {{ padding: 24px 18px !important; }}
-      .mobile-col {{ display: block !important; width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; margin-bottom: 16px !important; }}
-      .mobile-title {{ font-size: 22px !important; }}
+    body {{ margin: 0; padding: 0; -webkit-text-size-adjust: 100%; }}
+    a {{ color: #18181b; }}
+    @media only screen and (max-width: 620px) {{
+      .px {{ padding-left: 22px !important; padding-right: 22px !important; }}
+      .title {{ font-size: 24px !important; }}
+      .stack {{ display: block !important; width: 100% !important; }}
+      .label-cell {{ padding-bottom: 2px !important; border-bottom: 0 !important; }}
     }}
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f7f6f2; color: #1a1a1a;">
+<body style="margin: 0; padding: 0; background-color: #f7f6f2;">
+  <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">{preheader}</div>
 
-  <!-- Outer Canvas (Soft Beige Linen) -->
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f7f6f2; padding: 40px 16px;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#f7f6f2" style="background-color: #f7f6f2;">
     <tr>
-      <td align="center">
+      <td align="center" style="padding: 36px 14px;">
 
-        <!-- Main Card (Crisp White Card with subtle warm border) -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 620px; background-color: #ffffff; border: 1px solid #e5e3dc; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);">
-          
-          <!-- Top Accent Ribbon (Warm Bronze / Gold Accent Line) -->
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px;">
+
+          <!-- Brand bar -->
           <tr>
-            <td height="4" style="background-color: #18181b;"></td>
+            <td style="padding: 0 6px 16px 6px;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="font-family: {FONT}; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: #18181b;">
+                    ThinkLab<span style="font-weight: 400; color: #8c887b;"> Digital Solutions</span>
+                  </td>
+                  <td align="right" style="font-family: {MONO}; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #8c887b;">
+                    Lead alert
+                  </td>
+                </tr>
+              </table>
+            </td>
           </tr>
 
-          <!-- Header Section -->
+          <!-- Card -->
           <tr>
-            <td style="padding: 36px 40px 24px 40px; border-bottom: 1px solid #f0eee8;" class="mobile-pad">
-              <table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <td style="background-color: #ffffff; border: 1px solid #e5e3dc; border-radius: 16px;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+
+                <!-- Hero -->
                 <tr>
-                  <td>
-                    <!-- Brand Wordmark -->
-                    <div style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: #8e8a7e; margin-bottom: 8px;">
-                      THINKLAB DIGITAL SOLUTIONS • INCOMING TRANSMISSION
-                    </div>
-                    <h1 class="mobile-title" style="margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; color: #18181b; line-height: 1.25;">
-                      New Project Enquiry
-                    </h1>
-                  </td>
-                  <td align="right" valign="top" style="display: none;" class="mobile-hide">
-                    <!-- Status Pill -->
-                    <span style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; padding: 4px 10px; background-color: #f4f2ec; border: 1px solid #e4e0d7; border-radius: 20px; color: #5c584e;">
-                      VERIFIED
+                  <td class="px" style="padding: 36px 40px 28px 40px;">
+                    <span style="display: inline-block; padding: 4px 12px; background-color: #f4f2ec; border: 1px solid #e4e0d7; border-radius: 999px; font-family: {MONO}; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #5c584e;">
+                      &#9679;&nbsp; New enquiry
                     </span>
+                    <h1 class="title" style="margin: 18px 0 10px 0; font-family: {FONT}; font-size: 28px; font-weight: 600; line-height: 1.25; letter-spacing: -0.02em; color: #18181b;">
+                      {e['name']} wants to talk about {e['service']}
+                    </h1>
+                    <p style="margin: 0 0 26px 0; font-family: {FONT}; font-size: 15px; line-height: 1.6; color: #6b675d;">
+                      {e['company']} &middot; {e['created_at']}
+                    </p>
+                    {reply_button}
                   </td>
                 </tr>
-              </table>
-            </td>
-          </tr>
 
-          <!-- Lead Details Matrix -->
-          <tr>
-            <td style="padding: 28px 40px 36px 40px;" class="mobile-pad">
-              
-              <!-- Key Value Info Box (Warm Beige Inset) -->
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #faf9f6; border: 1px solid #ece9e2; border-radius: 12px; margin-bottom: 24px;">
+                <!-- Message -->
                 <tr>
-                  <td style="padding: 18px 22px; border-bottom: 1px solid #ece9e2;" class="mobile-col">
-                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                  <td class="px" style="padding: 0 40px 8px 40px;">
+                    <p style="margin: 0 0 10px 0; font-family: {MONO}; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #8c887b;">Their message</p>
+                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td width="50%" valign="top" style="padding-right: 12px;" class="mobile-col">
-                          <div style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #8c887b; margin-bottom: 4px;">
-                            Client Name
-                          </div>
-                          <div style="font-size: 16px; font-weight: 600; color: #18181b;">
-                            {name}
-                          </div>
-                        </td>
-                        <td width="50%" valign="top" style="padding-left: 12px;" class="mobile-col">
-                          <div style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #8c887b; margin-bottom: 4px;">
-                            Email Address
-                          </div>
-                          <div style="font-size: 15px;">
-                            <a href="mailto:{email}" style="color: #18181b; font-weight: 500; text-decoration: underline; text-decoration-color: #d1cdbf;">
-                              {email}
-                            </a>
-                          </div>
+                        <td style="padding: 20px 22px; background-color: #faf9f6; border: 1px solid #ece9e2; border-left: 3px solid #18181b; border-radius: 10px; font-family: {FONT}; font-size: 15px; line-height: 1.7; color: #2b2a27; word-break: break-word;">
+                          {message_html}
                         </td>
                       </tr>
                     </table>
                   </td>
                 </tr>
+
+                <!-- Details -->
                 <tr>
-                  <td style="padding: 18px 22px;" class="mobile-col">
-                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                      <tr>
-                        <td width="50%" valign="top" style="padding-right: 12px;" class="mobile-col">
-                          <div style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #8c887b; margin-bottom: 4px;">
-                            Company / Brand
-                          </div>
-                          <div style="font-size: 15px; font-weight: 500; color: #2e2d2a;">
-                            {company}
-                          </div>
-                        </td>
-                        <td width="50%" valign="top" style="padding-left: 12px;" class="mobile-col">
-                          <div style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #8c887b; margin-bottom: 4px;">
-                            Selected Service
-                          </div>
-                          <div style="display: inline-block; font-size: 12.5px; font-weight: 600; color: #433f38; background-color: #eeece5; border: 1px solid #ded9cd; border-radius: 14px; padding: 3px 10px;">
-                            {service}
-                          </div>
-                        </td>
-                      </tr>
+                  <td class="px" style="padding: 28px 40px 12px 40px;">
+                    <p style="margin: 0 0 2px 0; font-family: {MONO}; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #8c887b;">Lead details</p>
+                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">{rows}
                     </table>
                   </td>
                 </tr>
-              </table>
 
-              <!-- Project Message Box -->
-              <div style="margin-bottom: 28px;">
-                <div style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase; color: #8c887b; margin-bottom: 8px;">
-                  The Project Vision / Message
-                </div>
-                <div style="background-color: #ffffff; border: 1px solid #e5e2da; border-left: 3px solid #18181b; border-radius: 8px; padding: 18px 20px; font-size: 15px; line-height: 1.65; color: #2b2a27; word-break: break-word;">
-                  {formatted_message}
-                </div>
-              </div>
-
-              <!-- Action Buttons -->
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 10px;">
+                <!-- Footnote -->
                 <tr>
-                  <td>
-                    <!-- Primary Dark Button -->
-                    <a href="mailto:{email}?subject=Re:%20Your%20Enquiry%20with%20ThinkLab%20Digital%20Solutions" style="display: inline-block; background-color: #18181b; color: #ffffff; text-decoration: none; font-size: 13.5px; font-weight: 500; letter-spacing: 0.02em; padding: 12px 24px; border-radius: 8px; margin-right: 10px; margin-bottom: 8px;">
-                      Reply to {name} &rarr;
-                    </a>
-                    <!-- Secondary Outline Button -->
-                    <a href="https://www.thinklabdigitalsolutions.com/admin" style="display: inline-block; background-color: #faf9f6; color: #403e38; text-decoration: none; font-size: 13.5px; font-weight: 500; padding: 11px 20px; border: 1px solid #dcd8ce; border-radius: 8px; margin-bottom: 8px;">
-                      Open Admin Portal
-                    </a>
+                  <td class="px" style="padding: 16px 40px 32px 40px;">
+                    <p style="margin: 0; font-family: {FONT}; font-size: 13px; line-height: 1.6; color: #8c887b;">
+                      Replying to this email goes straight to {first_name}. The lead is also saved in the
+                      <a href="{SITE_URL}/admin" style="color: #433f38; text-decoration: underline; text-decoration-color: #cfcabd;">admin portal</a>.
+                    </p>
                   </td>
                 </tr>
-              </table>
 
+              </table>
             </td>
           </tr>
 
-          <!-- Footer Information -->
+          <!-- Footer -->
           <tr>
-            <td style="background-color: #fcfbf9; padding: 22px 40px; border-top: 1px solid #f0eee8; text-align: left;" class="mobile-pad">
-              <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10.5px; color: #9c978b;">
-                    Source: <strong style="color: #5c584e;">{source}</strong> &bull; {created_at}
-                  </td>
-                  <td align="right" style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10.5px; color: #9c978b;">
-                    ThinkLab &bull; Vijayawada & Sydney
-                  </td>
-                </tr>
-              </table>
+            <td align="center" style="padding: 22px 6px 0 6px; font-family: {FONT}; font-size: 12px; line-height: 1.6; color: #9c978b;">
+              Sent automatically by the contact form on thinklabdigitalsolutions.com<br>
+              ThinkLab Digital Solutions &middot; Vijayawada &amp; Sydney
             </td>
           </tr>
 
@@ -256,82 +282,95 @@ def generate_html_template(data: dict) -> str:
       </td>
     </tr>
   </table>
-
 </body>
 </html>
 """
 
-# ---------------------------------------------------------------------------
-# Dispatch Logic with Deliverability Headers
-# ---------------------------------------------------------------------------
-def send_email(data: dict) -> dict:
-    recipient = ADMIN_EMAIL
-    client_name = data.get('name', 'Client')
-    service = data.get('service') or 'ThinkLab Collaboration'
-    subject = f"New Project Enquiry from {client_name} ({service})"
-    html_content = generate_html_template(data)
 
-    # Save preview copy
+def generate_plain_text(data: dict) -> str:
+    f = lead_fields(data)
+    return (
+        f"New enquiry from {f['name']} - {f['service']}\n"
+        f"{'=' * 48}\n\n"
+        f"Name:     {f['name']}\n"
+        f"Email:    {f['email'] or 'Not provided'}\n"
+        f"Company:  {f['company']}\n"
+        f"Service:  {f['service']}\n"
+        f"Received: {f['created_at']}\n"
+        f"Source:   {f['source']} form\n\n"
+        f"Their message\n"
+        f"{'-' * 48}\n"
+        f"{f['message']}\n"
+        f"{'-' * 48}\n\n"
+        f"Reply to this email to respond directly to {f['name']}.\n"
+        f"Admin portal: {SITE_URL}/admin\n\n"
+        f"ThinkLab Digital Solutions - Vijayawada & Sydney\n"
+    )
+
+
+def save_preview(html_content: str):
     preview_dir = project_root / '.system_generated' / 'emails'
     try:
         preview_dir.mkdir(parents=True, exist_ok=True)
         preview_file = preview_dir / 'latest_lead_preview.html'
-        with open(preview_file, 'w', encoding='utf-8') as f:
-            f.write(html_content)
+        preview_file.write_text(html_content, encoding='utf-8')
+        return preview_file
     except Exception:
-        preview_file = None
+        return None
 
-    # Check for placeholder
-    if not SMTP_USER or not SMTP_PASS or 'yourgmail@gmail.com' in SMTP_USER:
-        msg = (
-            f"[send_lead_email] Notice: SMTP_USER is set to '{SMTP_USER}'.\n"
-            f"Please update SMTP_USER in .env.local to the actual Gmail address.\n"
-            f"Preview saved: {preview_file}\n"
-        )
-        print(msg, file=sys.stderr)
-        return {
-            "ok": False,
-            "status": "user_placeholder",
-            "message": "SMTP_USER in .env.local must be your actual Gmail address.",
-            "preview_file": str(preview_file) if preview_file else None,
-            "recipient": recipient
-        }
 
-    # Construct MIME message
+# ---------------------------------------------------------------------------
+# Dispatch
+# ---------------------------------------------------------------------------
+def rendered_parts(data: dict):
+    """(subject, text, html). The website pre-renders the email in
+    src/lib/lead-email.ts and passes it as `rendered`; the CLI uses the
+    built-in template."""
+    r = data.get('rendered')
+    if isinstance(r, dict) and r.get('html') and r.get('subject'):
+        return header_safe(str(r['subject']), 150), str(r.get('text') or ''), str(r['html'])
+    f = lead_fields(data)
+    return (header_safe(f"New enquiry from {f['name']} - {f['service']}", 150),
+            generate_plain_text(data), generate_html_template(data))
+
+
+def build_message(data: dict) -> MIMEMultipart:
+    f = lead_fields(data)
+    subject, text_part, html_part = rendered_parts(data)
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
-    
-    # Deliverability: Ensure From header matches authenticated SMTP account
-    from_header = f"ThinkLab Studio <{SMTP_USER}>"
-    msg['From'] = from_header
-    msg['To'] = recipient
-    
-    # Do not set mismatched external Reply-To header as Gmail flags cross-domain Reply-To as phishing/spam.
-    # The client email is clickable directly inside the message body and via the action button.
+    msg['From'] = sender_header()
+    msg['To'] = ADMIN_EMAIL
 
-    # Standard email headers for inbox deliverability
+    # Replies go straight to the visitor
+    client_email = header_safe(f['email'], 220)
+    if client_email and '@' in parseaddr(client_email)[1]:
+        msg['Reply-To'] = formataddr((header_safe(f['name'], 80), parseaddr(client_email)[1]))
+
     domain = SMTP_USER.split('@')[-1] if '@' in SMTP_USER else 'thinklabdigitalsolutions.com'
     msg['Message-ID'] = make_msgid(domain=domain)
     msg['Date'] = formatdate(localtime=True)
+    msg['Auto-Submitted'] = 'auto-generated'
+    msg['X-Auto-Response-Suppress'] = 'OOF, AutoReply'
 
-    # Clean plaintext alternative
-    plain_text = (
-        f"NEW PROJECT ENQUIRY — THINKLAB DIGITAL SOLUTIONS\n\n"
-        f"Client Name: {client_name}\n"
-        f"Email: {data.get('email', 'N/A')}\n"
-        f"Company: {data.get('company', 'N/A')}\n"
-        f"Service: {service}\n"
-        f"Date: {data.get('createdAt', datetime.now().strftime('%Y-%m-%d %H:%M'))}\n"
-        f"Source: {data.get('source', 'Website Contact Form')}\n\n"
-        f"The Idea / Message:\n"
-        f"--------------------------------------------------\n"
-        f"{data.get('message', 'No details provided.')}\n"
-        f"--------------------------------------------------\n\n"
-        f"Reply to this email to respond directly to {client_name}.\n"
-    )
+    msg.attach(MIMEText(text_part, 'plain', 'utf-8'))
+    msg.attach(MIMEText(html_part, 'html', 'utf-8'))
+    return msg
 
-    msg.attach(MIMEText(plain_text, 'plain', 'utf-8'))
-    msg.attach(MIMEText(html_content, 'html', 'utf-8'))
+
+def send_email(data: dict) -> dict:
+    recipient = ADMIN_EMAIL
+    preview_file = save_preview(rendered_parts(data)[2])
+    preview = str(preview_file) if preview_file else None
+
+    if not SMTP_USER or not SMTP_PASS or 'yourgmail@gmail.com' in SMTP_USER or 'your-email@' in SMTP_USER:
+        print(f"[send_lead_email] SMTP_USER/SMTP_PASS not configured in .env.local. Preview saved: {preview}",
+              file=sys.stderr)
+        return {"ok": False, "status": "user_placeholder",
+                "message": "Set SMTP_USER and SMTP_PASS in .env.local.",
+                "preview_file": preview, "recipient": recipient}
+
+    msg = build_message(data)
 
     def try_send(host, port, use_ssl):
         if use_ssl:
@@ -341,62 +380,62 @@ def send_email(data: dict) -> dict:
             srv.ehlo()
             srv.starttls()
             srv.ehlo()
-
         srv.login(SMTP_USER, SMTP_PASS)
         srv.sendmail(SMTP_USER, [recipient], msg.as_string())
         srv.quit()
 
     try:
         try_send(SMTP_HOST, SMTP_PORT, SMTP_SECURE)
-        print(f"[send_lead_email] Successfully delivered clean notification to {recipient}")
+        print(f"[send_lead_email] Delivered notification to {recipient}")
         return {"ok": True, "status": "sent", "recipient": recipient}
     except smtplib.SMTPAuthenticationError as auth_err:
-        err_msg = (
-            f"[send_lead_email] Authentication failed for '{SMTP_USER}': {auth_err}\n"
-            f"Check that SMTP_USER is your exact Gmail address and SMTP_PASS is the 16-character App Password."
-        )
-        print(err_msg, file=sys.stderr)
-        return {"ok": False, "error": str(auth_err), "preview_file": str(preview_file) if preview_file else None}
+        print(f"[send_lead_email] Authentication failed for '{SMTP_USER}': {auth_err}\n"
+              f"Check SMTP_USER is the exact mailbox and SMTP_PASS is its 16-character App Password.",
+              file=sys.stderr)
+        return {"ok": False, "error": str(auth_err), "preview_file": preview}
     except Exception as e:
-        # Fallback to SSL on 465 if 587 dropped
         if SMTP_PORT == 587:
             try:
-                print(f"[send_lead_email] Port 587 notice ({e}). Retrying with SSL on port 465...", file=sys.stderr)
+                print(f"[send_lead_email] Port 587 failed ({e}). Retrying with SSL on 465...", file=sys.stderr)
                 try_send(SMTP_HOST, 465, True)
-                print(f"[send_lead_email] Successfully delivered email to {recipient} via port 465 SSL")
+                print(f"[send_lead_email] Delivered notification to {recipient} via port 465")
                 return {"ok": True, "status": "sent", "recipient": recipient}
             except Exception as e2:
-                err_msg = f"[send_lead_email] Failed to send email via SMTP ({SMTP_HOST}:587 & 465): {e2}"
-                print(err_msg, file=sys.stderr)
-                return {"ok": False, "error": str(e2), "preview_file": str(preview_file) if preview_file else None}
-        else:
-            err_msg = f"[send_lead_email] Failed to send email via SMTP ({SMTP_HOST}:{SMTP_PORT}): {e}"
-            print(err_msg, file=sys.stderr)
-            return {"ok": False, "error": str(e), "preview_file": str(preview_file) if preview_file else None}
+                print(f"[send_lead_email] Failed via {SMTP_HOST}:587 and 465: {e2}", file=sys.stderr)
+                return {"ok": False, "error": str(e2), "preview_file": preview}
+        print(f"[send_lead_email] Failed via {SMTP_HOST}:{SMTP_PORT}: {e}", file=sys.stderr)
+        return {"ok": False, "error": str(e), "preview_file": preview}
+
 
 # ---------------------------------------------------------------------------
-# CLI / Stdin Entrypoint
+# CLI / stdin entrypoint
 # ---------------------------------------------------------------------------
+SAMPLE_LEAD = {
+    "name": "Sarah Jenkins",
+    "email": "sarah.jenkins@example.com",
+    "company": "Lumina Luxury Retail",
+    "service": "Shopify E-Commerce Website",
+    "message": "We are seeking a premium, fast e-commerce presence for our new designer collection.\n\n"
+               "We need bespoke interactions, ERP inventory integration, and a mobile-first checkout experience.",
+    "source": "contact",
+}
+
+
 def main():
     payload = None
+    arg = sys.argv[1].strip() if len(sys.argv) > 1 else ''
 
-    if len(sys.argv) > 1:
-        arg = sys.argv[1].strip()
-        if arg == '--test':
-            payload = {
-                "name": "Sarah Jenkins",
-                "email": "sarah.jenkins@lumina-retail.com",
-                "company": "Lumina Luxury Retail",
-                "service": "Shopify E-Commerce Website",
-                "message": "We are seeking a premium, fast e-commerce presence for our new designer collection. We need bespoke interactions, ERP inventory integration, and a mobile-first checkout experience.",
-                "source": "contact",
-                "createdAt": datetime.now().strftime('%d %B %Y, %I:%M %p IST')
-            }
-        else:
-            try:
-                payload = json.loads(arg)
-            except Exception:
-                pass
+    if arg in ('--test', '--preview'):
+        payload = dict(SAMPLE_LEAD, createdAt=datetime.now().strftime('%d %b %Y, %I:%M %p IST'))
+        if arg == '--preview':
+            path = save_preview(generate_html_template(payload))
+            print(json.dumps({"ok": True, "status": "preview", "preview_file": str(path) if path else None}))
+            return
+    elif arg:
+        try:
+            payload = json.loads(arg)
+        except Exception:
+            pass
 
     if not payload and not sys.stdin.isatty():
         try:
@@ -410,8 +449,8 @@ def main():
         print(json.dumps({"ok": False, "error": "No JSON payload provided"}))
         sys.exit(1)
 
-    result = send_email(payload)
-    print(json.dumps(result))
+    print(json.dumps(send_email(payload)))
+
 
 if __name__ == '__main__':
     main()

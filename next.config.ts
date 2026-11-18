@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   },
   // Allow localtunnel and custom dev origins
   allowedDevOrigins: ['*.loca.lt', 'cold-ends-divide.loca.lt', '*.pinggy.link', '*.trycloudflare.com'],
+  // worker-mailer imports `cloudflare:sockets`; keep it out of the Node bundle (only loaded on Workers).
+  serverExternalPackages: ['worker-mailer'],
   // pg loads pg-cloudflare's real socket only under the workerd export condition, which file tracing skips.
   outputFileTracingIncludes: { '/*': ['./node_modules/pg-cloudflare/**/*'] },
   images: {
