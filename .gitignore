@@ -23,4 +23,5 @@ npm-debug.log*
 !.dev.vars.example
 
 .vercel
+.system_generated/
 .env*
