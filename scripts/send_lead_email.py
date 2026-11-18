@@ -302,25 +302,17 @@ def send_email(data: dict) -> dict:
     msg['Subject'] = subject
     
     # Deliverability: Ensure From header matches authenticated SMTP account
-    # This prevents Gmail/Outlook SPF/DMARC spoofing detection
-    from_header = f"ThinkLab Notifications <{SMTP_USER}>"
+    from_header = f"ThinkLab Studio <{SMTP_USER}>"
     msg['From'] = from_header
     msg['To'] = recipient
     
-    # Reply-To routes replies directly to the client who submitted the form
-    client_email = data.get('email')
-    if client_email and '@' in client_email:
-        msg['Reply-To'] = f'"{client_name}" <{client_email}>'
-    else:
-        msg['Reply-To'] = recipient
+    # Do not set mismatched external Reply-To header as Gmail flags cross-domain Reply-To as phishing/spam.
+    # The client email is clickable directly inside the message body and via the action button.
 
     # Standard email headers for inbox deliverability
     domain = SMTP_USER.split('@')[-1] if '@' in SMTP_USER else 'thinklabdigitalsolutions.com'
     msg['Message-ID'] = make_msgid(domain=domain)
     msg['Date'] = formatdate(localtime=True)
-    msg['X-Mailer'] = 'ThinkLab Contact Dispatcher 1.0'
-    msg['Auto-Submitted'] = 'auto-generated'
-    msg['X-Auto-Response-Suppress'] = 'OOF, AutoReply'
 
     # Clean plaintext alternative
     plain_text = (
