@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 import data from './src/lib/live-content.json';
 const nextConfig: NextConfig = {
+  experimental: {
+    agentUpgrade: "security",
+  },
   // Allow localtunnel and custom dev origins
   allowedDevOrigins: ['*.loca.lt', 'cold-ends-divide.loca.lt', '*.pinggy.link', '*.trycloudflare.com'],
   // pg loads pg-cloudflare's real socket only under the workerd export condition, which file tracing skips.
