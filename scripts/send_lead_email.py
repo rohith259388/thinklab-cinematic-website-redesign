@@ -31,16 +31,16 @@ def load_env_file(filepath: Path):
                 k, v = line.split('=', 1)
                 k = k.strip()
                 v = v.strip().strip("'").strip('"')
-                if k not in os.environ:
-                    os.environ[k] = v
+                # Override to ensure latest values from .env.local take effect
+                os.environ[k] = v
     except Exception as e:
         print(f"[send_lead_email] Warning loading {filepath}: {e}", file=sys.stderr)
 
 # Discover project root
 current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent
-load_env_file(project_root / '.env.local')
 load_env_file(project_root / '.env')
+load_env_file(project_root / '.env.local')
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -48,8 +48,15 @@ load_env_file(project_root / '.env')
 ADMIN_EMAIL = os.environ.get('ADMIN_NOTIFICATION_EMAIL', 'info@thinklabdigitalsolutions.com')
 SMTP_HOST = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
 SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
-SMTP_USER = os.environ.get('SMTP_USER', os.environ.get('EMAIL_USER', ''))
-SMTP_PASS = os.environ.get('SMTP_PASS', os.environ.get('SMTP_PASSWORD', os.environ.get('EMAIL_PASS', '')))
+SMTP_USER = os.environ.get('SMTP_USER', os.environ.get('EMAIL_USER', '')).strip()
+raw_pass = os.environ.get('SMTP_PASS', os.environ.get('SMTP_PASSWORD', os.environ.get('EMAIL_PASS', ''))).strip()
+
+# Clean Google App Password: strip spaces if 16-character format (e.g. "abcd efgh ijkl mnop" -> "abcdefghijklmnop")
+if len(raw_pass.replace(' ', '')) == 16:
+    SMTP_PASS = raw_pass.replace(' ', '')
+else:
+    SMTP_PASS = raw_pass
+
 SMTP_FROM = os.environ.get('SMTP_FROM', f"ThinkLab Studio <{SMTP_USER or ADMIN_EMAIL}>")
 SMTP_SECURE = os.environ.get('SMTP_SECURE', 'false').lower() in ('true', '1', 'yes') or SMTP_PORT == 465
 
@@ -89,20 +96,12 @@ def generate_html_template(data: dict) -> str:
       0%, 100% {{ transform: translateY(0px) scale(1); }}
       50% {{ transform: translateY(-8px) scale(1.03); }}
     }}
-    @keyframes beamSweep {{
-      0% {{ left: -100%; }}
-      100% {{ left: 200%; }}
-    }}
     .animated-3d-box {{
       animation: floatOrb 4.5s ease-in-out infinite, pulseGlow 3s ease-in-out infinite;
-    }}
-    .animated-ring {{
-      animation: spin3D 10s linear infinite;
     }}
     @media only screen and (max-width: 600px) {{
       .mobile-padding {{ padding: 20px 14px !important; }}
       .mobile-title {{ font-size: 24px !important; }}
-      .grid-stack {{ display: block !important; width: 100% !important; }}
     }}
   </style>
 </head>
@@ -311,22 +310,18 @@ def send_email(data: dict) -> dict:
     except Exception as e:
         preview_file = None
 
-    # Check if SMTP credentials are provided
-    if not SMTP_USER or not SMTP_PASS:
+    # Check if SMTP credentials are provided or still placeholder
+    if not SMTP_USER or not SMTP_PASS or 'yourgmail@gmail.com' in SMTP_USER:
         msg = (
-            f"[send_lead_email] Notice: SMTP credentials (SMTP_USER / SMTP_PASS) not set in .env.local.\n"
+            f"[send_lead_email] Notice: SMTP_USER is still set to '{SMTP_USER}'.\n"
+            f"Please update SMTP_USER in .env.local to the exact Gmail address that generated the App Password (e.g. samhithbasa12@gmail.com).\n"
             f"Email preview generated at: {preview_file}\n"
-            f"To enable live sending, add to .env.local:\n"
-            f"  SMTP_HOST=smtp.gmail.com\n"
-            f"  SMTP_PORT=587\n"
-            f"  SMTP_USER=your_email@gmail.com\n"
-            f"  SMTP_PASS=your_gmail_app_password\n"
         )
         print(msg, file=sys.stderr)
         return {
-            "ok": True,
-            "status": "preview_saved",
-            "message": "SMTP not configured yet; preview rendered successfully.",
+            "ok": False,
+            "status": "user_placeholder",
+            "message": "SMTP_USER in .env.local must be your actual Gmail address, not yourgmail@gmail.com.",
             "preview_file": str(preview_file) if preview_file else None,
             "recipient": recipient
         }
@@ -351,25 +346,48 @@ def send_email(data: dict) -> dict:
     msg.attach(MIMEText(plain_text, 'plain', 'utf-8'))
     msg.attach(MIMEText(html_content, 'html', 'utf-8'))
 
-    # Connect to SMTP server
-    try:
-        if SMTP_SECURE:
-            server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=20)
+    # Helper connection logic with automatic SSL (465) fallback if STARTTLS (587) fails
+    def try_send(host, port, use_ssl):
+        if use_ssl:
+            srv = smtplib.SMTP_SSL(host, port, timeout=20)
         else:
-            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20)
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
+            srv = smtplib.SMTP(host, port, timeout=20)
+            srv.ehlo()
+            srv.starttls()
+            srv.ehlo()
 
-        server.login(SMTP_USER, SMTP_PASS)
-        server.sendmail(SMTP_USER, [recipient], msg.as_string())
-        server.quit()
+        srv.login(SMTP_USER, SMTP_PASS)
+        srv.sendmail(SMTP_USER, [recipient], msg.as_string())
+        srv.quit()
+
+    try:
+        try_send(SMTP_HOST, SMTP_PORT, SMTP_SECURE)
         print(f"[send_lead_email] Successfully delivered email to {recipient}")
         return {"ok": True, "status": "sent", "recipient": recipient}
-    except Exception as e:
-        err_msg = f"[send_lead_email] Failed to send email via SMTP ({SMTP_HOST}:{SMTP_PORT}): {e}"
+    except smtplib.SMTPAuthenticationError as auth_err:
+        err_msg = (
+            f"[send_lead_email] Authentication failed for '{SMTP_USER}':\n"
+            f"{auth_err}\n"
+            f"Check that SMTP_USER is your actual Gmail address and SMTP_PASS is the 16-character App Password."
+        )
         print(err_msg, file=sys.stderr)
-        return {"ok": False, "error": str(e), "preview_file": str(preview_file) if preview_file else None}
+        return {"ok": False, "error": str(auth_err), "preview_file": str(preview_file) if preview_file else None}
+    except Exception as e:
+        # If 587 dropped, try port 465 with SSL automatically
+        if SMTP_PORT == 587:
+            try:
+                print(f"[send_lead_email] Port 587 failed ({e}). Retrying with SSL on port 465...", file=sys.stderr)
+                try_send(SMTP_HOST, 465, True)
+                print(f"[send_lead_email] Successfully delivered email to {recipient} via port 465 SSL")
+                return {"ok": True, "status": "sent", "recipient": recipient}
+            except Exception as e2:
+                err_msg = f"[send_lead_email] Failed to send email via SMTP ({SMTP_HOST}:587 & 465): {e2}"
+                print(err_msg, file=sys.stderr)
+                return {"ok": False, "error": str(e2), "preview_file": str(preview_file) if preview_file else None}
+        else:
+            err_msg = f"[send_lead_email] Failed to send email via SMTP ({SMTP_HOST}:{SMTP_PORT}): {e}"
+            print(err_msg, file=sys.stderr)
+            return {"ok": False, "error": str(e), "preview_file": str(preview_file) if preview_file else None}
 
 # ---------------------------------------------------------------------------
 # CLI / Stdin Entrypoint
