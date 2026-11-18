@@ -1,14 +1,15 @@
 /**
  * Lead notification email — rendering + delivery.
  *
- * Production runs on Cloudflare Workers, which cannot spawn processes, so the
- * email is sent over Gmail SMTP (port 465, TLS) with `worker-mailer`, which
- * uses Cloudflare TCP sockets. In local `next dev` (plain Node.js) the same
- * rendered email is handed to scripts/send_lead_email.py instead.
+ * Sent over Gmail SMTP (port 465, TLS) by ./smtp.ts, which only uses `node:tls`
+ * and therefore runs both in local `next dev` and on Cloudflare Workers
+ * (which cannot spawn the Python script).
  *
  * Required env (Workers: `wrangler secret put …`, local: .env.local):
  *   SMTP_USER, SMTP_PASS, ADMIN_NOTIFICATION_EMAIL   optional: SMTP_FROM, SITE_URL
  */
+
+import { sendMail } from './smtp';
 
 export type Lead = {
   name: string;
@@ -161,7 +162,7 @@ export function renderLeadEmail(lead: Lead, siteUrl: string): RenderedEmail {
                 </tr>
                 <tr>
                   <td class="px" style="padding: 16px 40px 32px 40px;">
-                    <p style="margin: 0; font-family: ${FONT}; font-size: 13px; line-height: 1.6; color: #8c887b;">Replying to this email goes straight to ${firstName}. The lead is also saved in the <a href="${esc(siteUrl)}/admin" style="color: #433f38; text-decoration: underline; text-decoration-color: #cfcabd;">admin portal</a>.</p>
+                    <p style="margin: 0; font-family: ${FONT}; font-size: 13px; line-height: 1.6; color: #8c887b;">Use the button above to reply to ${firstName} directly. The lead is also saved in the <a href="${esc(siteUrl)}/admin" style="color: #433f38; text-decoration: underline; text-decoration-color: #cfcabd;">admin portal</a>.</p>
                   </td>
                 </tr>
               </table>
@@ -197,7 +198,7 @@ export function renderLeadEmail(lead: Lead, siteUrl: string): RenderedEmail {
     f.message,
     rule,
     '',
-    `Reply to this email to respond directly to ${f.name}.`,
+    `To reply, email ${f.name} at ${f.email || "the address above"}.`,
     `Admin portal: ${siteUrl}/admin`,
     '',
     'ThinkLab Digital Solutions - Vijayawada & Sydney',
@@ -210,9 +211,6 @@ export function renderLeadEmail(lead: Lead, siteUrl: string): RenderedEmail {
 // ---------------------------------------------------------------------------
 // Delivery
 // ---------------------------------------------------------------------------
-const isCloudflareWorker = () =>
-  typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers';
-
 /** Display name from SMTP_FROM; the address is always SMTP_USER (SPF/DMARC alignment). */
 function senderName() {
   const m = /^\s*"?([^"<]*?)"?\s*</.exec(process.env.SMTP_FROM ?? '');
@@ -232,50 +230,24 @@ export async function sendLeadEmail(lead: Lead): Promise<void> {
   }
 
   const rendered = renderLeadEmail(lead, siteUrl);
-  const clientEmail = headerSafe(lead.email, 220);
-  const replyTo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)
-    ? { name: headerSafe(lead.name, 80), email: clientEmail }
-    : undefined;
 
-  if (isCloudflareWorker()) {
-    const { WorkerMailer } = await import('worker-mailer');
-    await WorkerMailer.send(
-      {
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        credentials: { username: smtpUser, password: smtpPass },
-        authType: 'plain',
-        name: 'thinklabdigitalsolutions.com',
-        socketTimeoutMs: 15000,
-        responseTimeoutMs: 15000,
-      },
-      {
-        from: { name: senderName(), email: smtpUser },
-        to: { email: admin },
-        reply: replyTo,
-        subject: rendered.subject,
-        text: rendered.text,
-        html: rendered.html,
-        headers: { 'Auto-Submitted': 'auto-generated', 'X-Auto-Response-Suppress': 'OOF, AutoReply' },
-      },
-    );
-    console.log(`[leads:mail] Delivered notification to ${admin} via SMTP`);
-    return;
-  }
-
-  // Local Node.js (next dev / next start): hand the rendered email to the Python dispatcher.
-  const { spawn } = await import('node:child_process');
-  const path = await import('node:path');
-  const scriptPath = path.join(process.cwd(), 'scripts', 'send_lead_email.py');
-  const pythonBin = process.env.PYTHON_BIN || (process.platform === 'win32' ? 'python' : 'python3');
-
-  await new Promise<void>((resolve, reject) => {
-    const py = spawn(/*turbopackIgnore: true*/ pythonBin, [scriptPath], { stdio: ['pipe', 'pipe', 'pipe'] });
-    py.stdout.on('data', (c) => console.log('[leads:mail]', c.toString().trim()));
-    py.stderr.on('data', (c) => console.warn('[leads:mail:err]', c.toString().trim()));
-    py.on('error', reject);
-    py.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`send_lead_email.py exited with ${code}`))));
-    py.stdin.end(JSON.stringify({ ...lead, rendered }));
-  });
+  // No external Reply-To / Auto-Submitted headers: Gmail treats a cross-domain
+  // Reply-To as a phishing signal. The client's address is a mailto link in the body.
+  await sendMail(
+    {
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: 465, // implicit TLS; works in Node.js and Cloudflare Workers
+      username: smtpUser,
+      password: smtpPass,
+      heloName: 'thinklabdigitalsolutions.com',
+    },
+    {
+      from: { name: senderName(), email: smtpUser },
+      to: { email: admin },
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
+    },
+  );
+  console.log(`[leads:mail] Delivered notification to ${admin}`);
 }
