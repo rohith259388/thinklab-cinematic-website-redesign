@@ -65,143 +65,11 @@ export default async function HomePage() {
           <HomeJourney />
 
           <div className="studio-content">
-            {/* 2. COMPANY INTRODUCTION */}
-            <section id="studio" className="studio-intro section-pad">
-              <div className="section-index">
-                <span>
-                  <Plus size={14} /> <CmsText field="home.intro.number">01 / WHO WE ARE</CmsText>
-                </span>
-                <span><CmsText field="home.intro.kicker">CURIOUS MINDS. SHARED AMBITION.</CmsText></span>
-              </div>
-              <div className="intro-grid">
-                <Reveal>
-                  <span className="intro-symbol" aria-hidden="true">
-                    ✳
-                  </span>
-                  <p className="small-note">
-                    <CmsText field="home.intro.note">
-                      Helping Brands
-                      <br />
-                      Grow Faster Online.
-                    </CmsText>
-                  </p>
-                </Reveal>
-                <div>
-                  <h2 className="statement">
-                    <CmsText field="home.intro.title" split><SplitWords text="About Thinklab" /></CmsText>
-                    <br />
-                    <span className="muted">
-                      <CmsText field="home.intro.accent" split><SplitWords text="Digital Solutions." delay={0.1} /></CmsText>
-                    </span>
-                  </h2>
-                  <div className="intro-bottom">
-                    <Reveal>
-                      <div className="space-y-4 text-base md:text-lg leading-relaxed text-[#0b0b12]/80 dark:text-white/80">
-                        <p>
-                          <CmsText field="home.intro.body1">
-                            Thinklab Digital Solutions is a full-service digital agency providing digital marketing, website development, automation, CRM, and strategic consulting services.
-                          </CmsText>
-                        </p>
-                        <p>
-                          <CmsText field="home.intro.body2">
-                            We help businesses improve visibility, generate qualified leads, and streamline operations through data-driven solutions tailored to their growth goals.
-                          </CmsText>
-                        </p>
-                      </div>
-                    </Reveal>
-                    <Reveal delay={0.15}>
-                      <Link href="/about" className="round-link">
-                        <CmsText field="home.intro.cta">Meet the minds</CmsText>{" "}
-                        <span className="round-arrow">
-                          <ArrowUpRight size={18} />
-                        </span>
-                      </Link>
-                    </Reveal>
-                  </div>
-                </div>
-              </div>
-
-              {/* 3. STATISTICS SECTION */}
-              <div className="stats-line">
-                {STATS.map((s, i) => (
-                  <Reveal key={s.label} delay={i * 0.08}>
-                    <p>
-                      <CountUp
-                        end={s.value}
-                        prefix={s.prefix ?? ""}
-                        suffix={s.suffix ?? ""}
-                      />
-                    </p>
-                    <span className="micro-label">
-                      <CmsText field={`home.stats.label.${i}`}>{s.label}</CmsText>
-                    </span>
-                  </Reveal>
-                ))}
-              </div>
-            </section>
-
-            {/* 4. SELECTED PROJECTS */}
-            <section id="works" className="selected-work relative pt-6 pb-16">
-              <div className="section-index">
-                <span>
-                  <Plus size={14} /> <CmsText field="home.projects.number">02 / SELECTED WORK</CmsText>
-                </span>
-                <span><CmsText field="home.projects.kicker">THINKING MADE TANGIBLE.</CmsText></span>
-              </div>
-              <ProjectGallery projects={projectCards.slice(0, 6)} mode="stacked" />
-            </section>
-
-            {/* 5. BRAND PHILOSOPHY / WHY CHOOSE US */}
-            <section className="possibility-panel" aria-label="Why Thinklab Digital Solutions Stands Out">
-              <div className="possibility-orbit" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-                <i />
-                <i />
-              </div>
-              <span className="micro-label">
-                <CmsText field="home.philosophy.kicker">WHY THINKLAB DIGITAL SOLUTIONS STANDS OUT</CmsText>
-              </span>
-              <h2>
-<span className="block">
-                  <CmsText field="home.philosophy.title" split><SplitWords text="What if" /></CmsText>
-                </span>
-                <span className="block">
-                  <CmsText field="home.philosophy.title2" split><SplitWords text="became" /></CmsText>
-                </span>
-                <em className="block not-italic text-[#d0baff]">
-                  <CmsText field="home.philosophy.accent" split><SplitWords text="what’s next?" /></CmsText>
-                </em>
-              </h2>
-              <div className="relative z-10 max-w-xl space-y-4 my-6 text-white/80 text-left">
-                <p>
-                  <CmsText field="home.philosophy.body1">
-                    We combine strategic digital marketing, high performance website development, and intelligent automation to help businesses increase traffic, generate qualified leads, and grow revenue consistently.
-                  </CmsText>
-                </p>
-                <p>
-                  <CmsText field="home.philosophy.body2">
-                    Our approach focuses on measurable results, transparent reporting, and continuous optimisation to ensure long-term digital success.
-                  </CmsText>
-                </p>
-              </div>
-
-
-              <Link
-                href="/contact"
-                className="possibility-link"
-                aria-label="Explore what is possible together"
-              >
-                <ArrowUpRight size={36} />
-              </Link>
-            </section>
-
-            {/* 6. SERVICES SECTION */}
+            {/* 1. SERVICES */}
             <section id="services" className="services-section section-pad">
               <div className="section-index">
                 <span>
-                  <Plus size={14} /> <CmsText field="home.services.number">03 / WHAT WE DO</CmsText>
+                  <Plus size={14} /> <CmsText field="home.services.number">01 / WHAT WE DO</CmsText>
                 </span>
                 <span><CmsText field="home.services.kicker">CONNECTED BY DESIGN.</CmsText></span>
               </div>
@@ -257,11 +125,11 @@ export default async function HomePage() {
               </div>
             </section>
 
-            {/* 7. WORKING PROCESS SECTION */}
+            {/* 2. HOW WE WORK (PROCESS) */}
             <section className="process-section section-pad">
               <div className="section-index">
                 <span>
-                  <Plus size={14} /> <CmsText field="home.process.number">04 / HOW WE THINK</CmsText>
+                  <Plus size={14} /> <CmsText field="home.process.number">02 / HOW WE THINK</CmsText>
                 </span>
                 <span><CmsText field="home.process.kicker">FROM POSSIBILITY TO PROGRESS.</CmsText></span>
               </div>
@@ -293,11 +161,46 @@ export default async function HomePage() {
               </div>
             </section>
 
-            {/* 8. CLIENT TESTIMONIALS SECTION */}
+            {/* 3. PROJECTS */}
+            <section id="works" className="selected-work section-pad">
+              <div className="section-index">
+                <span>
+                  <Plus size={14} /> <CmsText field="home.projects.number">03 / SELECTED WORK</CmsText>
+                </span>
+                <span><CmsText field="home.projects.kicker">THINKING MADE TANGIBLE.</CmsText></span>
+              </div>
+              <div className="section-heading">
+                <h2>
+                  <CmsText field="home.projects.title" split><SplitWords text="Projects" /></CmsText>
+                  <span className="project-heading-count">
+                    {" "}
+                    / {projectCards.length}
+                  </span>
+                </h2>
+                <Reveal>
+                  <p>
+                    <CmsText field="home.projects.body">
+                      A few of the brands we’ve helped
+                      <br />
+                      find their next chapter.
+                    </CmsText>
+                  </p>
+                  <Link href="/projects" className="round-link">
+                    <CmsText field="home.projects.cta">View All Projects</CmsText>{" "}
+                    <span className="round-arrow">
+                      <ArrowUpRight size={18} />
+                    </span>
+                  </Link>
+                </Reveal>
+              </div>
+              <ProjectGallery projects={projectCards.slice(0, 4)} mode="stacked" />
+            </section>
+
+            {/* 4. TESTIMONIALS */}
             <section className="testimonials-section section-pad">
               <div className="section-index">
                 <span>
-                  <Plus size={14} /> <CmsText field="home.testimonials.number">05 / CLIENT FEEDBACK</CmsText>
+                  <Plus size={14} /> <CmsText field="home.testimonials.number">04 / CLIENT FEEDBACK</CmsText>
                 </span>
                 <span><CmsText field="home.testimonials.kicker">PROVEN RESULTS. TRUSTED PARTNERSHIPS.</CmsText></span>
               </div>
@@ -330,7 +233,100 @@ export default async function HomePage() {
               <VerticalTestimonials />
             </section>
 
-            {/* 9. BLOG / INSIGHTS SECTION */}
+            {/* 5. ABOUT US */}
+            <section id="studio" className="studio-intro section-pad">
+              <div className="section-index">
+                <span>
+                  <Plus size={14} /> <CmsText field="home.intro.number">05 / WHO WE ARE</CmsText>
+                </span>
+                <span><CmsText field="home.intro.kicker">CURIOUS MINDS. SHARED AMBITION.</CmsText></span>
+              </div>
+              <div className="intro-grid">
+                <Reveal>
+                  <span className="intro-symbol" aria-hidden="true">
+                    ✳
+                  </span>
+                  <p className="small-note">
+                    <CmsText field="home.intro.note">
+                      Helping Brands
+                      <br />
+                      Grow Faster Online.
+                    </CmsText>
+                  </p>
+                </Reveal>
+                <div>
+                  <h2 className="statement">
+                    <CmsText field="home.intro.title" split><SplitWords text="About Thinklab" /></CmsText>
+                    <br />
+                    <span className="muted">
+                      <CmsText field="home.intro.accent" split><SplitWords text="Digital Solutions." delay={0.1} /></CmsText>
+                    </span>
+                  </h2>
+                  <div className="intro-bottom">
+                    <Reveal>
+                      <div className="space-y-4 text-base md:text-lg leading-relaxed text-[#0b0b12]/80 dark:text-white/80">
+                        <p>
+                          <CmsText field="home.intro.body1">
+                            Thinklab Digital Solutions is a full-service digital agency providing digital marketing, website development, automation, CRM, and strategic consulting services.
+                          </CmsText>
+                        </p>
+                        <p>
+                          <CmsText field="home.intro.body2">
+                            We help businesses improve visibility, generate qualified leads, and streamline operations through data-driven solutions tailored to their growth goals.
+                          </CmsText>
+                        </p>
+                      </div>
+                    </Reveal>
+                    <Reveal delay={0.15}>
+                      <Link href="/about" className="round-link">
+                        <CmsText field="home.intro.cta">Meet the minds</CmsText>{" "}
+                        <span className="round-arrow">
+                          <ArrowUpRight size={18} />
+                        </span>
+                      </Link>
+                    </Reveal>
+                  </div>
+                </div>
+              </div>
+
+              {/* STATISTICS SECTION */}
+              <div className="stats-line">
+                {STATS.map((s, i) => (
+                  <Reveal key={s.label} delay={i * 0.08}>
+                    <p>
+                      <CountUp
+                        end={s.value}
+                        prefix={s.prefix ?? ""}
+                        suffix={s.suffix ?? ""}
+                      />
+                    </p>
+                    <span className="micro-label">
+                      <CmsText field={`home.stats.label.${i}`}>{s.label}</CmsText>
+                    </span>
+                  </Reveal>
+                ))}
+              </div>
+            </section>
+
+            {/* 6. FAQ'S */}
+            <section className="faq-section section-pad">
+              <div>
+                <span className="micro-label">
+                  <CmsText field="home.faq.kicker">A LITTLE MORE CLARITY</CmsText>
+                </span>
+                <h2>
+                  <CmsText field="home.faq.title">Frequently Asked</CmsText>
+                  <br />
+                  <span className="muted"><CmsText field="home.faq.accent">Questions.</CmsText></span>
+                </h2>
+                <Link href="/contact" className="text-link">
+                  <CmsText field="home.faq.cta">Have another one?</CmsText> <ArrowUpRight size={17} />
+                </Link>
+              </div>
+              <Accordion items={HOME_FAQS} />
+            </section>
+
+            {/* 7. INSIGHTS */}
             <section className="insights-section section-pad">
               <div className="section-index">
                 <span>
@@ -372,7 +368,7 @@ export default async function HomePage() {
                           <span className="px-2.5 py-0.5 rounded-full bg-[#7e6ff0]/10 text-[#644be2] font-medium border border-[#7e6ff0]/20">{blog.tag}</span>
                           <span>{blog.date}</span>
                         </div>
-<h3 className="text-base font-semibold text-[#1a1b18] group-hover:text-[#644be2] transition-colors leading-snug">
+                        <h3 className="text-base font-semibold text-[#1a1b18] group-hover:text-[#644be2] transition-colors leading-snug">
                           <CmsText field={`home.blog.${i}.title`}>{blog.title}</CmsText>
                         </h3>
                       </div>
@@ -386,24 +382,50 @@ export default async function HomePage() {
               </div>
             </section>
 
-            {/* 10. FAQ SECTION */}
-            <section className="faq-section section-pad">
-              <div>
-                <span className="micro-label">
-                  <CmsText field="home.faq.kicker">A LITTLE MORE CLARITY</CmsText>
-                </span>
-                <h2>
-                  <CmsText field="home.faq.title">Frequently Asked</CmsText>
-                  <br />
-                  <span className="muted"><CmsText field="home.faq.accent">Questions.</CmsText></span>
-                </h2>
-                <Link href="/contact" className="text-link">
-                  <CmsText field="home.faq.cta">Have another one?</CmsText> <ArrowUpRight size={17} />
-                </Link>
+            {/* 8. BANNER (BRAND PHILOSOPHY / WHY CHOOSE US) */}
+            <section className="possibility-panel" aria-label="Why Thinklab Digital Solutions Stands Out">
+              <div className="possibility-orbit" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+                <i />
+                <i />
               </div>
-              <Accordion items={HOME_FAQS} />
-            </section>
+              <span className="micro-label">
+                <CmsText field="home.philosophy.kicker">WHY THINKLAB DIGITAL SOLUTIONS STANDS OUT</CmsText>
+              </span>
+              <h2>
+                <span className="block">
+                  <CmsText field="home.philosophy.title" split><SplitWords text="What if" /></CmsText>
+                </span>
+                <span className="block">
+                  <CmsText field="home.philosophy.title2" split><SplitWords text="became" /></CmsText>
+                </span>
+                <em className="block not-italic text-[#d0baff]">
+                  <CmsText field="home.philosophy.accent" split><SplitWords text="what’s next?" /></CmsText>
+                </em>
+              </h2>
+              <div className="relative z-10 max-w-xl space-y-4 my-6 text-white/80 text-left">
+                <p>
+                  <CmsText field="home.philosophy.body1">
+                    We combine strategic digital marketing, high performance website development, and intelligent automation to help businesses increase traffic, generate qualified leads, and grow revenue consistently.
+                  </CmsText>
+                </p>
+                <p>
+                  <CmsText field="home.philosophy.body2">
+                    Our approach focuses on measurable results, transparent reporting, and continuous optimisation to ensure long-term digital success.
+                  </CmsText>
+                </p>
+              </div>
 
+              <Link
+                href="/contact"
+                className="possibility-link"
+                aria-label="Explore what is possible together"
+              >
+                <ArrowUpRight size={36} />
+              </Link>
+            </section>
           </div>
         </>
       }

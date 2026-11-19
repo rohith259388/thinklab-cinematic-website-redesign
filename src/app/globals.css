@@ -411,7 +411,7 @@ a, button { -webkit-tap-highlight-color: transparent; }
 }
 .journey-progress { position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: #ffffff15; }
 
-.studio-content { position: relative; background: var(--studio-paper); color: var(--studio-ink); border-radius: 28px 28px 0 0; }
+.studio-content { position: relative; background: var(--studio-paper); color: var(--studio-ink); border-radius: 28px 28px 0 0; padding-bottom: clamp(30px, 4vw, 60px); }
 .section-pad { padding: 75px 4.5vw 100px; }
 .section-index { display: flex; justify-content: space-between; gap: 20px; padding-bottom: 36px; font-family: var(--font-plex), monospace; font-size: 9px; letter-spacing: .055em; }
 .section-index > span:first-child { display: flex; align-items: center; gap: 14px; }
@@ -483,7 +483,7 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .architecture { position: absolute; width: 100%; height: 100%; bottom: -18%; left: 21%; transform: rotate(-22deg); }
 .architecture i { position: absolute; left: calc(var(--i) * 12%); width: 10%; height: 130%; background: linear-gradient(90deg,#ddd5c7,#b4aa97 65%,#6f685b 66%,#897e69); box-shadow: 12px 8px 18px #403f2e44; transform: translateY(calc(var(--i) * -6px)); }
 .project-art-3::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(155deg,#343b3255,transparent 65%); }
-.possibility-panel { position: relative; margin: 25px 20px 0; border-radius: 20px; background: #1e2230; color: #eff0ea; min-height: 780px; padding: 60px 4vw; overflow: hidden; }
+.possibility-panel { position: relative; margin: 25px 20px clamp(60px, 8vw, 120px); border-radius: 20px; background: #1e2230; color: #eff0ea; min-height: 780px; padding: 60px 4vw; overflow: hidden; }
 .possibility-panel > .micro-label { position: relative; z-index: 2; color: #b7b8c7; }
 .possibility-panel h2 { position: relative; z-index: 2; margin-top: 60px; font-size: clamp(60px,9vw,150px); letter-spacing: -.075em; line-height: .95; }
 .possibility-panel h2 em { font-style: normal; color: #d0baff; }
@@ -562,13 +562,13 @@ a, button { -webkit-tap-highlight-color: transparent; }
   .hero-description { left: 24px; bottom: 13%; max-width: 62%; }.hero-description > .micro-label, .hero-description .text-link { display: none; }.hero-description p { font-size: 11px; line-height: 1.5; margin: 0; }.hero-coordinate { display: none; }
   .journey-bottom { bottom: 22px; left: 24px; right: 24px; font-size: 7px; }.journey-edition { display: none; }.journey-skip { gap: 10px; }.scroll-track { height: 28px; width: 20px; }
   .journey-caption { left: 24px; bottom: 14%; max-width: 280px; }.journey-caption p { font-size: 29px; }.journey-caption .micro-label { font-size: 8px; }.journey-finale p { font-size: clamp(34px, 9vw, 47px); letter-spacing: -0.02em; }
-  .section-pad { padding: 48px 24px 65px; }.studio-content { border-radius: 20px 20px 0 0; }.section-index { font-size: 8px; padding-bottom: 25px; }.section-index > span:last-child { display: none; }
+  .section-pad { padding: 48px 24px 65px; }.studio-content { border-radius: 20px 20px 0 0; padding-bottom: 30px; }.section-index { font-size: 8px; padding-bottom: 25px; }.section-index > span:last-child { display: none; }
   .intro-grid { display: block; padding: 15px 0 45px; }.intro-grid > div:first-child { display: flex; align-items: center; gap: 25px; margin-bottom: 35px; }.intro-symbol { font-size: 62px; }.small-note { margin: 0; font-size: 10px; }.statement { font-size: clamp(28px,7.5vw,46px); line-height: 1.16; letter-spacing: -.06em; }
   .intro-bottom { grid-template-columns: 1fr; gap: 23px; margin-top: 25px; }.intro-bottom p { max-width: 340px; }.round-link { font-size: 12px; gap: 14px; }.round-link .round-arrow { width: 38px; height: 38px; }
   .stats-line { grid-template-columns: 1fr 1fr; gap: 30px 0; padding-top: 25px; }.stats-line > div:nth-child(3) { padding-left: 0; border-left: 0; }.stats-line p { font-size: 40px; margin-bottom: 8px; }.stats-line .micro-label { font-size: 7px; }
   .section-heading { align-items: start; flex-direction: column; gap: 25px; margin: 15px 0 35px; }.section-heading h2, .services-intro h2 { font-size: clamp(42px,11vw,68px); }.section-heading p { font-size: 12px; margin-bottom: 18px; }
   .work-grid { grid-template-columns: 1fr; gap: 40px; }.work-item:nth-child(even), .work-item:nth-child(3) { margin-top: 0; }.project-frame { aspect-ratio: 1.08; border-radius: 12px; }.project-caption h3 { font-size: 23px; }.project-caption p { font-size: 9px; }.project-open { transform: none; width: 37px; height: 37px; right: 15px; bottom: 15px; }.project-open svg { width: 20px; }.art-title { font-size: 10vw; }.elevex-title { font-size: 15vw; }.amara-title { font-size: 16vw; }.art-corner { font-size: 6px; top: 23px; left: 23px; }.art-foot { font-size: 7px; bottom: 23px; left: 23px; }
-  .possibility-panel { min-height: 610px; margin: 0 12px; padding: 33px 24px; }.possibility-panel > .micro-label { font-size: 8px; }.possibility-panel h2 { font-size: 17vw; margin-top: 45px; }.possibility-orbit { width: 105%; top: 35%; right: -37%; opacity: .7; }.possibility-orbit i { border-width: 23px; }.possibility-panel > p { margin-top: 30px; font-size: 11px; }.possibility-link { width: 55px; height: 55px; bottom: 35px; right: 24px; }.possibility-link svg { width: 25px; }
+  .possibility-panel { min-height: 610px; margin: 20px 12px 60px; padding: 33px 24px; }.possibility-panel > .micro-label { font-size: 8px; }.possibility-panel h2 { font-size: 17vw; margin-top: 45px; }.possibility-orbit { width: 105%; top: 35%; right: -37%; opacity: .7; }.possibility-orbit i { border-width: 23px; }.possibility-panel > p { margin-top: 30px; font-size: 11px; }.possibility-link { width: 55px; height: 55px; bottom: 35px; right: 24px; }.possibility-link svg { width: 25px; }
   .services-grid { grid-template-columns: 1fr; gap: 35px; margin-top: 15px; }.services-intro > p { max-width: 320px; }.capability-mark { display: none; }.service-row { padding: 25px 0; }.service-row h3 { font-size: 21px; }.service-row p { max-width: none; font-size: 8px; }.service-row > .micro-label { font-size: 8px; }
   .process-grid { grid-template-columns: 1fr 1fr; gap: 35px 22px; margin-top: 35px; }.process-number { font-size: 46px; }.process-grid h3 { font-size: 17px; margin-top: 25px; line-height: 1.25; }.process-grid p { font-size: 11px; }
   .faq-section { grid-template-columns: 1fr; gap: 40px; }.faq-section h2 { font-size: 52px; }.faq-section button > span:nth-child(2) { font-size: 14px; }.faq-section button > span:first-child { display: none; }.faq-section .acc-panel p { padding-left: 0; font-size: 12px; }
