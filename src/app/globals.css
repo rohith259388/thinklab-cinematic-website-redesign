@@ -80,16 +80,19 @@ body {
   overscroll-behavior-y: none;
 }
 
-body,
-button,
-input,
-textarea,
-select {
+body {
   background: var(--color-void);
   color: var(--color-paper);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
 }
 
 h1,
@@ -537,7 +540,7 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .process-grid p { font-size: 12px; line-height: 1.75; color: #767a6d; }
 .faq-section { display: grid; grid-template-columns: .9fr 1.3fr; gap: 7vw; padding-top: 120px; padding-bottom: 120px; }
 .faq-section h2 { font-size: clamp(44px,5.2vw,80px); margin: 22px 0 30px; }
-.faq-section button { gap: 15px; }
+.faq-section button { gap: 15px; background: transparent; }
 .faq-section button > span:nth-child(2) { color: #303328; font-size: 15px; font-weight: 400; }
 .faq-section button > span:last-child { border-color: #777c6c55; background: none; }
 .faq-section button svg { color: #5b6351; }
