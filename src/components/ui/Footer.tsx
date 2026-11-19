@@ -120,9 +120,6 @@ export default function Footer() {
         >
           Facebook ↗
         </a>
-        <a href="https://events.thinklabdigitalsolutions.com">
-          Thinklab Events ↗
-        </a>
       </div>
       <div className="footer-baseline">
         <span>© {new Date().getFullYear()} Thinklab Digital Solutions</span>
