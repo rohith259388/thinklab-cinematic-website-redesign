@@ -141,38 +141,14 @@ export default async function HomePage() {
             </section>
 
             {/* 4. SELECTED PROJECTS */}
-            <section id="works" className="selected-work section-pad">
+            <section id="works" className="selected-work relative pt-6 pb-16">
               <div className="section-index">
                 <span>
                   <Plus size={14} /> <CmsText field="home.projects.number">02 / SELECTED WORK</CmsText>
                 </span>
                 <span><CmsText field="home.projects.kicker">THINKING MADE TANGIBLE.</CmsText></span>
               </div>
-              <div className="section-heading">
-                <h2>
-                  <CmsText field="home.projects.title" split><SplitWords text="Projects" /></CmsText>
-                  <span className="project-heading-count">
-                    {" "}
-                    / {projectCards.length}
-                  </span>
-                </h2>
-                <Reveal>
-                  <p>
-                    <CmsText field="home.projects.body">
-                      A few of the brands we’ve helped
-                      <br />
-                      find their next chapter.
-                    </CmsText>
-                  </p>
-                  <Link href="/projects" className="round-link">
-                    <CmsText field="home.projects.cta">View All Projects</CmsText>{" "}
-                    <span className="round-arrow">
-                      <ArrowUpRight size={18} />
-                    </span>
-                  </Link>
-                </Reveal>
-              </div>
-              <ProjectGallery projects={projectCards.slice(0, 4)} mode="stacked" />
+              <ProjectGallery projects={projectCards.slice(0, 6)} mode="stacked" />
             </section>
 
             {/* 5. BRAND PHILOSOPHY / WHY CHOOSE US */}

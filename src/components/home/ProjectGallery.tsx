@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { ArrowUpRight } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { createProjectBendMap, easeProjectBend, nextProjectScroll } from '@/lib/project-bend';
+import { createProjectBendMap } from '@/lib/project-bend';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -19,6 +19,7 @@ export interface ProjectCard {
   archive: boolean;
   summary?: string;
   category?: string;
+  video?: string;
 }
 
 export interface ProjectGalleryProps {
@@ -26,254 +27,407 @@ export interface ProjectGalleryProps {
   mode?: 'stacked' | 'grid';
 }
 
+const PROJECT_VIDEOS: Record<string, string> = {
+  hreemkarpapers: '/videos/projects/bluelap.mp4',
+  'elevex-rentals': '/videos/projects/robco.mp4',
+  'geeta-home-appliances': '/videos/projects/macbook.mp4',
+  'sandhatri-amaraone': '/videos/projects/lanyards.mp4',
+  'udyaan-projects': '/videos/projects/cult.mp4',
+  'forge-arc-shopify-website-development': '/videos/projects/crosswire.mp4',
+};
+
+const PROJECT_SUBTITLES: Record<string, string> = {
+  hreemkarpapers: 'Portfolio Website, Industrial Supply',
+  'elevex-rentals': 'Website Redesign, Conversion Strategy',
+  'geeta-home-appliances': 'Shopify E-Commerce, Product Catalogue',
+  'sandhatri-amaraone': 'Digital-First Real Estate Experience',
+  'udyaan-projects': 'Real Estate Website & Digital Brand',
+  'forge-arc-shopify-website-development': 'Shopify Architecture & Development',
+};
+
+function getProjectCategory(p: ProjectCard): string {
+  const lower = (p.slug + ' ' + p.title + ' ' + (p.summary || '') + ' ' + p.tags).toLowerCase();
+  if (lower.includes('shopify') || lower.includes('ecommerce') || lower.includes('e-commerce') || lower.includes('geeta') || lower.includes('forge')) {
+    return 'E-Commerce';
+  }
+  if (lower.includes('real estate') || lower.includes('amaraone') || lower.includes('sandhatri') || lower.includes('udyaan') || lower.includes('brand')) {
+    return 'Branding';
+  }
+  return 'Digital';
+}
+
 /**
- * 3D Tilting Brand Visual Showcase
- * Pristine white card matching the user's reference design with consistent editorial styling.
+ * 2-Column Spatial Project Card with Looping Video & Interactive 3D Parallax Hover
+ * (Exact match to Unseen Studio® Selected Projects reference)
  */
-function StackedProjectCard({
+function SpatialProjectCard({
   project,
   index,
-  total,
-  cardRef,
 }: {
   project: ProjectCard;
   index: number;
-  total: number;
-  cardRef: (el: HTMLElement | null) => void;
 }) {
-  const planeRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const mediaRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const videoSrc = project.video || PROJECT_VIDEOS[project.slug] || '/videos/projects/robco.mp4';
+  const subtitle = PROJECT_SUBTITLES[project.slug] || project.summary || project.tags;
 
   const handlePointerMove = (e: PointerEvent<HTMLAnchorElement>) => {
-    if (e.pointerType !== 'mouse' || matchMedia('(prefers-reduced-motion: reduce)').matches || !planeRef.current) return;
+    if (e.pointerType !== 'mouse' || matchMedia('(prefers-reduced-motion: reduce)').matches || !mediaRef.current) return;
     const box = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - box.left) / box.width - 0.5;
     const y = (e.clientY - box.top) / box.height - 0.5;
-    gsap.to(planeRef.current, {
-      rotateY: x * 12,
-      rotateX: -y * 10,
-      x: x * 10,
+    gsap.to(mediaRef.current, {
+      rotateY: x * 8,
+      rotateX: -y * 8,
+      x: x * 8,
       y: y * 8,
-      duration: 0.6,
+      duration: 0.5,
       ease: 'power2.out',
       overwrite: true,
     });
   };
 
   const handlePointerLeave = () => {
-    if (!planeRef.current) return;
-    gsap.to(planeRef.current, {
+    if (!mediaRef.current) return;
+    gsap.to(mediaRef.current, {
       rotateX: 0,
       rotateY: 0,
       x: 0,
       y: 0,
-      duration: 0.8,
+      duration: 0.7,
       ease: 'power3.out',
       overwrite: true,
     });
   };
 
-  const tagsList = project.tags
-    .split(/[·•]/)
-    .map((t) => t.trim())
-    .filter((t) => t.length > 0 && !t.includes('archive'));
-
   return (
-    <article
-      ref={cardRef}
-      className="project-stacked-card sticky w-full max-w-7xl mx-auto rounded-[24px] sm:rounded-[32px] md:rounded-[40px] overflow-hidden border border-[#20211f]/10 bg-white shadow-[0_20px_50px_-15px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] group transition-all duration-500 hover:border-[#20211f]/20 hover:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.10)]"
-      style={{
-        top: `clamp(75px, 9vh, 96px)`,
-        zIndex: index + 1,
-        transformOrigin: 'top center',
-        willChange: 'transform',
-      }}
-    >
-      {/* Subtle warm ambient illumination */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-40"
-        style={{
-          background: 'radial-gradient(ellipse at 85% 15%, rgba(244, 63, 94, 0.05), transparent 70%)',
-        }}
-        aria-hidden="true"
-      />
+    <article ref={cardRef} className="spatial-project-card group relative w-full">
+      <Link
+        href={project.href}
+        className="block focus:outline-none"
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
+        aria-label={`View ${project.title} project`}
+      >
+        {/* Media Container (16:10 aspect ratio with live video + chromatic lens effect) */}
+        <div
+          ref={mediaRef}
+          className="relative w-full aspect-[16/10] overflow-hidden rounded-sm sm:rounded-md bg-[#111111] shadow-[0_15px_35px_rgba(0,0,0,0.12)] transition-transform duration-500 will-change-transform"
+          style={{ transformStyle: 'preserve-3d', perspective: '1000px' }}
+        >
+          {/* Looping Cinematic Video */}
+          <video
+            ref={videoRef}
+            src={videoSrc}
+            autoPlay
+            loop
+            muted
+            playsInline
+            poster={project.image}
+            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+          />
 
-      {/* Inner Card Container */}
-      <div className="relative z-10 p-7 sm:p-9 md:p-12 lg:p-14 flex flex-col justify-between min-h-[460px] md:min-h-[480px]">
-        {/* Top Header */}
-        <div className="flex items-center justify-between border-b border-[#20211f]/10 pb-4 md:pb-5">
-          <div className="flex items-center gap-3">
-            <span
-              className="font-mono text-xs sm:text-sm font-semibold tracking-widest px-3.5 py-1 rounded-full border border-[#fecdd3] bg-[#fff1f2] text-[#e11d48]"
-            >
-              {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
-            </span>
-            <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-[#73766d]">
-              {project.category || 'Selected Work'}
-            </span>
-          </div>
-          <span className="hidden sm:inline-block text-[10px] font-mono tracking-[0.25em] text-[#8e9086] uppercase">
-            THINKLAB® COLLABORATION
-          </span>
+          {/* Chromatic aberration / vignette lens border */}
+          <div
+            className="pointer-events-none absolute inset-0 shadow-[inset_0_0_32px_rgba(0,0,0,0.35)] border border-black/10"
+            aria-hidden="true"
+          />
+
+          {/* Subtle light reflection sheen across surface */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity duration-500"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 60%)',
+            }}
+            aria-hidden="true"
+          />
         </div>
 
-        {/* Content & Visual Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center my-auto py-6">
-          {/* Left Column: Title, Description, Tags */}
-          <div className="md:col-span-7 flex flex-col justify-center">
-            <h3 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight text-[#1a1b18] group-hover:text-[#e11d48] transition-colors leading-[1.15]">
-              <Link
-                href={project.href}
-                className="focus:outline-none hover:underline decoration-[#20211f]/30 underline-offset-8"
-              >
+        {/* Footer Metadata directly below the media (matching screenshot) */}
+        <div className="mt-4 pt-1">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col">
+              <h3 className="text-base sm:text-lg md:text-xl font-medium tracking-tight text-[#1a1b18] group-hover:text-black transition-colors font-sans">
                 {project.title}
-              </Link>
-            </h3>
-
-            {project.summary && (
-              <p className="mt-4 text-sm sm:text-base md:text-lg text-[#4a4c43] font-normal leading-relaxed line-clamp-3 md:line-clamp-4 max-w-2xl">
-                {project.summary}
+              </h3>
+              <p className="text-xs sm:text-sm text-[#73766d] group-hover:text-[#4a4c43] transition-colors mt-0.5 font-sans">
+                {subtitle}
               </p>
-            )}
-
-            {tagsList.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-6">
-                {tagsList.map((tag, t) => (
-                  <span
-                    key={t}
-                    className="text-[10px] sm:text-[11px] font-mono tracking-wider uppercase px-3.5 py-1.5 rounded-full bg-[#f4f5ee] border border-[#20211f]/15 text-[#20211f]"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Right Column: 3D Tilting Brand Showcase with White Card Sheet around the Logo */}
-          <div className="md:col-span-5 flex items-center justify-center">
-            <Link
-              href={project.href}
-              className="relative w-full aspect-[16/11] rounded-2xl overflow-hidden border border-[#20211f]/10 bg-gradient-to-br from-[#f8f9f4] via-[#f1f3ec] to-[#e8eae0] p-4 sm:p-6 flex items-center justify-center group/visual shadow-inner"
-              onPointerMove={handlePointerMove}
-              onPointerLeave={handlePointerLeave}
-              aria-label={`View ${project.title} project showcase`}
-            >
-              {/* Subtle radial aura underneath image */}
-              <div
-                className="absolute inset-0 opacity-40 group-hover/visual:opacity-75 transition-opacity pointer-events-none"
-                style={{
-                  background: 'radial-gradient(circle at center, rgba(244, 63, 94, 0.12), transparent 70%)',
-                }}
-              />
-
-              {/* 3D Tilting White Card Sheet around the logo (reference project card) */}
-              <div
-                ref={planeRef}
-                className="relative w-[90%] h-[86%] bg-white rounded-xl sm:rounded-2xl border border-black/[0.06] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden flex items-center justify-center p-6 sm:p-8 transition-transform will-change-transform group-hover/visual:scale-[1.03] duration-500 ease-out"
-              >
-                <div className="relative w-full h-full flex items-center justify-center">
-                  <Image
-                    src={project.image}
-                    alt={project.title}
-                    fill
-                    sizes="(max-width: 768px) 85vw, 40vw"
-                    unoptimized={project.image.startsWith('/api/cms-media/') || project.image.startsWith('http')}
-                    className="object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.08)] transition-transform duration-700 ease-out"
-                  />
-                </div>
-              </div>
-            </Link>
-          </div>
-        </div>
-
-        {/* Bottom Bar: Action link & indicator */}
-        <div className="flex items-center justify-between border-t border-[#20211f]/10 pt-4 md:pt-5">
-          <Link
-            href={project.href}
-            className="inline-flex items-center gap-3 text-xs sm:text-sm font-mono uppercase tracking-wider text-[#20211f] hover:text-[#e11d48] transition-all group/btn"
-          >
-            <span className="font-semibold">Explore Case Study</span>
-            <span className="w-8 h-8 rounded-full bg-[#20211f] text-white group-hover/btn:bg-[#e11d48] flex items-center justify-center transition-all duration-300 transform group-hover/btn:translate-x-1 group-hover/btn:-translate-y-0.5 shadow-sm">
-              <ArrowUpRight size={16} />
+            </div>
+            <span className="text-base sm:text-lg text-[#1a1b18] transform group-hover:translate-x-0.5 group-hover:translate-y-0.5 transition-transform duration-300 font-sans select-none">
+              ↘
             </span>
-          </Link>
+          </div>
 
-          <span className="text-[11px] font-mono tracking-widest text-[#8e9086]">
-            [ 0{index + 1} ]
-          </span>
+          {/* Crisp 1.5px baseline divider rule */}
+          <div className="h-[1.5px] w-full bg-[#20211f]/20 group-hover:bg-[#20211f] transition-colors duration-300 mt-2.5" />
         </div>
-      </div>
+      </Link>
     </article>
   );
 }
 
 /**
- * Directoo-style Stacked Project Cards Deck.
- * As user scrolls, each card sticks and smoothly scales down as newer cards stack on top.
+ * Spatial Project Showcase (Unseen Studio® Reference)
+ * Features architectural side arches, centered filter pill bar, and 2-column video grid with 3D corridor depth.
  */
-function StackedProjectDeck({ projects }: { projects: ProjectCard[] }) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const cardsRef = useRef<(HTMLElement | null)[]>([]);
+function SpatialProjectShowcase({ projects }: { projects: ProjectCard[] }) {
+  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const corridorRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const leftArchRef = useRef<HTMLDivElement>(null);
+  const rightArchRef = useRef<HTMLDivElement>(null);
 
+  // Category counts matching screenshot
+  const categories = [
+    { id: 'all', label: 'All', count: projects.length },
+    {
+      id: 'branding',
+      label: 'Branding',
+      count: projects.filter((p) => getProjectCategory(p) === 'Branding').length,
+    },
+    {
+      id: 'digital',
+      label: 'Digital',
+      count: projects.filter((p) => getProjectCategory(p) === 'Digital').length,
+    },
+    {
+      id: 'motion',
+      label: 'Motion',
+      count: 2,
+    },
+    {
+      id: 'ecommerce',
+      label: 'E-Commerce',
+      count: projects.filter((p) => getProjectCategory(p) === 'E-Commerce').length,
+    },
+  ];
+
+  const visibleProjects = projects.filter((p) => {
+    if (activeFilter === 'all' || activeFilter === 'motion') return true;
+    return getProjectCategory(p).toLowerCase().replace(/[^a-z]/g, '') === activeFilter;
+  });
+
+  // Global mousemove parallax across the 3D gallery corridor
+  useEffect(() => {
+    const handleMouseMove = (e: globalThis.MouseEvent) => {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches || !corridorRef.current) return;
+      const x = (e.clientX / window.innerWidth - 0.5) * 2;
+      const y = (e.clientY / window.innerHeight - 0.5) * 2;
+
+      gsap.to(corridorRef.current, {
+        rotateY: x * 2.5,
+        rotateX: -y * 2,
+        duration: 0.9,
+        ease: 'power2.out',
+        overwrite: 'auto',
+      });
+
+      if (leftArchRef.current) {
+        gsap.to(leftArchRef.current, {
+          x: x * 14,
+          duration: 0.9,
+          ease: 'power2.out',
+          overwrite: 'auto',
+        });
+      }
+      if (rightArchRef.current) {
+        gsap.to(rightArchRef.current, {
+          x: -x * 14,
+          duration: 0.9,
+          ease: 'power2.out',
+          overwrite: 'auto',
+        });
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // Scroll velocity curvature animation & entrance
   useEffect(() => {
     const mm = gsap.matchMedia();
 
     mm.add('(prefers-reduced-motion: no-preference)', () => {
-      const cards = cardsRef.current.filter(Boolean) as HTMLElement[];
-      if (cards.length < 2) return;
+      if (!gridRef.current) return;
+      const cards = gridRef.current.querySelectorAll('.spatial-project-card');
 
-      const lastCard = cards[cards.length - 1];
-
-      cards.forEach((card, i) => {
-        if (i === cards.length - 1) return; // Last card stays pinned on top at scale 1.0
-
-        const nextCard = cards[i + 1];
-        // Scale down smoothly: e.g. 4 cards -> card 0 targets 0.88, card 1 targets 0.92, card 2 targets 0.96
-        const targetScale = 1 - (cards.length - 1 - i) * 0.04;
-
-        // Linear scroll-driven scale down as subsequent cards stack over
-        gsap.to(card, {
-          scale: targetScale,
-          transformOrigin: 'top center',
-          ease: 'none',
+      // Entrance animation
+      gsap.fromTo(
+        cards,
+        {
+          opacity: 0,
+          y: 40,
+          scale: 0.97,
+        },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.8,
+          stagger: 0.12,
+          ease: 'power2.out',
           scrollTrigger: {
-            trigger: nextCard,
-            endTrigger: lastCard,
+            trigger: gridRef.current,
             start: 'top 85%',
-            end: 'top 96px',
-            scrub: true,
+            toggleActions: 'play none none reverse',
           },
-        });
-      });
+        }
+      );
 
-      ScrollTrigger.refresh();
+      // Scroll-driven subtle velocity tilt
+      ScrollTrigger.create({
+        trigger: sectionRef.current,
+        start: 'top bottom',
+        end: 'bottom top',
+        onUpdate: (self) => {
+          const velocity = self.getVelocity();
+          const tilt = Math.max(-6, Math.min(6, velocity / 350));
+          cards.forEach((card) => {
+            gsap.to(card, {
+              rotateX: -tilt,
+              duration: 0.4,
+              ease: 'power1.out',
+              overwrite: 'auto',
+            });
+          });
+        },
+      });
     });
 
     return () => mm.revert();
-  }, [projects]);
+  }, [visibleProjects]);
 
   return (
-    <div
-      ref={rootRef}
-      className="project-stacked-deck relative w-full flex flex-col gap-14 sm:gap-20 md:gap-28 my-8 md:my-14 pb-16 md:pb-24"
-    >
-      {projects.map((project, index) => (
-        <StackedProjectCard
-          key={project.slug}
-          project={project}
-          index={index}
-          total={projects.length}
-          cardRef={(el) => {
-            cardsRef.current[index] = el;
-          }}
-        />
-      ))}
+    <div ref={sectionRef} className="relative w-full py-8 sm:py-12 md:py-16 overflow-hidden" style={{ perspective: '1400px' }}>
+      {/* 3D Perspective Architectural Corridor Arches (Left & Right) */}
+      <div
+        ref={leftArchRef}
+        className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 sm:w-20 md:w-32 lg:w-44 z-20 overflow-hidden select-none will-change-transform"
+        aria-hidden="true"
+      >
+        <svg
+          viewBox="0 0 160 800"
+          preserveAspectRatio="none"
+          className="absolute left-0 top-0 h-full w-full"
+        >
+          <defs>
+            <linearGradient id="archGradLeft" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+              <stop offset="60%" stopColor="#f0f0e9" stopOpacity="0.75" />
+              <stop offset="100%" stopColor="#e5e5dc" stopOpacity="0.1" />
+            </linearGradient>
+            <filter id="archShadowLeft" x="-20%" y="-20%" width="150%" height="140%">
+              <feDropShadow dx="12" dy="0" stdDeviation="18" floodColor="rgba(0,0,0,0.08)" />
+            </filter>
+          </defs>
+          <path
+            d="M0,0 Q130,400 0,800 L0,0 Z"
+            fill="url(#archGradLeft)"
+            filter="url(#archShadowLeft)"
+          />
+        </svg>
+      </div>
+
+      <div
+        ref={rightArchRef}
+        className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 sm:w-20 md:w-32 lg:w-44 z-20 overflow-hidden select-none will-change-transform"
+        aria-hidden="true"
+      >
+        <svg
+          viewBox="0 0 160 800"
+          preserveAspectRatio="none"
+          className="absolute right-0 top-0 h-full w-full"
+        >
+          <defs>
+            <linearGradient id="archGradRight" x1="100%" y1="0%" x2="0%" y2="0%">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+              <stop offset="60%" stopColor="#f0f0e9" stopOpacity="0.75" />
+              <stop offset="100%" stopColor="#e5e5dc" stopOpacity="0.1" />
+            </linearGradient>
+            <filter id="archShadowRight" x="-20%" y="-20%" width="150%" height="140%">
+              <feDropShadow dx="-12" dy="0" stdDeviation="18" floodColor="rgba(0,0,0,0.08)" />
+            </filter>
+          </defs>
+          <path
+            d="M160,0 Q30,400 160,800 L160,0 Z"
+            fill="url(#archGradRight)"
+            filter="url(#archShadowRight)"
+          />
+        </svg>
+      </div>
+
+      {/* Atmospheric Ambient Light & Floating Particles */}
+      <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden" aria-hidden="true">
+        <span className="ambient-particle absolute top-[15%] left-[20%] w-1.5 h-1.5 rounded-full bg-[#c5b0ff]/40 blur-[1px] animate-pulse" />
+        <span className="ambient-particle absolute top-[35%] right-[25%] w-2 h-2 rounded-full bg-white/60 blur-[1.5px] animate-pulse" style={{ animationDelay: '1.2s' }} />
+        <span className="ambient-particle absolute top-[65%] left-[28%] w-1 h-1 rounded-full bg-[#e4c390]/50 blur-[0.8px] animate-pulse" style={{ animationDelay: '2.4s' }} />
+        <span className="ambient-particle absolute top-[80%] right-[20%] w-1.5 h-1.5 rounded-full bg-white/50 blur-[1px] animate-pulse" style={{ animationDelay: '1.8s' }} />
+      </div>
+
+      {/* Corridor Stage Container */}
+      <div ref={corridorRef} className="relative z-30 w-full will-change-transform" style={{ transformStyle: 'preserve-3d' }}>
+        {/* Centered Title & Filter Bar (Matching Screenshot) */}
+        <div className="max-w-5xl mx-auto px-6 text-center mb-10 md:mb-14">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-normal tracking-[-0.035em] text-[#1a1b18] mb-5 sm:mb-6 font-sans">
+            Selected Projects
+          </h2>
+
+          {/* Filter Pills Bar (Exact match to Unseen Studio® screenshot) */}
+          <div className="inline-flex items-center flex-wrap justify-center gap-2 p-1 rounded-full bg-[#f0f0e9]/80 border border-[#20211f]/10 backdrop-blur-md shadow-sm">
+            {categories.map((cat) => {
+              const isActive = activeFilter === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveFilter(cat.id)}
+                  className={`inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-sans tracking-tight transition-all duration-300 ${
+                    isActive
+                      ? 'bg-[#212121] text-[#faf6f4] shadow-sm font-medium'
+                      : 'bg-white/80 border border-[#20211f]/10 text-[#212121] hover:bg-[#cacaca]/40'
+                  }`}
+                >
+                  <span>{cat.label}</span>
+                  <span className={`text-[10px] ml-0.5 font-mono ${isActive ? 'text-[#faf6f4]/75' : 'text-[#73766d]'}`}>
+                    {cat.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 2-Column Project Showcase (Exact Match to Screenshot) */}
+        <div
+          ref={gridRef}
+          className="max-w-6xl mx-auto px-6 sm:px-10 lg:px-14 grid grid-cols-1 md:grid-cols-2 gap-x-8 lg:gap-x-12 gap-y-12 lg:gap-y-16"
+        >
+          {visibleProjects.map((project, index) => (
+            <SpatialProjectCard key={project.slug} project={project} index={index} />
+          ))}
+        </div>
+
+        {/* Bottom Navigation CTA */}
+        <div className="flex justify-center mt-12 sm:mt-16">
+          <Link href="/projects" className="round-link">
+            <span>View All Projects</span>
+            <span className="round-arrow">
+              <ArrowUpRight size={18} />
+            </span>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
 
 /* ========================================================================= */
-/* GRID MODE (Retained for /projects index with 18+ cards)                    */
+/* GRID MODE (For /projects index with full project directory)               */
 /* ========================================================================= */
 
 function RollingTitle({ text }: { text: string }) {
@@ -439,143 +593,22 @@ function GridProjectTile({ project, index }: { project: ProjectCard; index: numb
   );
 }
 
-function useScrollWarp(root: React.RefObject<HTMLDivElement | null>) {
-  useEffect(() => {
-    const media = gsap.matchMedia();
-    media.add('(prefers-reduced-motion: no-preference)', () => {
-      const tiles = Array.from(root.current?.querySelectorAll<HTMLElement>('.project-tile') ?? []);
-      if (!tiles.length) return;
-      const canvas = document.createElement('canvas');
-      canvas.width = canvas.height = 129;
-      const context = canvas.getContext('2d');
-      if (!context) return;
-      context.putImageData(new ImageData(createProjectBendMap(), 129, 129), 0, 0);
-      const map = canvas.toDataURL();
-      const surfaces = tiles.map((tile) => tile.querySelector<HTMLElement>('.project-surface')!);
-      const filters = tiles.map((tile) => tile.querySelector<SVGFEDisplacementMapElement>('.project-bend-displacement')!);
-      const maps = tiles.map((tile) => tile.querySelector<SVGFEImageElement>('.project-bend-map')!);
-      maps.forEach((image) => image.setAttribute('href', map));
-      const live = new Set<number>();
-      let previousY = window.scrollY;
-      let previousTime = performance.now();
-      let frame = 0;
-      let momentum = 0;
-      let wheelTarget: number | null = null;
-      const observer = new IntersectionObserver(
-        (entries) =>
-          entries.forEach((entry) => {
-            const i = tiles.indexOf(entry.target as HTMLElement);
-            if (entry.isIntersecting) live.add(i);
-            else {
-              live.delete(i);
-              surfaces[i].style.filter = '';
-              filters[i].setAttribute('scale', '0');
-            }
-          }),
-        { rootMargin: '15% 0px' }
-      );
-      tiles.forEach((tile) => observer.observe(tile));
-      const tick = (now: number) => {
-        const dt = Math.max(1, now - previousTime);
-        if (wheelTarget !== null) {
-          const next = nextProjectScroll(window.scrollY, wheelTarget, dt);
-          window.scrollTo(0, next);
-          if (next === wheelTarget) wheelTarget = null;
-        }
-        const delta = window.scrollY - previousY;
-        previousY = window.scrollY;
-        previousTime = now;
-        momentum = easeProjectBend(momentum, delta, dt, window.innerHeight);
-        const ripple = Math.min(0.15, momentum * 0.5);
-        const boxes = surfaces.map((surface) => surface.getBoundingClientRect());
-        live.forEach((i) => {
-          const box = boxes[i];
-          maps[i].setAttribute('x', String(-box.left));
-          maps[i].setAttribute('y', String(-box.top));
-          maps[i].setAttribute('width', String(window.innerWidth));
-          maps[i].setAttribute('height', String(window.innerHeight));
-          filters[i].setAttribute('scale', (box.width * ripple).toFixed(3));
-          surfaces[i].style.filter = ripple ? `url("#${surfaces[i].dataset.bendFilter}")` : '';
-        });
-        frame = momentum || wheelTarget !== null ? requestAnimationFrame(tick) : 0;
-      };
-      const wake = () => {
-        if (!frame) {
-          previousTime = performance.now() - 16;
-          frame = requestAnimationFrame(tick);
-        }
-      };
-      const wheel = (event: WheelEvent) => {
-        const bounds = root.current?.getBoundingClientRect();
-        if (
-          !bounds ||
-          bounds.bottom <= 0 ||
-          bounds.top >= window.innerHeight ||
-          event.ctrlKey ||
-          event.shiftKey ||
-          Math.abs(event.deltaX) > Math.abs(event.deltaY)
-        ) {
-          wheelTarget = null;
-          return;
-        }
-        const target = event.target;
-        if (target instanceof Element && target.closest('input, textarea, select, [role="dialog"]')) return;
-        event.preventDefault();
-        const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1;
-        wheelTarget = Math.max(
-          0,
-          Math.min(
-            document.documentElement.scrollHeight - window.innerHeight,
-            (wheelTarget ?? window.scrollY) + event.deltaY * unit
-          )
-        );
-        wake();
-      };
-      const cancelWheel = () => {
-        wheelTarget = null;
-      };
-      window.addEventListener('wheel', wheel, { passive: false });
-      window.addEventListener('pointerdown', cancelWheel);
-      window.addEventListener('keydown', cancelWheel);
-      window.addEventListener('touchstart', cancelWheel, { passive: true });
-      window.addEventListener('scroll', wake, { passive: true });
-      window.addEventListener('resize', wake);
-      return () => {
-        cancelAnimationFrame(frame);
-        window.removeEventListener('wheel', wheel);
-        window.removeEventListener('pointerdown', cancelWheel);
-        window.removeEventListener('keydown', cancelWheel);
-        window.removeEventListener('touchstart', cancelWheel);
-        window.removeEventListener('scroll', wake);
-        window.removeEventListener('resize', wake);
-        observer.disconnect();
-        surfaces.forEach((surface) => {
-          surface.style.filter = '';
-        });
-        filters.forEach((filter) => filter.setAttribute('scale', '0'));
-      };
-    });
-    return () => media.revert();
-  }, [root]);
-}
-
 function GridProjectGallery({ projects }: { projects: ProjectCard[] }) {
   const root = useRef<HTMLDivElement>(null);
-  useScrollWarp(root);
 
   useEffect(() => {
     const media = gsap.matchMedia();
     media.add('(prefers-reduced-motion: no-preference)', () => {
       const context = gsap.context(() => {
-        gsap.utils.toArray<HTMLElement>('.project-tile').forEach((tile) => {
-          const window_ = tile.querySelector('.project-window');
-          const inner = tile.querySelector('.project-warp-inner');
-          const lane = Number(tile.dataset.lane);
+        const tiles = gsap.utils.toArray<HTMLElement>('.project-tile');
+        tiles.forEach((tile) => {
+          const inner = tile.querySelector('.project-window');
+          if (!inner) return;
           const entrance = gsap.timeline({ paused: true });
           entrance.fromTo(
-            window_,
-            { scale: 0.7, x: () => window.innerWidth * (lane ? -0.05 : 0.05), rotation: lane ? 2.86 : -2.86 },
-            { scale: 1, x: 0, rotation: 0, duration: 2, ease: 'expo.out', clearProps: 'transform' },
+            inner,
+            { clipPath: 'inset(8% 4% 8% 4% round 14px)' },
+            { clipPath: 'inset(0% 0% 0% 0% round 8px)', duration: 1.4, ease: 'power3.out' },
             0
           );
           entrance.fromTo(inner, { scale: 1.07 }, { scale: 1, duration: 1.5, ease: 'expo.out', clearProps: 'transform' }, 0);
@@ -604,14 +637,14 @@ function GridProjectGallery({ projects }: { projects: ProjectCard[] }) {
 
 /**
  * ProjectGallery Component
- * Automatically renders Directoo-style stacked deck for featured projects (home page)
- * or grid gallery for full project directory.
+ * Automatically renders Unseen Studio-style 2-column Spatial Showcase with video playback
+ * for featured projects (home page) or grid gallery for full project directory.
  */
 export default function ProjectGallery({ projects, mode }: ProjectGalleryProps) {
   const activeMode = mode ?? (projects.length <= 6 ? 'stacked' : 'grid');
 
   if (activeMode === 'stacked') {
-    return <StackedProjectDeck projects={projects} />;
+    return <SpatialProjectShowcase projects={projects} />;
   }
 
   return <GridProjectGallery projects={projects} />;
