@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from 'next';
-import { Fraunces, Space_Grotesk, IBM_Plex_Mono } from 'next/font/google';
+import { League_Spartan, Space_Grotesk, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import { BRAND } from '@/lib/content';
 
-const fraunces = Fraunces({
+const leagueSpartan = League_Spartan({
   subsets: ['latin'],
-  style: ['normal', 'italic'],
-  variable: '--font-fraunces',
+  variable: '--font-league-spartan',
   display: 'swap',
 });
 
@@ -60,7 +59,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${grotesk.variable} ${plex.variable}`}>
+    <html lang="en" className={`${leagueSpartan.variable} ${grotesk.variable} ${plex.variable}`}>
       <body className="grain overflow-x-clip bg-[#050505] text-[#fcfcf7]">
         {children}
       </body>

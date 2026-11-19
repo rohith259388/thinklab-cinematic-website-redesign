@@ -87,7 +87,7 @@ export function SplitWords({ text, className = '', delay = 0, stagger = 0.055 }:
   return (
     <span ref={ref} className={className} aria-label={text} role="text">
       {text.split(' ').map((w, i) => (
-        <span key={i} className="inline-block overflow-hidden pb-[0.12em] -mb-[0.12em] align-bottom" aria-hidden="true">
+        <span key={i} className="inline-block overflow-hidden pb-[0.12em] -mb-[0.12em] pr-[0.15em] -mr-[0.15em] align-bottom" aria-hidden="true">
           <span data-word-inner className="inline-block will-change-transform">
             {w}
             {i < text.split(' ').length - 1 ? ' ' : ''}

@@ -125,7 +125,7 @@ export const HERO = {
 export const STATS = [
   { value: 98, suffix: '%', label: 'Client Success Rate' },
   { value: 200, suffix: '+', label: 'Campaigns Launched' },
-  { value: 250, prefix: '$', suffix: 'K+', label: 'Revenue Generated' },
+  { value: 250, prefix: '₹', suffix: 'K+', label: 'Revenue Generated' },
   { value: 200, suffix: '+', label: '5 Star Reviews' },
 ];
 
