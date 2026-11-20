@@ -133,5 +133,10 @@ export const siteContent = cache(async (slugOverride?: string) => {
   let global = (docs?.find((d) => d.kind === 'global' && d.slug === 'site')?.published ?? null) as Content | null;
   if (preview?.kind === 'page' && preview.slug === slug) page = preview.draft;
   if (preview?.kind === 'global') global = preview.draft;
-  return { page, global, previewId: preview?.id || null };
+  // Custom pages the editor chose to show in the main menu.
+  const menu = (docs ?? [])
+    .filter((d) => d.kind === 'page' && d.slug !== '/' && d.published?.fields['page.menu'] === 'show')
+    .map((d) => ({ title: d.published!.fields['page.menuLabel'] || d.published!.title, href: `/${d.slug}` }))
+    .sort((a, b) => a.title.localeCompare(b.title));
+  return { page, global, previewId: preview?.id || null, menu };
 });

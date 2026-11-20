@@ -1,19 +1,71 @@
 export const kinds = ['page', 'projects', 'blog', 'careers', 'global'] as const;
 export type Kind = (typeof kinds)[number];
 export type Role = 'admin' | 'publisher' | 'editor';
+export const sectionTypes = [
+  'hero',
+  'text',
+  'image',
+  'imageText',
+  'features',
+  'stats',
+  'faq',
+  'testimonials',
+  'gallery',
+  'logos',
+  'cta',
+  'quote',
+  'video',
+  'contact',
+  'divider',
+] as const;
+export type SectionType = (typeof sectionTypes)[number];
+export type SectionItem = {
+  title: string;
+  body: string;
+  image: string;
+  href: string;
+  /** FAQ category this question belongs to ('' = uncategorised). */
+  group: string;
+};
 export type Section = {
   id: string;
-  type: 'text' | 'hero' | 'cta' | 'image';
+  type: SectionType;
+  kicker: string;
   image: string;
   alt: string;
   title: string;
   body: string;
   href: string;
+  label: string;
   background: string;
   color: string;
   padding: number;
   align: 'left' | 'center';
+  /** imageText: 'left' | 'right' (image side). features/gallery/stats: '2' | '3' | '4' columns. */
+  layout: string;
+  hidden: boolean;
+  items: SectionItem[];
 };
+export const blockTypes = [
+  'p',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'li',
+  'ol',
+  'quote',
+  'img',
+  'faq',
+  'faqs',
+  'button',
+  'divider',
+] as const;
+/**
+ * Article block. `extra` holds the caption (img), answer (faq) or link (button).
+ * A `faqs` block is a whole category FAQ: `text` is its heading, `items` its questions.
+ */
+export type Block = { type: string; text: string; extra?: string; items?: SectionItem[] };
 export type Content = {
   title: string;
   summary: string;
@@ -25,7 +77,7 @@ export type Content = {
   apply: string;
   source: string;
   archive: boolean;
-  blocks: { type: string; text: string }[];
+  blocks: Block[];
   fields: Record<string, string>;
   styles: Record<
     string,
@@ -130,9 +182,26 @@ export function validateContent(raw: unknown): Content {
   if (!Array.isArray(r.blocks) || r.blocks.length > 500)
     throw new Error('Invalid rich text');
   out.blocks = r.blocks.map((b) => {
-    if (!b || !['p', 'h2', 'h3', 'h4', 'h5', 'li'].includes(b.type))
+    if (!b || !(blockTypes as readonly string[]).includes(b.type))
       throw new Error('Unsupported rich text block');
-    return { type: b.type, text: text(b.text) };
+    const block: Block = { type: b.type, text: text(b.text ?? '') };
+    if (b.extra !== undefined && b.extra !== '') block.extra = text(b.extra);
+    if (b.type === 'img' && !safeUrl(block.text, true))
+      throw new Error('Invalid image URL');
+    if (b.type === 'button' && !safeUrl(block.extra || ''))
+      throw new Error('Invalid button link');
+    if (b.type === 'faqs') {
+      if (!Array.isArray(b.items) || b.items.length > 200)
+        throw new Error('Invalid FAQ questions');
+      block.items = b.items.map((it: Record<string, unknown>) => ({
+        title: text(it?.title ?? '', 2000),
+        body: text(it?.body ?? ''),
+        image: '',
+        href: '',
+        group: text(it?.group ?? '', 200),
+      }));
+    }
+    return block;
   });
   if (
     !r.fields ||
@@ -182,24 +251,45 @@ export function validateContent(raw: unknown): Content {
         ];
       }),
   );
-  if (!Array.isArray(r.sections) || r.sections.length > 50)
+  if (!Array.isArray(r.sections) || r.sections.length > 60)
     throw new Error('Invalid sections');
   out.sections = r.sections.map((s) => {
-    if (!['text', 'hero', 'cta', 'image'].includes(s.type) || !safeUrl(s.href))
+    if (!s || !(sectionTypes as readonly string[]).includes(s.type))
       throw new Error('Unsupported section');
+    if (!safeUrl(s.href || '')) throw new Error('Invalid link in a section');
     if (!safeUrl(s.image || '', true)) throw new Error('Invalid image URL');
+    const items = s.items === undefined ? [] : s.items;
+    if (!Array.isArray(items) || items.length > 200)
+      throw new Error('Too many items in a section');
     return {
-      image: text(s.image || ''),
-      alt: text(s.alt || ''),
       id: text(s.id, 100),
       type: s.type,
-      title: text(s.title),
-      body: text(s.body),
-      href: text(s.href),
-      color: color(s.color),
-      background: color(s.background),
-      padding: number(s.padding, 200),
+      kicker: text(s.kicker ?? '', 300),
+      image: text(s.image ?? ''),
+      alt: text(s.alt ?? ''),
+      title: text(s.title ?? ''),
+      body: text(s.body ?? ''),
+      href: text(s.href ?? ''),
+      label: text(s.label ?? '', 200),
+      color: color(s.color ?? ''),
+      background: color(s.background ?? ''),
+      padding: number(s.padding ?? 64, 200),
       align: s.align === 'center' ? 'center' : 'left',
+      layout: ['left', 'right', '2', '3', '4'].includes(s.layout) ? s.layout : '',
+      hidden: s.hidden === true,
+      items: items.map((it: Record<string, unknown>) => {
+        if (!it || typeof it !== 'object') throw new Error('Invalid item');
+        const item = {
+          title: text(it.title ?? '', 2000),
+          body: text(it.body ?? ''),
+          image: text(it.image ?? '', 2000),
+          href: text(it.href ?? '', 2000),
+          group: text(it.group ?? '', 200),
+        };
+        if (!safeUrl(item.image, true) || !safeUrl(item.href))
+          throw new Error('Invalid link or image in a section item');
+        return item;
+      }),
     };
   });
   return out;

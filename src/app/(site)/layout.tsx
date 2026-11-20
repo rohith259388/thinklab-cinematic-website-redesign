@@ -6,6 +6,7 @@ import Footer from "@/components/ui/Footer";
 import SmoothScroll from "@/components/ui/SmoothScroll";
 
 import { CanvasProvider, CmsSections } from "@/components/cms/Canvas";
+import "@/components/cms/sections.css";
 import { siteContent } from "@/lib/cms/public";
 export default async function SiteLayout({
   children,

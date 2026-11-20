@@ -4,9 +4,59 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Document, type Content, type Kind, documentPath } from "@/lib/cms/schema";
 import TemplateModal from "./TemplateModal";
 import ImageField from "./ImageField";
+import PageModal from "./builder/PageModal";
+import PageSections from "./builder/PageSections";
+import BlockEditor from "./builder/BlockEditor";
+import SeoFields from "./builder/SeoFields";
+import { baseLinks } from "./builder/shared";
+import { builtInPages } from "@/lib/cms/blocks";
 import "./studio.css";
-import AuthCard from "./AuthCard";
+import "./builder/builder.css";
 type Field = { key: string; value: string; global: boolean };
+
+/** Applies an inline edit made in the preview (see Canvas.tsx readPath for the path format). */
+function applyPath(c: Content, path: string, value: string): Content | null {
+  const [scope, a, b, idx, key] = path.split(":");
+  if (scope === "f" && a) return { ...c, fields: { ...c.fields, [a]: value } };
+  if (scope === "e" && (a === "title" || a === "summary")) return { ...c, [a]: value };
+  if (scope === "b") {
+    const i = Number(a);
+    if (!c.blocks[i]) return null;
+    if (b === "items") {
+      if (key !== "title" && key !== "body") return null;
+      const k = Number(idx);
+      return {
+        ...c,
+        blocks: c.blocks.map((x, j) =>
+          j === i
+            ? { ...x, items: (x.items ?? []).map((it, m) => (m === k ? { ...it, [key]: value } : it)) }
+            : x,
+        ),
+      };
+    }
+    return {
+      ...c,
+      blocks: c.blocks.map((x, j) =>
+        j === i ? (b === "extra" ? { ...x, extra: value } : { ...x, text: value }) : x,
+      ),
+    };
+  }
+  if (scope === "s") {
+    return {
+      ...c,
+      sections: c.sections.map((s) => {
+        if (s.id !== a) return s;
+        if (b === "items" && (key === "title" || key === "body")) {
+          const k = Number(idx);
+          return { ...s, items: s.items.map((it, j) => (j === k ? { ...it, [key]: value } : it)) };
+        }
+        if (["title", "body", "kicker", "label"].includes(b)) return { ...s, [b]: value };
+        return s;
+      }),
+    };
+  }
+  return null;
+}
 type Asset = { id: string; name: string; mime: string; alt: string };
 async function api(action: string, data?: unknown) {
   const r = await fetch("/api/cms/" + action, {
@@ -42,11 +92,7 @@ async function api(action: string, data?: unknown) {
   return v;
 }
 const isDeletable = (d: Document) =>
-  !(
-    d.kind === "global" ||
-    (d.kind === "page" &&
-      ["/", "about", "services", "projects", "reviews", "blog", "contact"].includes(d.slug))
-  );
+  !(d.kind === "global" || (d.kind === "page" && builtInPages.includes(d.slug)));
 
 function formatFieldLabel(key: string): string {
   const parts = key.split(".");
@@ -176,7 +222,12 @@ export default function Studio({
     [canUndo, setCanUndo] = useState(false),
     [canRedo, setCanRedo] = useState(false),
     [mediaSection, setMediaSection] = useState(""),
-    [templateModal, setTemplateModal] = useState<Kind | null>(null);
+    [templateModal, setTemplateModal] = useState<Kind | null>(null),
+    [pageModal, setPageModal] = useState(false),
+    // What was last clicked in the preview, so the panel can reveal it. `tick`
+    // changes on every click so clicking the same thing twice still re-focuses.
+    [focus, setFocus] = useState<{ path: string; tick: number }>({ path: "", tick: 0 }),
+    [showPageText, setShowPageText] = useState(false);
   const canvasArea = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLIFrameElement>(null),
     past = useRef<Content[]>([]),
@@ -243,6 +294,14 @@ export default function Studio({
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refresh]);
+  // Image pickers everywhere offer the media library, so load it once up front.
+  useEffect(() => {
+    if (!user) return;
+    api("media")
+      .then((list) => setAssets(list))
+      .catch(() => {});
+  }, [user]);
+  const changeRef = useRef<(next: Content) => void>(() => {});
   const change = (next: Content) => {
     if (draft) {
       past.current.push(draft);
@@ -258,6 +317,9 @@ export default function Studio({
         : "Unsaved changes",
     );
   };
+  useEffect(() => {
+    changeRef.current = change;
+  });
   const undo = () => {
     const next = past.current.pop();
     if (next && draft) {
@@ -299,7 +361,7 @@ export default function Studio({
     setCanUndo(false);
     setCanRedo(false);
     setStatus("Saved");
-    setPanel("design");
+    setPanel(d.kind === "page" || d.kind === "global" ? "design" : "content");
   }, [status]);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -344,7 +406,7 @@ export default function Studio({
     );
   };
   const deleteDocument = async (id: string, revision: number, title: string) => {
-    const itemType = tab === "projects" ? "project" : tab === "blog" ? "insight" : tab === "careers" ? "career" : "entry";
+    const itemType = tab === "projects" ? "project" : tab === "blog" ? "insight" : tab === "careers" ? "career" : tab === "page" ? "page" : "entry";
     if (!confirm(`Are you sure you want to permanently delete the ${itemType} "${title}"? This cannot be undone.`)) return;
     await run(async () => {
       await api("delete", { id, revision });
@@ -432,7 +494,18 @@ export default function Studio({
           location.origin,
         );
       }
+      if (
+        e.data.type === "cms:edit" &&
+        typeof e.data.path === "string" &&
+        typeof e.data.value === "string" &&
+        latest.current
+      ) {
+        const next = applyPath(latest.current, e.data.path, e.data.value);
+        if (next) changeRef.current(next);
+        return;
+      }
       if (e.data.type === "cms:select") {
+        setFocus({ path: typeof e.data.focus === "string" ? e.data.focus : "", tick: Date.now() });
         if (e.data.global && doc.kind !== "global") {
           const g = docs.find((d) => d.kind === "global");
           if (g) {
@@ -450,6 +523,39 @@ export default function Studio({
     window.addEventListener("message", receive);
     return () => window.removeEventListener("message", receive);
   }, [doc, docs, open]);
+  // Scroll the right-hand panel to the control for what was clicked and highlight it.
+  // Collapsed parents open on the same click, so retry briefly until it renders.
+  useEffect(() => {
+    if (!focus.path) return;
+    let tries = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    const find = (root: Element) => {
+      const parts = focus.path.split(":");
+      for (let n = parts.length; n >= 2; n--) {
+        const el = root.querySelector<HTMLElement>(
+          `[data-edit-path="${CSS.escape(parts.slice(0, n).join(":"))}"]`,
+        );
+        if (el) return el;
+      }
+      return null;
+    };
+    const reveal = () => {
+      const root = document.querySelector(".cms-inspector");
+      const el = root && find(root);
+      if ((!el || el.dataset.editPath !== focus.path) && tries++ < 8) {
+        timer = setTimeout(reveal, 60);
+        return;
+      }
+      if (!root || !el) return;
+      root.querySelectorAll(".cms-focused").forEach((x) => x.classList.remove("cms-focused"));
+      // Restart the flash animation even when the same element is clicked again.
+      void el.offsetWidth;
+      el.classList.add("cms-focused");
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+    };
+    timer = setTimeout(reveal, 40);
+    return () => clearTimeout(timer);
+  }, [focus]);
   useEffect(() => {
     if (draft && doc)
       frame.current?.contentWindow?.postMessage(
@@ -524,9 +630,33 @@ export default function Studio({
     return Array.from(map.values());
   }, [doc, draft?.fields, fields]);
 
+  // Pages offered by every link picker: built-in pages plus pages created here.
+  const links = useMemo(
+    () => [
+      ...baseLinks,
+      ...docs
+        .filter((d) => d.kind === "page" && !builtInPages.includes(d.slug))
+        .map((d) => ({ label: d.draft?.title || d.slug, href: "/" + d.slug })),
+    ],
+    [docs],
+  );
+
+  const seoBox = () =>
+    draft &&
+    doc && (
+      <SeoFields
+        title={draft.seoTitle}
+        description={draft.seoDescription}
+        fallbackTitle={draft.title}
+        fallbackDescription={draft.summary}
+        path={documentPath(doc)}
+        onChange={(p) => change({ ...draft, ...p })}
+      />
+    );
+
   const field = (key: keyof Content, label: string, multiline = false) =>
     draft && (
-      <label className="cms-field">
+      <label className="cms-field" data-edit-path={"e:" + String(key)}>
         {label}
         {multiline ? (
           <textarea
@@ -669,16 +799,36 @@ export default function Studio({
                 : tab === "careers"
                 ? "CAREERS"
                 : "ENTRIES"}
-              {tab !== "page" && tab !== "global" && (
+              {tab !== "global" && (
                 <button
-                  title="Create new entry"
+                  title={tab === "page" ? "Create a new page" : "Create new entry"}
                   disabled={busy}
-                  onClick={() => setTemplateModal(tab as Kind)}
+                  onClick={() =>
+                    tab === "page" ? setPageModal(true) : setTemplateModal(tab as Kind)
+                  }
                 >
                   ＋
                 </button>
               )}
             </div>
+            {tab !== "global" && (
+              <button
+                className="cms-new-btn"
+                disabled={busy}
+                onClick={() =>
+                  tab === "page" ? setPageModal(true) : setTemplateModal(tab as Kind)
+                }
+              >
+                ＋ New{" "}
+                {tab === "page"
+                  ? "page"
+                  : tab === "projects"
+                    ? "project"
+                    : tab === "blog"
+                      ? "blog post"
+                      : "job opening"}
+              </button>
+            )}
             <div className="cms-documents">
               {docs
                 .filter((d) => d.kind === tab)
@@ -694,7 +844,8 @@ export default function Studio({
                         <i className={d.published ? "published" : ""} />
                         <span className="cms-doc-title">{title}</span>
                       </button>
-                      {["projects", "blog", "careers"].includes(tab) && (
+                      {(["projects", "blog", "careers"].includes(tab) ||
+                        (tab === "page" && isDeletable(d))) && (
                         <button
                           type="button"
                           className="cms-delete-icon-btn"
@@ -1042,7 +1193,7 @@ export default function Studio({
                       );
                   }}
                 >
-                  {p}
+                  {({ design: doc.kind === "page" || doc.kind === "global" ? "Edit page" : "Styles", content: doc.kind === "page" || doc.kind === "global" ? "Publish" : "Content", seo: "SEO", history: "History" } as Record<string, string>)[p] ?? p}
                 </button>
               ))}
             </div>
@@ -1059,7 +1210,7 @@ export default function Studio({
                 {selected &&
                   !selected.startsWith("section.") &&
                   !selected.startsWith("entry.") && (
-                    <>
+                    <div data-edit-path={"f:" + selected} className="cms-focus-target">
                       <label className="cms-field">
                         {selected.endsWith(".href")
                           ? "Destination URL"
@@ -1162,16 +1313,88 @@ export default function Studio({
                           )}
                         </>
                       )}
-                    </>
+                    </div>
                   )}
                 {["page", "global"].includes(doc.kind) && (
-                  <div style={{ marginTop: 20, marginBottom: 20, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 16 }}>
-                    <h2 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-                      Page Text ({availableFields.length} fields)
+                  <>
+                    {doc.kind === "page" && !builtInPages.includes(doc.slug) && (
+                      <div className="cms-page-settings">
+                        <h2>Page settings</h2>
+                        {field("title", "Page name")}
+                        <p className="cms-hint">Address: {documentPath(doc)}</p>
+                        <label className="cms-check">
+                          <input
+                            type="checkbox"
+                            checked={draft.fields["page.menu"] === "show"}
+                            onChange={(e) => {
+                              const fields = { ...draft.fields };
+                              if (e.target.checked) fields["page.menu"] = "show";
+                              else delete fields["page.menu"];
+                              change({ ...draft, fields });
+                            }}
+                          />
+                          Show in the website menu
+                        </label>
+                        {draft.fields["page.menu"] === "show" && (
+                          <label className="cms-field">
+                            Menu label (optional)
+                            <input
+                              placeholder={draft.title}
+                              value={draft.fields["page.menuLabel"] ?? ""}
+                              onChange={(e) => {
+                                const fields = { ...draft.fields };
+                                if (e.target.value) fields["page.menuLabel"] = e.target.value;
+                                else delete fields["page.menuLabel"];
+                                change({ ...draft, fields });
+                              }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    )}
+                    {doc.kind !== "global" && (
+                      <div className="cms-page-settings">
+                        <h2>Google search (SEO)</h2>
+                        {seoBox()}
+                      </div>
+                    )}
+                    <h2>
+                      {doc.kind === "global" ? "Sections on every page" : "Page sections"}
                     </h2>
-                    <p className="cms-hint" style={{ marginBottom: 14 }}>
-                      Edit any text on this page directly. Changes reflect in your preview and save to draft.
-                    </p>
+                    <PageSections
+                      sections={draft.sections}
+                      onChange={(sections) => change({ ...draft, sections })}
+                      selectedId={selected.startsWith("section.") ? selected.slice(8) : ""}
+                      onSelect={(id) => {
+                        setSelected(id ? "section." + id : "");
+                        if (id)
+                          frame.current?.contentWindow?.postMessage(
+                            { type: "cms:focus", id: doc.id, key: "section." + id },
+                            location.origin,
+                          );
+                      }}
+                      assets={assets}
+                      links={links}
+                      disabled={busy}
+                      focus={focus}
+                      intro={
+                        doc.kind === "global"
+                          ? "These sections appear above the footer on every page of the website."
+                          : builtInPages.includes(doc.slug)
+                            ? "Tip: click any text in the preview to change it. Sections you add here appear below this page's built-in content."
+                            : "Tip: click any text in the preview to change it, or open a section below to edit its text, images and style."
+                      }
+                    />
+                    {availableFields.length > 0 && (
+                      <div className="cms-page-text">
+                        <button
+                          type="button"
+                          className="cms-style-toggle"
+                          onClick={() => setShowPageText(!showPageText)}
+                        >
+                          {showPageText ? "▾" : "▸"} All text on this page ({availableFields.length})
+                        </button>
+                        {showPageText && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                       {availableFields.map((f) => {
                         const val =
@@ -1212,297 +1435,72 @@ export default function Studio({
                         );
                       })}
                     </div>
-                  </div>
-                )}
-                {["page", "global"].includes(doc.kind) && (
-                  <>
-                    <h2>Additional sections</h2>
-                    {selected.startsWith("section.") && (
-                      <button onClick={() => setSelected("")}>
-                        Show all sections
-                      </button>
+                        )}
+                      </div>
                     )}
-                    {draft.sections.map((s, i) =>
-                      selected.startsWith("section.") &&
-                      selected !== "section." + s.id ? null : (
-                        <div key={s.id} className="cms-section-edit">
-                          <strong>{s.type}</strong>
-                          {s.type === "image" && (
-                            <button
-                              onClick={() => {
-                                setMediaSection(s.id);
-                                setTab("media");
-                                void run(async () =>
-                                  setAssets(await api("media")),
-                                );
-                              }}
-                            >
-                              Choose image
-                            </button>
-                          )}
-                          <button
-                            disabled={i === 0}
-                            onClick={() => {
-                              const sections = [...draft.sections];
-                              [sections[i - 1], sections[i]] = [
-                                sections[i],
-                                sections[i - 1],
-                              ];
-                              change({ ...draft, sections });
-                            }}
-                          >
-                            ↑
-                          </button>
-                          <button
-                            onClick={() =>
-                              change({
-                                ...draft,
-                                sections: draft.sections.filter(
-                                  (x) => x.id !== s.id,
-                                ),
-                              })
-                            }
-                          >
-                            Remove
-                          </button>
-                          {(
-                            [
-                              "title",
-                              "body",
-                              ...(s.type === "cta" ? ["href" as const] : []),
-                              ...(s.type === "image" ? ["alt" as const] : []),
-                              "background",
-                              "color",
-                            ] as const
-                          ).map((k) => (
-                            <label className="cms-field" key={k}>
-                              {k}
-                              <textarea
-                                value={s[k]}
-                                onChange={(e) =>
-                                  change({
-                                    ...draft,
-                                    sections: draft.sections.map((x) =>
-                                      x.id === s.id
-                                        ? { ...x, [k]: e.target.value }
-                                        : x,
-                                    ),
-                                  })
-                                }
-                              />
-                            </label>
-                          ))}
-                          <label className="cms-field">
-                            Spacing
-                            <input
-                              type="number"
-                              min="0"
-                              max="200"
-                              value={s.padding}
-                              onChange={(e) =>
-                                change({
-                                  ...draft,
-                                  sections: draft.sections.map((x) =>
-                                    x.id === s.id
-                                      ? {
-                                          ...x,
-                                          padding: Number(e.target.value),
-                                        }
-                                      : x,
-                                  ),
-                                })
-                              }
-                            />
-                          </label>
-                          <label className="cms-field">
-                            Alignment
-                            <select
-                              value={s.align}
-                              onChange={(e) =>
-                                change({
-                                  ...draft,
-                                  sections: draft.sections.map((x) =>
-                                    x.id === s.id
-                                      ? {
-                                          ...x,
-                                          align: e.target.value as
-                                            | "left"
-                                            | "center",
-                                        }
-                                      : x,
-                                  ),
-                                })
-                              }
-                            >
-                              <option>left</option>
-                              <option>center</option>
-                            </select>
-                          </label>
-                        </div>
-                      ),
-                    )}
-                    <select
-                      aria-label="Add section"
-                      value=""
-                      onChange={(e) => {
-                        if (e.target.value)
-                          change({
-                            ...draft,
-                            sections: [
-                              ...draft.sections,
-                              {
-                                id: crypto.randomUUID(),
-                                type: e.target.value as
-                                  | "text"
-                                  | "hero"
-                                  | "cta"
-                                  | "image",
-                                image: "",
-                                alt: "",
-                                title: "",
-                                body: "",
-                                href: "",
-                                color: "",
-                                background: "",
-                                padding: 64,
-                                align: "left",
-                              },
-                            ],
-                          });
-                      }}
-                    >
-                      <option value="">＋ Add registered section</option>
-                      <option value="text">Editorial text</option>
-                      <option value="hero">Statement</option>
-                      <option value="cta">Call to action</option>
-                      <option value="image">Image</option>
-                    </select>
                   </>
                 )}
               </>
             )}
             {panel === "content" && (
               <>
-                <h2>Entry content</h2>
+                <h2>Content</h2>
                 {field("title", "Title")}
                 {["page", "global"].includes(doc.kind) ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
-                    <p className="cms-hint">
-                      Edit page text directly below or switch to the Design tab for visual previews.
-                    </p>
-                    {availableFields.map((f) => {
-                      const val =
-                        draft.fields[f.key] ??
-                        fields.find((x) => x.key === f.key)?.value ??
-                        f.defaultValue ??
-                        "";
-                      return (
-                        <label className="cms-field" key={f.key} style={{ margin: 0 }}>
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              fontSize: 11,
-                              color: "rgba(255,255,255,0.75)",
-                              marginBottom: 4,
-                            }}
-                          >
-                            <strong>{f.label}</strong>
-                            <code style={{ fontSize: 9, opacity: 0.5 }}>{f.key}</code>
-                          </div>
-                          <textarea
-                            value={val}
-                            rows={val.length > 60 ? 3 : 1}
-                            placeholder={f.defaultValue || `Enter ${f.label}`}
-                            onChange={(e) =>
-                              change({
-                                ...draft,
-                                fields: {
-                                  ...draft.fields,
-                                  [f.key]: e.target.value,
-                                },
-                              })
-                            }
-                          />
-                        </label>
-                      );
-                    })}
-                  </div>
+                  <p className="cms-hint">
+                    Publishing makes your saved draft visible to everyone. Unpublishing
+                    hides the page from visitors but keeps it here so you can edit it.
+                    {doc.published ? " This page is live." : " This page is not published yet."}
+                  </p>
                 ) : (
                   <>
-                    {field("summary", "Summary", true)}
-                    <ImageField
-                      label="Cover Image (Cloudinary URL or PC Upload)"
-                      value={draft.image || ""}
-                      onChange={(newUrl) => change({ ...draft, image: newUrl })}
+                    {field("summary", "Short summary (shown under the title)", true)}
+                    <div className="cms-page-settings">
+                      <h2>Google search (SEO)</h2>
+                      {seoBox()}
+                    </div>
+                    <div data-edit-path="e:image">
+                      <ImageField
+                        label="Cover image"
+                        value={draft.image || ""}
+                        onChange={(newUrl) => change({ ...draft, image: newUrl })}
+                        assets={assets}
+                        disabled={busy}
+                      />
+                    </div>
+                    {draft.image && field("alt", "Describe the cover image")}
+                    <h2>
+                      {doc.kind === "blog"
+                        ? "Article"
+                        : doc.kind === "careers"
+                          ? "Job description"
+                          : "Case study"}
+                    </h2>
+                    <p className="cms-hint">
+                      Build the body from blocks: paragraphs, headings, lists, images,
+                      quotes, FAQs and buttons. You can also click any text in the preview
+                      to edit it there.
+                    </p>
+                    <BlockEditor
+                      focus={focus}
+                      blocks={draft.blocks}
+                      onChange={(blocks) => change({ ...draft, blocks })}
                       assets={assets}
+                      links={links}
                       disabled={busy}
                     />
-                    {field("alt", "Image description")}
+                    <h2>Details</h2>
                     {field("category", "Category")}
                     {field("tags", "Tags, separated by commas")}
                     {field("date", "Display date")}
                     {doc.kind === "careers" &&
-                      field("apply", "Application URL")}
+                      field("apply", "Application link (web address or mailto:)")}
                     {draft.archive && (
                       <p className="cms-hint">
                         Archived case study: keeps its existing destination.
                       </p>
                     )}
-                    {field("source", "Original source URL")}
-                    <h2>Rich text blocks</h2>
-                    {draft.blocks.map((b, i) => (
-                      <div className="cms-section-edit" key={i}>
-                        <select
-                          value={b.type}
-                          onChange={(e) =>
-                            change({
-                              ...draft,
-                              blocks: draft.blocks.map((x, j) =>
-                                j === i ? { ...x, type: e.target.value } : x,
-                              ),
-                            })
-                          }
-                        >
-                          {["p", "h2", "h3", "h4", "h5", "li"].map((t) => (
-                            <option key={t}>{t}</option>
-                          ))}
-                        </select>
-                        <textarea
-                          aria-label={`Block ${i + 1}`}
-                          value={b.text}
-                          onChange={(e) =>
-                            change({
-                              ...draft,
-                              blocks: draft.blocks.map((x, j) =>
-                                j === i ? { ...x, text: e.target.value } : x,
-                              ),
-                            })
-                          }
-                        />
-                        <button
-                          onClick={() =>
-                            change({
-                              ...draft,
-                              blocks: draft.blocks.filter((_, j) => i !== j),
-                            })
-                          }
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() =>
-                        change({
-                          ...draft,
-                          blocks: [...draft.blocks, { type: "p", text: "" }],
-                        })
-                      }
-                    >
-                      ＋ Paragraph
-                    </button>
+                    {field("source", "Original source link (optional)")}
                   </>
                 )}
                 <hr />
@@ -1532,11 +1530,10 @@ export default function Studio({
             )}
             {panel === "seo" && (
               <>
-                <h2>Search & sharing</h2>
-                <p className="cms-hint">Route: {documentPath(doc)}</p>
-                {field("seoTitle", "SEO title")}
-                {field("seoDescription", "Meta description", true)}
-                {field("canonical", "Canonical URL (optional)")}
+                <h2>Google search (SEO)</h2>
+                <p className="cms-hint">Address: {documentPath(doc)}</p>
+                {seoBox()}
+                {field("canonical", "Canonical URL (optional, advanced)")}
                 <p>
                   New slugs are chosen at creation. Existing routes are
                   preserved.
@@ -1572,6 +1569,23 @@ export default function Studio({
             )}
           </fieldset>
         </aside>
+      )}
+      {pageModal && (
+        <PageModal
+          existingSlugs={docs.filter((d) => d.kind === "page").map((d) => d.slug)}
+          busy={busy}
+          onClose={() => setPageModal(false)}
+          onSubmit={async ({ title, slug, content }) => {
+            await run(async () => {
+              const d = await api("create", { kind: "page", title, slug, content });
+              setPageModal(false);
+              setTab("page");
+              await refresh();
+              open(d);
+              setStatus("Page created: add sections, then Publish");
+            });
+          }}
+        />
       )}
       {templateModal && (
         <TemplateModal

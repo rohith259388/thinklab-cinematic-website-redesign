@@ -1,6 +1,6 @@
 'use client';
 
-import { CmsText, CmsLink } from '@/components/cms/Canvas';
+import { CmsText, CmsLink, useCanvasContent } from '@/components/cms/Canvas';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -11,6 +11,7 @@ export default function Nav() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [light, setLight] = useState(false);
+  const { menu } = useCanvasContent();
   const [open, setOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
@@ -72,7 +73,7 @@ export default function Nav() {
               <CmsText global field="menu.kicker">INDIA ↔ AUSTRALIA</CmsText>
             </span>
           </div>
-          <nav aria-label="Main navigation">{NAV.map((item, i) => <CmsLink global field={`nav.${i}`} key={item.href} href={item.href} aria-current={pathname === item.href ? 'page' : undefined} onClick={() => setOpen(false)} style={{ animationDelay: `${i * 45}ms` }}><span className="micro-label">0{i + 1}</span><span><CmsText global field={`nav.${i}.label`}>{item.label}</CmsText></span><ArrowUpRight /></CmsLink>)}</nav>
+          <nav aria-label="Main navigation">{NAV.map((item, i) => <CmsLink global field={`nav.${i}`} key={item.href} href={item.href} aria-current={pathname === item.href ? 'page' : undefined} onClick={() => setOpen(false)} style={{ animationDelay: `${i * 45}ms` }}><span className="micro-label">0{i + 1}</span><span><CmsText global field={`nav.${i}.label`}>{item.label}</CmsText></span><ArrowUpRight /></CmsLink>)}{(menu ?? []).map((item, j) => <Link key={item.href} href={item.href} aria-current={pathname === item.href ? 'page' : undefined} onClick={() => setOpen(false)} style={{ animationDelay: `${(NAV.length + j) * 45}ms` }}><span className="micro-label">{String(NAV.length + j + 1).padStart(2, '0')}</span><span>{item.title}</span><ArrowUpRight /></Link>)}</nav>
         </div>
         <div className="menu-bottom">
           <span><CmsText global field="menu.bottom">GOOD THINGS BEGIN WITH A CONVERSATION.</CmsText></span>
