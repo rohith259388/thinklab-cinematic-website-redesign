@@ -229,7 +229,7 @@ export default async function HomePage() {
                 </Reveal>
               </div>
 
-              {/* Infinite Vertical Testimonial Scroller */}
+              {/* Scroll-driven 3D testimonial ring (pins this section) */}
               <VerticalTestimonials />
             </section>
 

@@ -8,12 +8,13 @@ import RichContent from './RichContent';
 import { type LiveEntry } from '@/lib/live';
 import type { PageKey } from '@/lib/motion';
 import { Reveal } from '@/components/ui/Reveal';
+import CareerApplyForm from '@/components/ui/CareerApplyForm';
 
 export default function DetailPage({ entry: originalEntry, page, back, label }: { entry: LiveEntry; page: PageKey; back: string; label: string }) {
   const canvas=useCanvasContent();
   const entry=canvas.previewId && canvas.page ? {...originalEntry,...canvas.page} : originalEntry;
   const isJob = back === '/careers';
-  const destination = isJob ? entry.apply || 'mailto:info@thinklabdigitalsolutions.com' : '/contact';
+  const destination = isJob ? '#apply' : '/contact';
   const cta = isJob ? 'Apply for this role' : 'Let’s talk about your project';
   const metrics: { value: string; label: string }[] = [];
   if (back === '/projects') { for (let i = 0; i < 4; i += 2) { if (/^[0-9#]/.test(entry.blocks[i]?.text || '') && entry.blocks[i + 1]) metrics.push({ value: entry.blocks[i].text, label: entry.blocks[i + 1].text }); } }
@@ -25,6 +26,7 @@ export default function DetailPage({ entry: originalEntry, page, back, label }: 
       {metrics.length > 0 && <div className="project-metrics">{metrics.map(m => <div key={m.label}><strong>{m.value}</strong><span>{m.label}</span></div>)}</div>}
       <RichContent blocks={blocks} />
       {entry.slug === 'pr-events' && <a href="https://events.thinklabdigitalsolutions.com" className="btn-drop px-7 py-4 mt-8">Visit Thinklab Events <ArrowUpRight size={18} /></a>}
-      <div className="detail-end"><Link href={destination} className="btn-drop px-7 py-4">{cta}<ArrowUpRight size={18} /></Link><p className="mt-6 text-xs text-[#aaa6b2]">{isJob ? 'Applications are handled through Thinklab’s existing application form.' : 'Have a different challenge in mind? We’d love to hear it.'}</p><Link href={back} className="text-link mt-7"><ArrowLeft size={15} /> Back to {label.toLowerCase()}</Link></div>
+      {isJob && <CareerApplyForm role={entry.title} roleSlug={entry.slug} />}
+      <div className="detail-end">{!isJob && <><Link href={destination} className="btn-drop px-7 py-4">{cta}<ArrowUpRight size={18} /></Link><p className="mt-6 text-xs text-[#aaa6b2]">Have a different challenge in mind? We’d love to hear it.</p></>}<Link href={back} className="text-link mt-7"><ArrowLeft size={15} /> Back to {label.toLowerCase()}</Link></div>
     </article></div></div></>;
 }
