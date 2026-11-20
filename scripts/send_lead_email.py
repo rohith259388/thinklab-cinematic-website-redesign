@@ -106,6 +106,7 @@ def lead_fields(data: dict) -> dict:
     return {
         'name': clean(data.get('name'), 'Website visitor'),
         'email': clean(data.get('email')),
+        'phone': clean(data.get('phone'), 'Not provided'),
         'company': clean(data.get('company'), 'Not provided'),
         'service': clean(data.get('service'), 'General enquiry'),
         'message': clean(data.get('message'), 'No message provided.'),
@@ -145,9 +146,15 @@ def generate_html_template(data: dict) -> str:
     email_html = (f'<a href="{reply_href}" style="color: #18181b; text-decoration: underline; '
                   f'text-decoration-color: #cfcabd;">{e["email"]}</a>') if f['email'] else 'Not provided'
 
+    phone_clean = ''.join(c for c in f['phone'] if c in '+0123456789')
+    phone_href = f"tel:{phone_clean}" if phone_clean else ''
+    phone_html = (f'<a href="{phone_href}" style="color: #18181b; font-weight: 600; text-decoration: underline; '
+                  f'text-decoration-color: #cfcabd;">{e["phone"]}</a>') if phone_href else e['phone']
+
     rows = ''.join([
         detail_row('Name', f'<strong style="font-weight: 600;">{e["name"]}</strong>'),
         detail_row('Email', email_html),
+        detail_row('Phone', phone_html),
         detail_row('Company', e['company']),
         detail_row('Service',
                    f'<span style="display: inline-block; padding: 3px 11px; background-color: #eeece5; '
@@ -294,6 +301,7 @@ def generate_plain_text(data: dict) -> str:
         f"{'=' * 48}\n\n"
         f"Name:     {f['name']}\n"
         f"Email:    {f['email'] or 'Not provided'}\n"
+        f"Phone:    {f['phone'] or 'Not provided'}\n"
         f"Company:  {f['company']}\n"
         f"Service:  {f['service']}\n"
         f"Received: {f['created_at']}\n"
@@ -413,6 +421,7 @@ def send_email(data: dict) -> dict:
 SAMPLE_LEAD = {
     "name": "Sarah Jenkins",
     "email": "sarah.jenkins@example.com",
+    "phone": "+91 93475 80911",
     "company": "Lumina Luxury Retail",
     "service": "Shopify E-Commerce Website",
     "message": "We are seeking a premium, fast e-commerce presence for our new designer collection.\n\n"

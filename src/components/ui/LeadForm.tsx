@@ -22,9 +22,23 @@ export default function LeadForm({ source = 'contact' }: { source?: string }) {
     e.preventDefault();
     const form = e.currentTarget;
     const data = new FormData(form);
+    const phone = String(data.get('phone') ?? '').trim();
+    if (!phone) {
+      setError('Please provide your phone number. This field is required before submitting.');
+      setStatus('error');
+      return;
+    }
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 7) {
+      setError('Please enter a valid phone number (at least 7 digits).');
+      setStatus('error');
+      return;
+    }
+
     const payload = {
       name: data.get('name'),
       email: data.get('email'),
+      phone,
       company: data.get('company'),
       service: data.get('service'),
       message: data.get('message'),
@@ -83,10 +97,28 @@ export default function LeadForm({ source = 'contact' }: { source?: string }) {
           <input required type="email" name="email" className="field" placeholder="ada@company.com" autoComplete="email" />
         </label>
         <label className="block">
+          <span className="mb-2 flex items-center justify-between font-mono text-[10px] tracking-[0.24em] text-[#9a97a8] uppercase">
+            <span>Phone number <span className="text-[#a280ff] font-bold">*</span></span>
+            <span className="inline-flex items-center gap-1 rounded bg-[#a280ff]/15 px-1.5 py-0.5 text-[9px] font-sans font-semibold tracking-wider text-[#c5b0ff] uppercase">Important &bull; Required</span>
+          </span>
+          <input
+            required
+            type="tel"
+            name="phone"
+            className="field"
+            placeholder="+91 98765 43210"
+            autoComplete="tel"
+            minLength={7}
+            maxLength={25}
+            pattern="^[+0-9\s\-()]{7,25}$"
+            title="Please enter a valid phone number (at least 7 digits)"
+          />
+        </label>
+        <label className="block">
           <span className="mb-2 block font-mono text-[10px] tracking-[0.24em] text-[#9a97a8] uppercase">Company</span>
           <input name="company" className="field" placeholder="Company / brand" autoComplete="organization" />
         </label>
-        <label className="block">
+        <label className="block sm:col-span-2">
           <span className="mb-2 block font-mono text-[10px] tracking-[0.24em] text-[#9a97a8] uppercase">What can we help with?</span>
           <select name="service" className="field" defaultValue={preselect} key={preselect}>
             <option value="">Not sure yet — guide me</option>

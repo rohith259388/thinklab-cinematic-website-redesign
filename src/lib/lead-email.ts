@@ -14,6 +14,7 @@ import { sendMail } from './smtp';
 export type Lead = {
   name: string;
   email: string;
+  phone?: string | null;
   company: string | null;
   service: string | null;
   message: string;
@@ -42,6 +43,7 @@ function fields(lead: Lead) {
   return {
     name: lead.name.trim() || 'Website visitor',
     email: lead.email.trim(),
+    phone: lead.phone?.trim() || 'Not provided',
     company: lead.company?.trim() || 'Not provided',
     service: lead.service?.trim() || 'General enquiry',
     message: lead.message.trim() || 'No message provided.',
@@ -73,9 +75,15 @@ export function renderLeadEmail(lead: Lead, siteUrl: string): RenderedEmail {
     ? `<a href="${esc(replyHref)}" style="color: #18181b; text-decoration: underline; text-decoration-color: #cfcabd;">${e.email}</a>`
     : 'Not provided';
 
+  const phoneTelHref = f.phone && f.phone !== 'Not provided' ? `tel:${f.phone.replace(/[\s()-]/g, '')}` : '';
+  const phoneHtml = phoneTelHref
+    ? `<a href="${esc(phoneTelHref)}" style="color: #18181b; font-weight: 600; text-decoration: underline; text-decoration-color: #cfcabd;">${e.phone}</a>`
+    : esc(e.phone);
+
   const rows = [
     detailRow('Name', `<strong style="font-weight: 600;">${e.name}</strong>`),
     detailRow('Email', emailHtml),
+    detailRow('Phone', phoneHtml),
     detailRow('Company', e.company),
     detailRow(
       'Service',
@@ -188,6 +196,7 @@ export function renderLeadEmail(lead: Lead, siteUrl: string): RenderedEmail {
     '',
     `Name:     ${f.name}`,
     `Email:    ${f.email || 'Not provided'}`,
+    `Phone:    ${f.phone || 'Not provided'}`,
     `Company:  ${f.company}`,
     `Service:  ${f.service}`,
     `Received: ${f.createdAt}`,

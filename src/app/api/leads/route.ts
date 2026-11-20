@@ -16,6 +16,7 @@ export async function POST(req: Request) {
 
     const name = String(body.name ?? '').trim();
     const email = String(body.email ?? '').trim();
+    const phone = String(body.phone ?? '').trim();
     const company = String(body.company ?? '').trim() || null;
     const service = String(body.service ?? '').trim() || null;
     const message = String(body.message ?? '').trim();
@@ -23,6 +24,9 @@ export async function POST(req: Request) {
 
     if (name.length < 2) return NextResponse.json({ ok: false, error: 'Please tell us your name.' }, { status: 422 });
     if (!EMAIL_RE.test(email)) return NextResponse.json({ ok: false, error: 'Please use a valid email address.' }, { status: 422 });
+    if (!phone || phone.replace(/\D/g, '').length < 7) {
+      return NextResponse.json({ ok: false, error: 'Please enter a valid phone number. This field is required before submitting.' }, { status: 422 });
+    }
     if (message.length < 10) return NextResponse.json({ ok: false, error: 'Give your idea a few more words (min 10 characters).' }, { status: 422 });
     if (service && !SERVICES.some((s) => s.title === service)) {
       return NextResponse.json({ ok: false, error: 'Unknown service selected.' }, { status: 422 });
@@ -38,6 +42,7 @@ export async function POST(req: Request) {
     await db.collection('leads').insertOne({
       name: name.slice(0, 160),
       email: email.slice(0, 220),
+      phone: phone.slice(0, 50),
       company: company?.slice(0, 220) ?? null,
       service,
       message: message.slice(0, 4000),
@@ -50,6 +55,7 @@ export async function POST(req: Request) {
     const lead = {
       name,
       email,
+      phone,
       company,
       service,
       message,
