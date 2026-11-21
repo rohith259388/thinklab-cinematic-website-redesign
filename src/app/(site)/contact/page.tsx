@@ -1,3 +1,4 @@
+import dynamic from 'next/dynamic';
 import CmsPage from '@/components/cms/Page';
 import { siteContent } from '@/lib/cms/public';
 import type { Metadata } from 'next';
@@ -6,10 +7,13 @@ import { MapPin, Phone, Star } from 'lucide-react';
 import { BRAND, CONTACT_META } from '@/lib/content';
 import StageSetter from '@/components/experience/StageSetter';
 import PageHero from '@/components/ui/PageHero';
-import LeadForm from '@/components/ui/LeadForm';
 import Magnetic from '@/components/ui/Magnetic';
 import { Reveal, EnergyLine } from '@/components/ui/Reveal';
 import { CmsText } from '@/components/cms/Canvas';
+
+const LeadForm = dynamic(() => import('@/components/ui/LeadForm'), {
+  loading: () => <div className="glass p-9 font-mono text-[11px] tracking-[0.3em] text-[#9a97a8] uppercase">Loading enquiry form…</div>,
+});
 
 const defaultMetadata: Metadata = {
   title: 'Contact',

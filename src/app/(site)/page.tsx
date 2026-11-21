@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import CmsPage from "@/components/cms/Page";
 import { toProjectCard } from "@/lib/live";
 import type { Metadata } from "next";
@@ -15,12 +16,19 @@ import {
 } from "@/lib/content";
 import StageSetter from "@/components/experience/StageSetter";
 import HomeJourney from "@/components/home/HomeJourney";
-import ProjectGallery from "@/components/home/ProjectGallery";
-import VerticalTestimonials from "@/components/home/VerticalTestimonials";
 import { entries, siteContent } from "@/lib/cms/public";
 import { CmsText } from "@/components/cms/Canvas";
-import Accordion from "@/components/ui/Accordion";
 import { Reveal, CountUp, SplitWords } from "@/components/ui/Reveal";
+
+const ProjectGallery = dynamic(() => import("@/components/home/ProjectGallery"), {
+  loading: () => <div className="min-h-[500px] flex items-center justify-center font-mono text-xs text-[#9a97a8]">Loading projects…</div>,
+});
+const VerticalTestimonials = dynamic(() => import("@/components/home/VerticalTestimonials"), {
+  loading: () => <div className="min-h-[300px] flex items-center justify-center font-mono text-xs text-[#9a97a8]">Loading testimonials…</div>,
+});
+const Accordion = dynamic(() => import("@/components/ui/Accordion"), {
+  loading: () => <div className="min-h-[200px] flex items-center justify-center font-mono text-xs text-[#9a97a8]">Loading FAQs…</div>,
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const fallback: Metadata = {

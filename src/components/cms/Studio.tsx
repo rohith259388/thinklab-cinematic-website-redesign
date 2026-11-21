@@ -989,6 +989,7 @@ export default function Studio({
                 <article key={a.id}>
                   <Image
                     unoptimized
+                    loading="lazy"
                     width={220}
                     height={150}
                     src={"/api/cms-media/" + a.id}

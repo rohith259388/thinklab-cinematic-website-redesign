@@ -150,6 +150,8 @@ export default function ImageField({
           <img
             src={value}
             alt="Preview"
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = 'none';
             }}

@@ -178,6 +178,7 @@ function StackedProjectCard({
                     fill
                     sizes="(max-width: 768px) 85vw, 40vw"
                     unoptimized={project.image.startsWith('/api/cms-media/') || project.image.startsWith('http')}
+                    loading="lazy"
                     className="object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.08)] transition-transform duration-700 ease-out"
                   />
                 </div>
@@ -407,6 +408,7 @@ function GridProjectTile({ project, index }: { project: ProjectCard; index: numb
                         alt=""
                         fill
                         sizes="(max-width: 700px) 75vw, 36vw"
+                        loading="lazy"
                         className="brand-image"
                       />
                     </div>

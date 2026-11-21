@@ -1,3 +1,4 @@
+import dynamic from 'next/dynamic';
 import CmsPage from '@/components/cms/Page';
 import { siteContent } from '@/lib/cms/public';
 import type { Metadata } from 'next';
@@ -9,10 +10,13 @@ import { ABOUT, ABOUT_FAQS, CTA } from '@/lib/content';
 import StageSetter from '@/components/experience/StageSetter';
 import PageHero from '@/components/ui/PageHero';
 import SectionIntro from '@/components/ui/SectionIntro';
-import Accordion from '@/components/ui/Accordion';
 import Marquee from '@/components/ui/Marquee';
 import { Reveal, EnergyLine } from '@/components/ui/Reveal';
 import { CmsText } from '@/components/cms/Canvas';
+
+const Accordion = dynamic(() => import('@/components/ui/Accordion'), {
+  loading: () => <div className="min-h-[200px] flex items-center justify-center font-mono text-xs text-[#9a97a8]">Loading FAQs…</div>,
+});
 
 const defaultMetadata: Metadata = {
   title: 'About',
@@ -81,7 +85,7 @@ export default function AboutPage() {
             </div>
           </div>
           <Reveal delay={0.15}>
-            <div className="team-photo"><Image src={team[0].image} alt="Ajay Kumar Kattamuri, founder of Thinklab" fill sizes="(max-width: 900px) 90vw, 40vw" /></div>
+            <div className="team-photo"><Image src={team[0].image} alt="Ajay Kumar Kattamuri, founder of Thinklab" fill sizes="(max-width: 900px) 90vw, 40vw" loading="lazy" /></div>
           </Reveal>
         </div>
       </section>
@@ -130,7 +134,7 @@ export default function AboutPage() {
       <section className="border-t border-[rgba(197,176,255,0.08)] bg-[rgba(13,13,13,0.55)] py-24 md:py-32">
         <div className="mx-auto max-w-[1500px] px-5 md:px-10">
           <SectionIntro kicker={ABOUT.team.kicker} title="Say Hello to" accent="Our Squad" body={ABOUT.team.body} align="center" />
-          <div className="team-portraits">{team.map(person => <Reveal key={person.name}><a href={person.linkedin} target="_blank" rel="noreferrer"><div className="team-photo"><Image src={person.image} alt={person.name} fill sizes="(max-width: 700px) 90vw, 30vw" /></div><h3>{person.name}</h3><p>{person.role}<ArrowUpRight size={17} /></p></a></Reveal>)}</div>
+          <div className="team-portraits">{team.map(person => <Reveal key={person.name}><a href={person.linkedin} target="_blank" rel="noreferrer"><div className="team-photo"><Image src={person.image} alt={person.name} fill sizes="(max-width: 700px) 90vw, 30vw" loading="lazy" /></div><h3>{person.name}</h3><p>{person.role}<ArrowUpRight size={17} /></p></a></Reveal>)}</div>
         </div>
       </section>
 
