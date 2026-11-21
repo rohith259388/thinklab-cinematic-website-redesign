@@ -48,6 +48,16 @@ export const metadata: Metadata = {
     siteName: 'Thinklab Digital Solutions',
     type: 'website',
   },
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/images/tlds-favicon.png', sizes: '200x200', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    apple: [
+      { url: '/images/tlds-favicon.png', sizes: '200x200', type: 'image/png' },
+    ],
+  },
   robots: { index: true, follow: true },
 };
 

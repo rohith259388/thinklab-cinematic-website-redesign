@@ -94,6 +94,18 @@ export async function publicDocuments(kind: Kind) {
   return docs ? docs.filter((d) => d.kind === kind) : null;
 }
 
+function parseItemTimestamp(item: { updated?: string | Date; date?: string }): number {
+  if (item.updated) {
+    const t = new Date(item.updated).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  if (item.date) {
+    const t = Date.parse(item.date);
+    if (!isNaN(t) && t > 0) return t;
+  }
+  return 0;
+}
+
 export async function entries(kind: 'projects' | 'blog' | 'careers') {
   const rows = await publicDocuments(kind);
   const preview = await previewDocument();
@@ -104,18 +116,34 @@ export async function entries(kind: 'projects' | 'blog' | 'careers') {
   }));
   const result = rows
     ? rows
-    .map((d) => ({ ...d.published!, slug: d.slug }))
-    .sort((a, b) => {
-      const ai = fallback.findIndex((e) => e.slug === a.slug),
-        bi = fallback.findIndex((e) => e.slug === b.slug);
-      return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
-    })
+        .map((d) => ({ ...d.published!, slug: d.slug, updated: d.updated }))
+        .sort((a, b) => {
+          const ai = fallback.findIndex((e) => e.slug === a.slug);
+          const bi = fallback.findIndex((e) => e.slug === b.slug);
+
+          // 1. If BOTH are newly created CMS items (not in legacy static seed array),
+          // sort the newer one on top (descending timestamp).
+          if (ai < 0 && bi < 0) {
+            return parseItemTimestamp(b) - parseItemTimestamp(a);
+          }
+          // 2. If 'a' is newly created in CMS, 'a' comes first (top of the list).
+          if (ai < 0) return -1;
+          // 3. If 'b' is newly created in CMS, 'b' comes first (top of the list).
+          if (bi < 0) return 1;
+
+          // 4. Both are legacy items: preserve the established curation order.
+          return ai - bi;
+        })
     : fallback;
-  if (preview?.kind === kind)
+
+  // In preview mode: place the draft being previewed on the very top of the list!
+  if (preview?.kind === kind && preview.draft) {
+    const previewItem = { ...preview.draft, slug: preview.slug };
     return [
+      previewItem,
       ...result.filter((e) => e.slug !== preview.slug),
-      { ...preview.draft, slug: preview.slug },
     ];
+  }
   return result;
 }
 

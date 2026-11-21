@@ -38,11 +38,24 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const projects = await entries("projects");
+  const [projects, articles] = await Promise.all([
+    entries("projects"),
+    entries("blog"),
+  ]);
   const projectCards = projects.map(toProjectCard);
 
   // Four primary services from main website
   const primaryServices = SERVICES.slice(0, 4);
+
+  // Latest insights: newly created insights appear on top
+  const homeInsights = (articles && articles.length > 0)
+    ? articles.slice(0, 3).map((a) => ({
+        title: a.title,
+        date: a.date || 'Recent',
+        tag: a.category || 'Insights',
+        slug: a.slug,
+      }))
+    : BLOGS.slice(0, 3);
 
   return (
     <CmsPage>
@@ -357,8 +370,8 @@ export default async function HomePage() {
                 </Reveal>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-                {BLOGS.map((blog, i) => (
-                  <Reveal key={blog.title} delay={i * 0.07}>
+                {homeInsights.map((blog, i) => (
+                  <Reveal key={blog.slug || blog.title} delay={i * 0.07}>
                     <Link
                       href={blog.slug ? `/blog/${blog.slug}` : "/blog"}
                       className="group p-6 rounded-2xl bg-white/75 border border-[#27291d]/15 shadow-sm hover:border-[#7e6ff0]/50 hover:shadow-md transition-all flex flex-col justify-between h-full"

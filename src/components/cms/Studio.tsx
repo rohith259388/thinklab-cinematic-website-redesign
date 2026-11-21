@@ -832,6 +832,12 @@ export default function Studio({
             <div className="cms-documents">
               {docs
                 .filter((d) => d.kind === tab)
+                .slice()
+                .sort((a, b) => {
+                  const ta = a.updated ? new Date(a.updated).getTime() : 0;
+                  const tb = b.updated ? new Date(b.updated).getTime() : 0;
+                  return tb - ta;
+                })
                 .map((d) => {
                   const title = d.draft?.title?.trim() || d.slug || "Untitled";
                   return (
@@ -1578,6 +1584,7 @@ export default function Studio({
           onSubmit={async ({ title, slug, content }) => {
             await run(async () => {
               const d = await api("create", { kind: "page", title, slug, content });
+              setDocs((prev) => [d, ...prev.filter((x) => x.id !== d.id)]);
               setPageModal(false);
               setTab("page");
               await refresh();
@@ -1596,6 +1603,7 @@ export default function Studio({
           onSubmit={async ({ title, slug, content: newContent }) => {
             await run(async () => {
               const d = await api("create", { kind: templateModal, title, slug, content: newContent });
+              setDocs((prev) => [d, ...prev.filter((x) => x.id !== d.id)]);
               await refresh();
               open(d);
             });
