@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
     ],
   },
   async redirects() {
-    const fixed = [['/about-us', '/about'], ['/contact-us', '/contact'], ['/case-studies', '/projects'], ['/blogs', '/blog']];
+    const fixed = [['/about-us', '/about'], ['/contact-us', '/contact'], ['/case-studies', '/projects'], ['/blogs', '/blog'], ['/hammer-time', '/contact']];
     const entries = [
       ...data.projects.filter(p => !p.archive).map(p => [new URL(p.source).pathname, `/projects/${p.slug}`]),
       ...data.articles.map(p => [new URL(p.source).pathname, `/blog/${p.slug}`]),

@@ -237,6 +237,7 @@ export default function Studio({
     latest = useRef(draft);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -636,6 +637,7 @@ export default function Studio({
     return () => observer.disconnect();
   }, [doc, tab]);
   const zoom = Math.min(1, canvasWidth / size);
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const availableFields = useMemo(() => {
     if (!doc) return [];
     const map = new Map<string, { key: string; label: string; defaultValue?: string }>();

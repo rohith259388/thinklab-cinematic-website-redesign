@@ -9,6 +9,7 @@ import { type LiveEntry } from '@/lib/live';
 import type { PageKey } from '@/lib/motion';
 import { Reveal } from '@/components/ui/Reveal';
 import CareerApplyForm from '@/components/ui/CareerApplyForm';
+import GrowCtaCard from '@/components/ui/GrowCtaCard';
 
 export default function DetailPage({ entry: originalEntry, page, back, label }: { entry: LiveEntry; page: PageKey; back: string; label: string }) {
   const canvas=useCanvasContent();
@@ -21,7 +22,24 @@ export default function DetailPage({ entry: originalEntry, page, back, label }: 
   const metricText = new Set(metrics.flatMap(m => [m.value, m.label]));
   const blocks = entry.blocks.map((b, i) => ({ ...b, i })).filter(b => !['p', 'h2', 'h3', 'h4', 'h5'].includes(b.type) || (!metricText.has(b.text) && b.text !== entry.summary && b.text !== 'Visit our events page'));
   const faqData = faqJsonLd(blocks);
-  return <><StageSetter page={page} /><div className="ink-surface"><header className="detail-header"><Link href={back} className="text-link"><ArrowLeft size={15} /> {label}</Link><Reveal><h1 data-cms-entry="title">{entry.title}</h1><p className="micro-label">{entry.category}{entry.date && ` / ${entry.date}`}</p><p data-cms-entry="summary" className="detail-deck mt-7">{entry.summary}</p></Reveal></header>
+  return <><StageSetter page={page} /><div className="ink-surface"><header className="detail-header"><Link href={back} className="text-link"><ArrowLeft size={15} /> {label}</Link>{page === 'blog' ? (
+    <div className="detail-header-grid mt-6">
+      <div className="detail-header-main">
+        <Reveal>
+          <h1 data-cms-entry="title">{entry.title}</h1>
+          <p className="micro-label">{entry.category}{entry.date && ` / ${entry.date}`}</p>
+          <p data-cms-entry="summary" className="detail-deck mt-7">{entry.summary}</p>
+        </Reveal>
+      </div>
+      <div className="detail-header-aside">
+        <Reveal delay={0.2}>
+          <GrowCtaCard />
+        </Reveal>
+      </div>
+    </div>
+  ) : (
+    <Reveal><h1 data-cms-entry="title">{entry.title}</h1><p className="micro-label">{entry.category}{entry.date && ` / ${entry.date}`}</p><p data-cms-entry="summary" className="detail-deck mt-7">{entry.summary}</p></Reveal>
+  )}</header>
     <div className="detail-layout"><aside className="detail-aside"><span className="micro-label">{label}</span><p>Ideas, expertise and a shared ambition.<br />Thinklab Digital Solutions.</p><Link href={destination}>{cta}<ArrowUpRight size={16} /></Link><Link href={back}>Explore more<ArrowUpRight size={16} /></Link></aside><article>
       {entry.image && (
         <div data-cms-entry="image" className="detail-image">
