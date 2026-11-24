@@ -26,7 +26,7 @@ export default function DetailPage({ entry: originalEntry, page, back, label }: 
       {entry.image && <div data-cms-entry="image" className="detail-image"><Image unoptimized={entry.image.startsWith('/api/cms-media/') || entry.image.startsWith('http')} src={entry.image} alt={('alt' in entry && typeof entry.alt==='string' ? entry.alt : entry.title)} fill sizes="(max-width: 900px) 90vw, 65vw" priority /></div>}
       {metrics.length > 0 && <div className="project-metrics">{metrics.map(m => <div key={m.label}><strong>{m.value}</strong><span>{m.label}</span></div>)}</div>}
       {faqData && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faqData }} />}
-      <RichContent blocks={blocks} editable={Boolean(canvas.previewId)} />
+      <RichContent blocks={blocks} editable={Boolean(canvas.previewId)} html={'html' in entry ? (entry.html as string) : undefined} />
       {entry.slug === 'pr-events' && <a href="https://events.thinklabdigitalsolutions.com" className="btn-drop px-7 py-4 mt-8">Visit Thinklab Events <ArrowUpRight size={18} /></a>}
       {isJob && <CareerApplyForm role={entry.title} roleSlug={entry.slug} />}
       <div className="detail-end">{!isJob && <><Link href={destination} className="btn-drop px-7 py-4">{cta}<ArrowUpRight size={18} /></Link><p className="mt-6 text-xs text-[#aaa6b2]">Have a different challenge in mind? We’d love to hear it.</p></>}<Link href={back} className="text-link mt-7"><ArrowLeft size={15} /> Back to {label.toLowerCase()}</Link></div>

@@ -1,3 +1,5 @@
+import { sanitizeArticleHtml } from './sanitize';
+
 export const kinds = ['page', 'projects', 'blog', 'careers', 'global'] as const;
 export type Kind = (typeof kinds)[number];
 export type Role = 'admin' | 'publisher' | 'editor';
@@ -77,6 +79,7 @@ export type Content = {
   apply: string;
   source: string;
   archive: boolean;
+  html?: string;
   blocks: Block[];
   fields: Record<string, string>;
   styles: Record<
@@ -115,6 +118,7 @@ export const emptyContent = (title = ''): Content => ({
   apply: '',
   source: '',
   archive: false,
+  html: '',
   blocks: [],
   fields: {},
   styles: {},
@@ -179,6 +183,9 @@ export function validateContent(raw: unknown): Content {
   )
     throw new Error('Invalid URL');
   out.archive = r.archive === true;
+  if (r.html !== undefined && typeof r.html === 'string') {
+    out.html = sanitizeArticleHtml(text(r.html, 500000));
+  }
   if (!Array.isArray(r.blocks) || r.blocks.length > 500)
     throw new Error('Invalid rich text');
   out.blocks = r.blocks.map((b) => {

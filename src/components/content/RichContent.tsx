@@ -5,6 +5,7 @@ import { ArrowUpRight, ChevronDown } from 'lucide-react';
 import type { ContentBlock } from '@/lib/live';
 import type { SectionItem } from '@/lib/cms/schema';
 import { ArticleFaq } from '@/components/cms/Sections';
+import { sanitizeArticleHtml } from '@/lib/cms/sanitize';
 
 export type RichBlock = ContentBlock & { extra?: string; items?: SectionItem[]; i?: number };
 
@@ -20,10 +21,29 @@ function linkedText(text: string) {
 }
 
 /**
- * Renders article blocks. With `editable`, each block carries the attribute the
- * Studio preview uses to edit it in place; `i` is the block's index in the draft.
+ * Renders article content. If `html` is provided, sanitizes and renders it directly.
+ * Otherwise falls back to legacy `blocks` for non-destructive backwards compatibility.
  */
-export default function RichContent({ blocks, editable = false }: { blocks: RichBlock[]; editable?: boolean }) {
+export default function RichContent({
+  blocks,
+  editable = false,
+  html,
+}: {
+  blocks: RichBlock[];
+  editable?: boolean;
+  html?: string;
+}) {
+  if (html && html.trim()) {
+    const sanitized = sanitizeArticleHtml(html);
+    return (
+      <div
+        className="rich-copy"
+        dangerouslySetInnerHTML={{ __html: sanitized }}
+        data-cms-entry="html"
+      />
+    );
+  }
+
   const edit = (b: RichBlock, extra = false) =>
     editable && b.i !== undefined ? { 'data-cms-edit': `b:${b.i}${extra ? ':extra' : ''}` } : {};
   const result: ReactNode[] = [];

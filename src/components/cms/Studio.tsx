@@ -8,6 +8,8 @@ import PageModal from "./builder/PageModal";
 import PageSections from "./builder/PageSections";
 import BlockEditor from "./builder/BlockEditor";
 import SeoFields from "./builder/SeoFields";
+import InsightRichEditor from "./InsightRichEditor";
+import { blocksToHtml } from "@/lib/cms/html-migration";
 import { baseLinks } from "./builder/shared";
 import { builtInPages } from "@/lib/cms/blocks";
 import "./studio.css";
@@ -352,7 +354,11 @@ export default function Studio({
     if (status === "Unsaved changes" && !confirm("Discard unsaved changes?"))
       return;
     setDoc(d);
-    setDraft(d.draft);
+    let initialDraft = d.draft;
+    if (d.kind === "blog" && (!initialDraft.html || !initialDraft.html.trim())) {
+      initialDraft = { ...initialDraft, html: blocksToHtml(initialDraft.blocks || []) };
+    }
+    setDraft(initialDraft);
     setSelected("");
     setFields([]);
     setVersions([]);
@@ -363,6 +369,15 @@ export default function Studio({
     setStatus("Saved");
     setPanel(d.kind === "page" || d.kind === "global" ? "design" : "content");
   }, [status]);
+  // Autosave: automatically save draft 2.5s after editing stops
+  useEffect(() => {
+    if (status !== "Unsaved changes" || busy || !doc || !draft) return;
+    const timer = setTimeout(() => {
+      save().catch((err) => console.warn("[Autosave] background save failed:", err));
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [draft, status, busy, doc]);
+
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     setError("");
@@ -395,8 +410,12 @@ export default function Studio({
       revision: doc.revision,
       ...extra,
     });
+    let nextDraft = updated.deleted ? null : updated.draft;
+    if (nextDraft && updated.kind === "blog" && (!nextDraft.html || !nextDraft.html.trim())) {
+      nextDraft = { ...nextDraft, html: blocksToHtml(nextDraft.blocks || []) };
+    }
     setDoc(updated.deleted ? null : updated);
-    setDraft(updated.deleted ? null : updated.draft);
+    setDraft(nextDraft);
     setStatus("Saved");
     setFrameVersion((v) => v + 1);
     setDocs((prev) =>
@@ -434,7 +453,11 @@ export default function Studio({
       if (!confirm("Discard your current unsaved edits? This will reset all fields to the last saved state.")) {
         return;
       }
-      setDraft(doc.draft);
+      let restoredDraft = doc.draft;
+      if (doc.kind === "blog" && (!restoredDraft.html || !restoredDraft.html.trim())) {
+        restoredDraft = { ...restoredDraft, html: blocksToHtml(restoredDraft.blocks || []) };
+      }
+      setDraft(restoredDraft);
       past.current = [];
       future.current = [];
       setCanUndo(false);
@@ -455,7 +478,11 @@ export default function Studio({
       await run(async () => {
         const updated = await save(doc.published!);
         if (updated) {
-          setDraft(updated.draft);
+          let restoredDraft = updated.draft;
+          if (updated.kind === "blog" && (!restoredDraft.html || !restoredDraft.html.trim())) {
+            restoredDraft = { ...restoredDraft, html: blocksToHtml(restoredDraft.blocks || []) };
+          }
+          setDraft(restoredDraft);
           setDoc(updated);
           past.current = [];
           future.current = [];
@@ -1451,16 +1478,57 @@ export default function Studio({
             )}
             {panel === "content" && (
               <>
-                <h2>Content</h2>
-                {field("title", "Title")}
                 {["page", "global"].includes(doc.kind) ? (
-                  <p className="cms-hint">
-                    Publishing makes your saved draft visible to everyone. Unpublishing
-                    hides the page from visitors but keeps it here so you can edit it.
-                    {doc.published ? " This page is live." : " This page is not published yet."}
-                  </p>
+                  <>
+                    <h2>Content</h2>
+                    {field("title", "Title")}
+                    <p className="cms-hint">
+                      Publishing makes your saved draft visible to everyone. Unpublishing
+                      hides the page from visitors but keeps it here so you can edit it.
+                      {doc.published ? " This page is live." : " This page is not published yet."}
+                    </p>
+                  </>
+                ) : doc.kind === "blog" ? (
+                  <>
+                    <InsightRichEditor
+                      initialHtml={draft.html || ""}
+                      onChange={(newHtml) => change({ ...draft, html: newHtml })}
+                      assets={assets}
+                      disabled={busy}
+                    />
+
+                    {/* Blog Cover Image directly below the text content box */}
+                    <div className="cms-blog-cover-section mt-6 pt-4 border-t border-white/10" data-edit-path="e:image">
+                      <ImageField
+                        label="Featured / Cover Image (Paste Cloudinary URL or Upload from PC)"
+                        value={draft.image || ""}
+                        onChange={(newUrl) => change({ ...draft, image: newUrl })}
+                        assets={assets}
+                        disabled={busy}
+                      />
+                      {draft.image && field("alt", "Describe the cover image (Alt text for SEO)")}
+                    </div>
+
+                    {/* Additional Article Metadata */}
+                    <details className="cms-article-meta-drawer mt-4 border-t border-white/10 pt-3 text-xs text-white/70">
+                      <summary className="cursor-pointer font-mono tracking-wider uppercase text-[#c5b0ff] hover:text-white py-2 flex items-center justify-between">
+                        <span>Additional Metadata (Title, Summary, Category, Date)</span>
+                        <span className="text-[10px] text-white/40">▼</span>
+                      </summary>
+                      <div className="space-y-4 pt-3">
+                        {field("title", "Article Title")}
+                        {field("summary", "Short summary / deck", true)}
+                        {field("category", "Category")}
+                        {field("tags", "Tags, separated by commas")}
+                        {field("date", "Display date")}
+                        {field("source", "Original source link (optional)")}
+                      </div>
+                    </details>
+                  </>
                 ) : (
                   <>
+                    <h2>Content</h2>
+                    {field("title", "Title")}
                     {field("summary", "Short summary (shown under the title)", true)}
                     <div className="cms-page-settings">
                       <h2>Google search (SEO)</h2>
@@ -1477,11 +1545,7 @@ export default function Studio({
                     </div>
                     {draft.image && field("alt", "Describe the cover image")}
                     <h2>
-                      {doc.kind === "blog"
-                        ? "Article"
-                        : doc.kind === "careers"
-                          ? "Job description"
-                          : "Case study"}
+                      {doc.kind === "careers" ? "Job description" : "Case study"}
                     </h2>
                     <p className="cms-hint">
                       Build the body from blocks: paragraphs, headings, lists, images,

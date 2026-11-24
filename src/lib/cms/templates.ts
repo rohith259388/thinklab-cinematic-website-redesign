@@ -1,4 +1,5 @@
 import { emptyContent, type Content } from './schema';
+import { blocksToHtml } from './html-migration';
 
 export interface ProjectTemplateInput {
   title: string;
@@ -140,6 +141,7 @@ export function buildProjectContent(input: ProjectTemplateInput): Content {
   }
 
   content.blocks = blocks;
+  content.html = blocksToHtml(blocks);
   return content;
 }
 
@@ -210,6 +212,7 @@ export function buildBlogContent(input: BlogTemplateInput): Content {
   }
 
   content.blocks = blocks;
+  content.html = blocksToHtml(blocks);
   return content;
 }
 
@@ -275,6 +278,7 @@ export function buildCareerContent(input: CareerTemplateInput): Content {
   }
 
   content.blocks = blocks;
+  content.html = blocksToHtml(blocks);
   return content;
 }
 

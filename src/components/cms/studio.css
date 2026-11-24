@@ -17,7 +17,7 @@
   inset: 0;
   z-index: 10000;
   display: grid;
-  grid-template-columns: 220px minmax(300px, 1fr) 300px;
+  grid-template-columns: 220px minmax(300px, 1fr) clamp(380px, 35vw, 620px);
   grid-template-rows: 60px 1fr;
 }
 .cms-app *,
@@ -976,3 +976,9 @@
   border-color: rgba(255, 80, 80, 0.45) !important;
   color: #ffffff !important;
 }
+
+
+/* TipTap & Article Rich Editor */
+.cms-insight-editor-container { min-height: 520px; }
+.cms-article-meta-drawer summary { list-style: none; }
+.cms-article-meta-drawer summary::-webkit-details-marker { display: none; }
