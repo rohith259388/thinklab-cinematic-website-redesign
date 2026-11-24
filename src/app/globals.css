@@ -3796,3 +3796,182 @@ button {
     font-size: 14.5px;
   }
 }
+/* ——— Project hero: the resting frame of the card → hero shared-element transition ——— */
+.project-hero {
+  position: relative;
+  z-index: 1;
+  height: 100vh;
+  height: 100dvh;
+  background: #ffffff;
+}
+
+.project-hero .ph-frame {
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  color: #20211f;
+  overflow: hidden;
+}
+
+/* Must mirror heroInset() in components/transition/ProjectTransition.tsx */
+.project-hero .ph-logo {
+  position: absolute;
+  top: 16%;
+  right: 30%;
+  bottom: 46%;
+  left: 30%;
+  transform-origin: 50% 50%;
+}
+
+.project-hero .ph-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.project-hero .ph-copy {
+  position: absolute;
+  left: 4.5vw;
+  bottom: clamp(36px, 7vh, 80px);
+  max-width: min(920px, 64vw);
+}
+
+.project-hero .ph-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #686b61;
+  margin-bottom: 22px;
+  transition: color .3s;
+}
+
+.project-hero .ph-back:hover {
+  color: #20211f;
+}
+
+.project-hero .micro-label {
+  color: #686b61;
+}
+
+.project-hero h1 {
+  font-size: clamp(30px, 3.6vw, 64px);
+  line-height: 1.04;
+  letter-spacing: -.045em;
+  font-weight: 600;
+  margin: 12px 0 16px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.project-hero .ph-summary {
+  font-size: clamp(15px, 1.25vw, 19px);
+  line-height: 1.55;
+  color: #55574f;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 760px;
+}
+
+.project-hero .ph-scroll {
+  position: absolute;
+  right: 4.5vw;
+  bottom: clamp(36px, 7vh, 80px);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #686b61;
+}
+
+/* During the forward transition the copy waits under the panel, then rises in. */
+html[data-pt="forward"] .project-hero [data-pt-copy] > * {
+  opacity: 0;
+}
+
+.detail-layout--after-hero {
+  padding-top: clamp(40px, 6vw, 90px);
+}
+
+/* The case study continues on the expanded white page instead of a separate dark surface. */
+.project-detail-body {
+  position: relative;
+  z-index: 1;
+  background: #ffffff;
+  color: #20211f;
+}
+
+.project-detail-body .detail-aside,
+.project-detail-body .detail-end {
+  border-color: #20211f22;
+}
+
+.project-detail-body .detail-aside .micro-label,
+.project-detail-body .detail-aside p,
+.project-detail-body .detail-end p {
+  color: #686b61 !important;
+}
+
+.project-detail-body .project-metrics {
+  border-color: #20211f22;
+}
+
+.project-detail-body .project-metrics strong {
+  color: #5b4ad6;
+}
+
+.project-detail-body .project-metrics span {
+  color: #686b61;
+}
+
+.project-detail-body .rich-copy {
+  color: #4a4c45;
+}
+
+.project-detail-body .rich-copy :is(h1, h2, h3, h4, h5, strong) {
+  color: #20211f;
+}
+
+.project-detail-body .rich-copy a:not(.btn-drop) {
+  color: #20211f;
+  text-decoration-color: #7e6ff0;
+}
+
+.project-detail-body .rich-copy :is(hr, blockquote, .rich-faq, .rich-faq *) {
+  border-color: #20211f22;
+}
+
+.project-detail-body .btn-drop {
+  background: #20211f;
+  color: #ffffff;
+}
+
+.project-detail-body .btn-drop:hover {
+  background: #3a3b37;
+}
+
+@media (max-width: 767px) {
+  .project-hero .ph-logo {
+    top: 16%;
+    right: 12%;
+    bottom: 52%;
+    left: 12%;
+  }
+
+  .project-hero h1 {
+    -webkit-line-clamp: 3;
+  }
+
+  .project-hero .ph-copy {
+    right: 5vw;
+    left: 5vw;
+    max-width: none;
+  }
+
+  .project-hero .ph-scroll {
+    display: none;
+  }
+}

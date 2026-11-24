@@ -17,11 +17,10 @@ export default function Nav() {
   const toggle = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const surface = document.querySelector('.studio-content');
+    const surfaces = Array.from(document.querySelectorAll<HTMLElement>('.studio-content, [data-light-surface]'));
     const update = () => {
-      const rect = surface?.getBoundingClientRect();
       setScrolled(window.scrollY > 40);
-      setLight(Boolean(rect && rect.top < 80 && rect.bottom > 80));
+      setLight(surfaces.some((s) => { const rect = s.getBoundingClientRect(); return rect.top < 80 && rect.bottom > 80; }));
     };
     update();
     window.addEventListener('scroll', update, { passive: true });

@@ -14,6 +14,8 @@ export default function PageTransition({ children }: { children: React.ReactNode
     const { gsap } = ensureGsap();
     const el = ref.current;
     if (!el) return;
+    // A card → hero (or hero → card) transition owns this navigation; don't fight it.
+    if (document.documentElement.dataset.pt) return;
     gsap.fromTo(
       el,
       { clipPath: 'inset(9% 4% 9% 4% round 32px)', y: 34, autoAlpha: 0.001 },

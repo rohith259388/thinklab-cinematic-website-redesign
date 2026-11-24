@@ -5,68 +5,16 @@ import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import * as THREE from 'three';
 import type { ProjectCard } from './ProjectGallery';
-
-const VERT = /* glsl */ `
-  varying vec2 vUv;
-  varying float vK;
-  uniform float uVel;
-  uniform float uTime;
-  uniform vec2 uBend;
-  void main() {
-    vUv = uv;
-    vec3 p = position;
-    vec4 wp = modelMatrix * vec4(p, 1.0);
-    // As plane moves towards the top, smoothly curve backwards into 3D z-depth
-    float k = smoothstep(uBend.x, uBend.y, wp.y);
-    vK = k;
-    p.z -= 1200.0 * k;
-    // Scroll velocity ripple wave
-    p.z += sin((wp.x - wp.y) * 0.02 - uTime * 2.0) * 14.0 * clamp(abs(uVel), 0.0, 1.0);
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
-  }
-`;
-
-const FRAG = /* glsl */ `
-  varying vec2 vUv;
-  varying float vK;
-  uniform sampler2D uTex;
-  uniform vec2 uImg;
-  uniform vec2 uMesh;
-  uniform float uScale;
-  uniform float uHasTex;
-  uniform float uRadius;
-  uniform vec3 uBg;
-  uniform vec3 uFog;
-  void main() {
-    // Rounded corners for the white 3D card
-    vec2 q = abs(vUv - 0.5) * uMesh - uMesh * 0.5 + uRadius;
-    float dist = length(max(q, 0.0)) - uRadius;
-    if (dist > 0.0) discard;
-
-    // Subtle premium border stroke on the card edge
-    float border = smoothstep(0.0, -1.2, dist) - smoothstep(-1.2, -2.4, dist);
-
-    // Contain image inside the card with generous padding
-    vec2 box = uMesh * (1.0 - 0.36);
-    float s = min(box.x / uImg.x, box.y / uImg.y);
-    vec2 size = uImg * s;
-    vec2 p = (vUv - 0.5) * uMesh / size / uScale + 0.5;
-    vec4 t = texture2D(uTex, p);
-    float inside = step(0.0, p.x) * step(p.x, 1.0) * step(0.0, p.y) * step(p.y, 1.0);
-
-    // Mix white card surface with texture, add border accent
-    vec3 col = mix(uBg, t.rgb, t.a * inside * uHasTex);
-    col = mix(col, vec3(0.12, 0.13, 0.12), border * 0.06);
-
-    // Fog fade into the paper background
-    col = mix(col, uFog, vK * 0.85);
-
-    // Smoothly dissolve alpha near the very top edge
-    float alpha = 1.0 - smoothstep(0.85, 1.0, vK);
-    gl_FragColor = vec4(col, alpha);
-    #include <colorspace_fragment>
-  }
-`;
+import { useProjectTransition } from '@/components/transition/ProjectTransition';
+import {
+  CARD_VERT,
+  CARD_FRAG,
+  CAM_Z,
+  BEND_DEPTH,
+  CARD_PAD,
+  CARD_RADIUS,
+  bendRange,
+} from '@/components/transition/cardShader';
 
 interface Item {
   el: HTMLElement;
@@ -90,6 +38,7 @@ export default function ProjectBendGallery({
   const textRefs = useRef<(HTMLDivElement | null)[]>([]);
   const hovered = useRef(-1);
   const [gl, setGl] = useState(false);
+  const pt = useProjectTransition();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -99,15 +48,32 @@ export default function ProjectBendGallery({
 
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        alpha: true,
+        antialias: true,
+      });
     } catch {
+      canvas.dataset.galleryReady = '1'; // flat DOM cards are ready immediately
       return; // WebGL fallback
     }
     setGl(true);
 
-    let W = window.innerWidth;
+    // Tell the card ↔ hero transition when every logo is on the GPU, so the closing
+    // animation never competes with texture decode/upload work.
+    let pending = 0;
+    const settle = () => {
+      if (--pending <= 0) canvas.dataset.galleryReady = '1';
+    };
+    // Returning from a project (html[data-pt="back"]): load only the logos on screen once the
+    // scroll position is restored; the rest wait until the closing animation is over.
+    const returning = document.documentElement.dataset.pt === 'back';
+    const deferred: { el: HTMLElement; load: () => void }[] = [];
+
+    // clientWidth = the canvas's real CSS width (excludes a Windows/Linux scrollbar)
+    let W = document.documentElement.clientWidth;
     let H = window.innerHeight;
-    const camZ = 1500;
+    const camZ = CAM_Z;
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(W, H);
     renderer.setClearColor(0x000000, 0);
@@ -117,21 +83,21 @@ export default function ProjectBendGallery({
       (2 * Math.atan(H / 2 / camZ) * 180) / Math.PI,
       W / H,
       100,
-      5000
+      5000,
     );
     camera.position.z = camZ;
 
     const geo = new THREE.PlaneGeometry(1, 1, 32, 32);
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
-    const bend = new THREE.Vector2(H * 0.05, H * 0.6);
+    const bend = new THREE.Vector2(...bendRange(H));
 
     const items: Item[] = [];
     visualRefs.current.forEach((el, i) => {
       if (!el) return;
       const mat = new THREE.ShaderMaterial({
-        vertexShader: VERT,
-        fragmentShader: FRAG,
+        vertexShader: CARD_VERT,
+        fragmentShader: CARD_FRAG,
         transparent: true,
         uniforms: {
           uTex: { value: null },
@@ -139,7 +105,12 @@ export default function ProjectBendGallery({
           uMesh: { value: new THREE.Vector2(1, 1) },
           uScale: { value: 1 },
           uHasTex: { value: 0 },
-          uRadius: { value: 24 },
+          uRadius: { value: CARD_RADIUS },
+          uBorder: { value: 1 },
+          uAmt: { value: 1 },
+          uIns: {
+            value: new THREE.Vector4(CARD_PAD, CARD_PAD, CARD_PAD, CARD_PAD),
+          },
           uVel: { value: 0 },
           uTime: { value: 0 },
           uBend: { value: bend },
@@ -160,24 +131,60 @@ export default function ProjectBendGallery({
 
       const imgUrl = projects[i]?.image;
       if (imgUrl) {
-        loader.load(imgUrl, (tex) => {
-          tex.colorSpace = THREE.SRGBColorSpace;
-          tex.anisotropy = 8;
-          mat.uniforms.uTex.value = tex;
-          mat.uniforms.uImg.value.set(tex.image.width, tex.image.height);
-          mat.uniforms.uHasTex.value = 1;
-        });
+        const load = () => {
+          pending++;
+          loader.load(
+            imgUrl,
+            (tex) => {
+              tex.colorSpace = THREE.SRGBColorSpace;
+              tex.anisotropy = 8;
+              renderer.initTexture(tex); // upload as each arrives, not all at once on a later frame
+              mat.uniforms.uTex.value = tex;
+              mat.uniforms.uImg.value.set(tex.image.width, tex.image.height);
+              mat.uniforms.uHasTex.value = 1;
+              dirty = 2;
+              settle();
+            },
+            undefined,
+            settle,
+          );
+        };
+        if (returning) deferred.push({ el, load });
+        else load();
       }
     });
+    renderer.compile(scene, camera); // compile the card shader now, not on the first frame
+    if (pending === 0 && !returning) canvas.dataset.galleryReady = '1';
+
+    const loadDeferred = (nearOnly: boolean) => {
+      for (let i = deferred.length - 1; i >= 0; i--) {
+        const r = deferred[i].el.getBoundingClientRect();
+        if (!nearOnly || (r.bottom > -H * 0.25 && r.top < H * 1.25)) {
+          deferred[i].load();
+          deferred.splice(i, 1);
+        }
+      }
+    };
+    const onRestored = () => {
+      loadDeferred(true);
+      if (pending === 0) canvas.dataset.galleryReady = '1';
+    };
+    window.addEventListener('pt:restored', onRestored);
+    if (returning && document.documentElement.dataset.ptRestored) onRestored();
+
+    // While a page transition covers the screen, only redraw when something actually changed.
+    let dirty = 2;
+    let lastScroll = -1;
 
     const onResize = () => {
-      W = window.innerWidth;
+      dirty = 2;
+      W = document.documentElement.clientWidth;
       H = window.innerHeight;
       renderer.setSize(W, H);
       camera.aspect = W / H;
       camera.fov = (2 * Math.atan(H / 2 / camZ) * 180) / Math.PI;
       camera.updateProjectionMatrix();
-      bend.set(H * 0.05, H * 0.6);
+      bend.set(...bendRange(H));
     };
     window.addEventListener('resize', onResize);
 
@@ -187,10 +194,22 @@ export default function ProjectBendGallery({
     const clock = new THREE.Clock();
 
     const tick = () => {
+      raf = requestAnimationFrame(tick);
+      if (deferred.length && !document.documentElement.dataset.pt) loadDeferred(false);
       const t = clock.getElapsedTime();
       const dy = window.scrollY - prevY;
       prevY = window.scrollY;
-      vel += (dy / H * 6 - vel) * 0.1;
+      vel += ((dy / H) * 6 - vel) * 0.1;
+
+      if (
+        document.documentElement.dataset.pt &&
+        window.scrollY === lastScroll &&
+        dirty <= 0 &&
+        Math.abs(vel) < 0.002
+      )
+        return;
+      lastScroll = window.scrollY;
+      dirty--;
 
       items.forEach((it, i) => {
         const r = it.el.getBoundingClientRect();
@@ -200,11 +219,7 @@ export default function ProjectBendGallery({
 
         // Position 3D white card plane exactly over DOM placeholder
         it.mesh.scale.set(r.width, r.height, 1);
-        it.mesh.position.set(
-          r.left + r.width / 2 - W / 2,
-          -(r.top + r.height / 2 - H / 2),
-          0
-        );
+        it.mesh.position.set(r.left + r.width / 2 - W / 2, -(r.top + r.height / 2 - H / 2), 0);
 
         const target = hovered.current === i ? 1.05 : 1;
         it.scale += (target - it.scale) * 0.1;
@@ -214,19 +229,28 @@ export default function ProjectBendGallery({
         u.uVel.value = vel;
         u.uTime.value = t;
 
-        // Sync text element 3D bend animation so title, tags and arrow curve with the card
+        // Project the DOM text with the exact same camera + bend as the WebGL card,
+        // so it recedes toward the same vanishing point (viewport centre) in the same direction.
+        // Glue the text to the card's projected bottom edge (same math as the vertex shader),
+        // so it moves, shrinks and fades exactly with the card instead of drifting on its own.
         if (it.textEl) {
-          const textTop = r.bottom;
-          const kText = THREE.MathUtils.smoothstep(H - textTop, H * 0.35, H * 0.95);
+          const textTop = r.bottom + 16; // untransformed layout top (mt-4 below the card)
+          const bx = r.left + r.width / 2 - W / 2;
+          const by = H / 2 - r.bottom; // world y of the card's bottom edge
+          const k = THREE.MathUtils.smoothstep(by, bend.x, bend.y);
+          const ripple = Math.sin((bx - by) * 0.02 - t * 2.0) * 14.0 * Math.min(Math.abs(vel), 1.0);
+          const z = -BEND_DEPTH * k + ripple;
 
-          if (kText > 0.005) {
-            const tilt = kText * -28;
-            const zDist = kText * -650;
-            const yDist = kText * -35;
-            const velRipple = Math.sin((r.left - r.top) * 0.02 - t * 2.0) * 10.0 * Math.min(Math.abs(vel), 1.0);
-            it.textEl.style.transformOrigin = 'top center';
-            it.textEl.style.transform = `perspective(1400px) rotateX(${tilt}deg) translateZ(${zDist + velRipple}px) translateY(${yDist}px)`;
-            it.textEl.style.opacity = `${Math.max(0, 1 - kText * 1.2)}`;
+          if (k > 0.001 || Math.abs(ripple) > 0.05) {
+            const s = camZ / (camZ - z); // perspective scale at the card's bottom edge
+            const projLeft = W / 2 + (r.left - W / 2) * s;
+            const projBottom = H / 2 + (r.bottom - H / 2) * s;
+            const dx = projLeft - r.left;
+            const dy = projBottom + 16 * s - textTop;
+            it.textEl.style.transformOrigin = '0 0';
+            it.textEl.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(${s})`;
+            const fade = (1 - 0.85 * k) * (1 - THREE.MathUtils.smoothstep(k, 0.85, 1));
+            it.textEl.style.opacity = `${Math.max(0, fade)}`;
           } else {
             it.textEl.style.transform = 'none';
             it.textEl.style.opacity = '1';
@@ -235,19 +259,20 @@ export default function ProjectBendGallery({
       });
 
       renderer.render(scene, camera);
-      raf = requestAnimationFrame(tick);
     };
     tick();
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', onResize);
+      window.removeEventListener('pt:restored', onRestored);
       items.forEach((it) => {
         it.mat.uniforms.uTex.value?.dispose();
         it.mat.dispose();
       });
       geo.dispose();
       renderer.dispose();
+      delete canvas.dataset.galleryReady;
       setGl(false);
     };
   }, [projects, pageBg, cardBg]);
@@ -273,8 +298,32 @@ export default function ProjectBendGallery({
             key={p.slug}
             href={p.href}
             className="group block"
-            onPointerEnter={() => (hovered.current = i)}
+            onPointerEnter={() => {
+              hovered.current = i;
+              if (!p.archive) pt?.prefetch(p.href, p.image);
+            }}
             onPointerLeave={() => (hovered.current = -1)}
+            onClick={(e) => {
+              const el = visualRefs.current[i];
+              if (
+                !pt ||
+                !el ||
+                p.archive ||
+                e.metaKey ||
+                e.ctrlKey ||
+                e.shiftKey ||
+                e.altKey ||
+                e.button !== 0
+              )
+                return;
+              e.preventDefault();
+              pt.open(el, {
+                slug: p.slug,
+                href: p.href,
+                image: p.image,
+                bent: gl,
+              });
+            }}
             aria-label={`${p.title} — view project`}
           >
             {/* Visual container: when gl is active, background is transparent so the 3D WebGL white card is the only card surface */}
@@ -282,6 +331,7 @@ export default function ProjectBendGallery({
               ref={(el) => {
                 visualRefs.current[i] = el;
               }}
+              data-pt-card={p.slug}
               className={`relative aspect-[820/430] w-full overflow-hidden rounded-3xl transition-colors duration-300 ${
                 gl ? 'bg-transparent' : 'bg-white shadow-[0_20px_45px_-12px_rgba(0,0,0,0.08)]'
               }`}
@@ -297,7 +347,7 @@ export default function ProjectBendGallery({
               />
             </div>
 
-            {/* Content text container: dynamically follows 3D perspective bend and opacity fade */}
+            {/* Content text container: follows 3D perspective bend backwards without detaching or shifting upward */}
             <div
               ref={(el) => {
                 textRefs.current[i] = el;
@@ -308,9 +358,7 @@ export default function ProjectBendGallery({
                 <h3 className="text-[26px] font-semibold leading-tight text-[#20211f] group-hover:text-black">
                   {p.title}
                 </h3>
-                <p className="text-[18px] leading-tight text-[#71736d] mt-1 line-clamp-1">
-                  {p.tags}
-                </p>
+                <p className="text-[18px] leading-tight text-[#71736d] mt-1 line-clamp-1">{p.tags}</p>
               </div>
               <ArrowUpRight className="text-[#20211f] shrink-0 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" />
             </div>

@@ -2,6 +2,8 @@
 import { useCanvasContent } from '@/components/cms/Canvas';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useEffect, useRef } from 'react';
+import { ensureGsap } from '@/lib/gsap';
 import { ArrowLeft, ArrowUpRight } from 'lucide-react';
 import StageSetter from '@/components/experience/StageSetter';
 import RichContent, { faqJsonLd } from './RichContent';
@@ -10,6 +12,8 @@ import type { PageKey } from '@/lib/motion';
 import { Reveal } from '@/components/ui/Reveal';
 import CareerApplyForm from '@/components/ui/CareerApplyForm';
 import GrowCtaCard from '@/components/ui/GrowCtaCard';
+import ProjectHero from './ProjectHero';
+import { GalleryBackLink } from '@/components/transition/ProjectTransition';
 
 export default function DetailPage({ entry: originalEntry, page, back, label }: { entry: LiveEntry; page: PageKey; back: string; label: string }) {
   const canvas=useCanvasContent();
@@ -22,7 +26,28 @@ export default function DetailPage({ entry: originalEntry, page, back, label }: 
   const metricText = new Set(metrics.flatMap(m => [m.value, m.label]));
   const blocks = entry.blocks.map((b, i) => ({ ...b, i })).filter(b => !['p', 'h2', 'h3', 'h4', 'h5'].includes(b.type) || (!metricText.has(b.text) && b.text !== entry.summary && b.text !== 'Visit our events page'));
   const faqData = faqJsonLd(blocks);
-  return <><StageSetter page={page} /><div className="ink-surface"><header className="detail-header"><Link href={back} className="text-link"><ArrowLeft size={15} /> {label}</Link>{page === 'blog' ? (
+  const altText = 'alt' in entry && typeof entry.alt === 'string' ? entry.alt : entry.title;
+  const projectHero = page === 'projects' && Boolean(entry.image);
+  const body = useRef<HTMLDivElement>(null);
+  const editing = Boolean(canvas.previewId);
+
+  // Case-study content rises into the expanded page block by block as it scrolls in.
+  useEffect(() => {
+    const root = body.current;
+    if (!projectHero || editing || !root || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const { gsap, ScrollTrigger } = ensureGsap();
+    const ctx = gsap.context(() => {
+      const items = root.querySelectorAll<HTMLElement>('.detail-aside, .project-metrics > div, .rich-copy > *, .detail-end > *');
+      gsap.set(items, { y: 56, autoAlpha: 0 });
+      ScrollTrigger.batch(items, {
+        start: 'top 90%',
+        once: true,
+        onEnter: (batch) => gsap.to(batch, { y: 0, autoAlpha: 1, duration: 1, stagger: 0.09, ease: 'power3.out', overwrite: true }),
+      });
+    }, root);
+    return () => ctx.revert();
+  }, [projectHero, editing, entry.slug]);
+  return <><StageSetter page={page} />{projectHero && <ProjectHero slug={entry.slug} title={entry.title} summary={entry.summary} category={entry.category} date={entry.date} image={entry.image} alt={altText} back={back} label={label} />}<div ref={body} className={projectHero ? 'project-detail-body' : 'ink-surface'} {...(projectHero ? { 'data-light-surface': '' } : {})}>{!projectHero && <header className="detail-header"><GalleryBackLink href={back} className="text-link"><ArrowLeft size={15} /> {label}</GalleryBackLink>{page === 'blog' ? (
     <div className="detail-header-grid mt-6">
       <div className="detail-header-main">
         <Reveal>
@@ -39,14 +64,14 @@ export default function DetailPage({ entry: originalEntry, page, back, label }: 
     </div>
   ) : (
     <Reveal><h1 data-cms-entry="title">{entry.title}</h1><p className="micro-label">{entry.category}{entry.date && ` / ${entry.date}`}</p><p data-cms-entry="summary" className="detail-deck mt-7">{entry.summary}</p></Reveal>
-  )}</header>
-    <div className="detail-layout"><aside className="detail-aside"><span className="micro-label">{label}</span><p>Ideas, expertise and a shared ambition.<br />Thinklab Digital Solutions.</p><Link href={destination}>{cta}<ArrowUpRight size={16} /></Link><Link href={back}>Explore more<ArrowUpRight size={16} /></Link></aside><article>
-      {entry.image && (
+  )}</header>}
+    <div className={`detail-layout${projectHero ? ' detail-layout--after-hero' : ''}`}><aside className="detail-aside"><span className="micro-label">{label}</span><p>Ideas, expertise and a shared ambition.<br />Thinklab Digital Solutions.</p><Link href={destination}>{cta}<ArrowUpRight size={16} /></Link><GalleryBackLink href={back}>Explore more<ArrowUpRight size={16} /></GalleryBackLink></aside><article>
+      {entry.image && !projectHero && (
         <div data-cms-entry="image" className="detail-image">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={entry.image}
-            alt={('alt' in entry && typeof entry.alt === 'string' ? entry.alt : entry.title)}
+            alt={altText}
             loading="eager"
             decoding="async"
             className="detail-adaptive-img"
@@ -58,6 +83,6 @@ export default function DetailPage({ entry: originalEntry, page, back, label }: 
       <RichContent blocks={blocks} editable={Boolean(canvas.previewId)} html={'html' in entry ? (entry.html as string) : undefined} />
       {entry.slug === 'pr-events' && <a href="https://events.thinklabdigitalsolutions.com" className="btn-drop px-7 py-4 mt-8">Visit Thinklab Events <ArrowUpRight size={18} /></a>}
       {isJob && <CareerApplyForm role={entry.title} roleSlug={entry.slug} />}
-      <div className="detail-end">{!isJob && <><Link href={destination} className="btn-drop px-7 py-4">{cta}<ArrowUpRight size={18} /></Link><p className="mt-6 text-xs text-[#aaa6b2]">Have a different challenge in mind? We’d love to hear it.</p></>}<Link href={back} className="text-link mt-7"><ArrowLeft size={15} /> Back to {label.toLowerCase()}</Link></div>
+      <div className="detail-end">{!isJob && <><Link href={destination} className="btn-drop px-7 py-4">{cta}<ArrowUpRight size={18} /></Link><p className="mt-6 text-xs text-[#aaa6b2]">Have a different challenge in mind? We’d love to hear it.</p></>}<GalleryBackLink href={back} className="text-link mt-7"><ArrowLeft size={15} /> Back to {label.toLowerCase()}</GalleryBackLink></div>
     </article></div></div></>;
 }

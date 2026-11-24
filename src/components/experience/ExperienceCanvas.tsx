@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
@@ -141,8 +141,19 @@ function Rig({ fx }: { fx: boolean }) {
   );
 }
 
+// True while a project card ↔ hero transition covers the screen (html[data-pt]).
+const subscribePt = (cb: () => void) => {
+  const mo = new MutationObserver(cb);
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-pt'] });
+  return () => mo.disconnect();
+};
+const ptActive = () => Boolean(document.documentElement.dataset.pt);
+
 export default function ExperienceCanvas() {
   const quality = useMemo<Quality>(() => detectQuality(), []);
+  // Freeze the organism (and its bloom pass) during transitions so the main thread and GPU
+  // are free for the panel morph — matters most on low-power Windows/Android devices.
+  const paused = useSyncExternalStore(subscribePt, ptActive, () => false);
 
   useEffect(() => {
     motion.reduced = quality === 'low';
@@ -151,6 +162,7 @@ export default function ExperienceCanvas() {
   return (
     <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
       <Canvas
+        frameloop={paused ? 'never' : 'always'}
         dpr={quality === 'high' ? [1, 1.8] : quality === 'mid' ? [1, 1.5] : 1}
         camera={{ fov: 40, near: 0.1, far: 60, position: [0, 0.05, 6.4] }}
         gl={{ antialias: true, alpha: false, stencil: false, powerPreference: 'high-performance' }}
