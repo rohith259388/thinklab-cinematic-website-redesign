@@ -1,11 +1,14 @@
 /* eslint-disable @next/next/no-img-element -- article images come from uploads or editor-supplied URLs */
-import { Fragment, type ReactNode } from 'react';
+'use client';
+
+import { Fragment, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, ChevronDown } from 'lucide-react';
+import { ArrowUpRight, Check, ChevronDown, Lightbulb, Quote } from 'lucide-react';
 import type { ContentBlock } from '@/lib/live';
 import type { SectionItem } from '@/lib/cms/schema';
 import { ArticleFaq } from '@/components/cms/Sections';
 import { sanitizeArticleHtml } from '@/lib/cms/sanitize';
+import { structureContent, type Inline, type Section, type StructuredDoc } from '@/lib/cms/structure';
 
 export type RichBlock = ContentBlock & { extra?: string; items?: SectionItem[]; i?: number };
 
@@ -20,109 +23,255 @@ function linkedText(text: string) {
   });
 }
 
+/** Build the auto-laid-out document for an entry (HTML from the rich editor wins over legacy blocks). */
+export function structureEntry(blocks: RichBlock[], html?: string): StructuredDoc<RichBlock> {
+  return structureContent(blocks, html, sanitizeArticleHtml);
+}
+
+type TextTag = 'span' | 'p' | 'h2' | 'h3' | 'strong' | 'blockquote';
+const pad = (n: number) => String(n + 1).padStart(2, '0');
+
 /**
- * Renders article content. If `html` is provided, sanitizes and renders it directly.
- * Otherwise falls back to legacy `blocks` for non-destructive backwards compatibility.
+ * Renders article content with automatic layout: lists become checklists or cards, "Label: value"
+ * lines become a fact table, numbered points become steps, and so on (see lib/cms/structure).
  */
 export default function RichContent({
-  blocks,
+  doc,
   editable = false,
   html,
 }: {
-  blocks: RichBlock[];
+  doc: StructuredDoc<RichBlock>;
   editable?: boolean;
   html?: string;
 }) {
-  if (html && html.trim()) {
-    const sanitized = sanitizeArticleHtml(html);
-    return (
-      <div
-        className="rich-copy"
-        dangerouslySetInnerHTML={{ __html: sanitized }}
-        data-cms-entry="html"
-      />
+  const fromHtml = Boolean(html && html.trim());
+  /** Click-to-edit path for content that came from a legacy block. */
+  const ed = (c?: Inline) => (editable && !fromHtml && c?.src !== undefined ? { 'data-cms-edit': `b:${c.src}` } : {});
+  /** Editor text: sanitized inline HTML, or plain text with auto-linked URLs. */
+  const t = (c: Inline, Tag: TextTag = 'span', className?: string): ReactNode =>
+    c.html !== undefined ? (
+      <Tag className={className} {...ed(c)} dangerouslySetInnerHTML={{ __html: c.html }} />
+    ) : (
+      <Tag className={className} {...ed(c)}>{linkedText(c.text)}</Tag>
     );
-  }
+  const intro = (c?: Inline) => (c ? t(c, 'p', 'rx-intro') : null);
 
-  const edit = (b: RichBlock, extra = false) =>
-    editable && b.i !== undefined ? { 'data-cms-edit': `b:${b.i}${extra ? ':extra' : ''}` } : {};
-  const result: ReactNode[] = [];
-  for (let n = 0; n < blocks.length; n++) {
-    const b = blocks[n];
-    if (b.type === 'li' || b.type === 'ol') {
-      const list = [b];
-      while (blocks[n + 1]?.type === b.type) list.push(blocks[++n]);
-      const items = list.map((item, j) => <li key={j} {...edit(item)}>{linkedText(item.text)}</li>);
-      result.push(b.type === 'ol' ? <ol key={n}>{items}</ol> : <ul key={n}>{items}</ul>);
-    } else if (b.type === 'faq') {
-      const list = [b];
-      while (blocks[n + 1]?.type === 'faq') list.push(blocks[++n]);
-      result.push(
-        <div key={n} className="rich-faq">
-          {list.map((item, j) => (
-            <details key={j}>
-              <summary data-cms-toggle="">
-                <span {...edit(item)}>{item.text}</span>
-                <ChevronDown size={20} aria-hidden="true" className="rich-faq-arrow" />
-              </summary>
-              <div {...edit(item, true)}>{(item.extra || '').split(/\n{2,}/).map((p, k) => <p key={k}>{linkedText(p)}</p>)}</div>
-            </details>
-          ))}
-        </div>,
+  const render = (s: Section<RichBlock>, n: number): ReactNode => {
+    switch (s.kind) {
+      case 'p':
+        return <Fragment key={n}>{t(s.c, 'p', s.lead ? 'rx-lead' : s.emphasis ? 'rx-emphasis' : undefined)}</Fragment>;
+      case 'h':
+        return (
+          <div key={n} className={`rx-heading${s.num ? ' rx-heading--num' : ''}`} id={s.id}>
+            {s.kicker && t(s.kicker, 'span', 'rx-kicker')}
+            {s.num && <span className="rx-num" aria-hidden="true">{s.num}</span>}
+            {t(s.c, s.level === 2 ? 'h2' : 'h3')}
+          </div>
+        );
+      case 'checklist':
+        return <Checklist key={n} items={s.items} ordered={s.ordered} intro={intro(s.intro)} text={(c) => t(c)} />;
+      case 'cards':
+        return (
+          <div key={n} className="rx-block">
+            {intro(s.intro)}
+            <div className={`rx-cards${s.items.length % 3 === 0 && s.items.every((it) => (it.body?.text.length ?? 0) < 170) ? ' rx-cards--3' : ''}`}>
+              {s.items.map((it, k) => (
+                <article key={k} className="rx-card">
+                  <span className="rx-card-num" aria-hidden="true">{pad(k)}</span>
+                  {t(it.title, 'h3')}
+                  {it.body && t(it.body, 'p')}
+                </article>
+              ))}
+            </div>
+          </div>
+        );
+      case 'stats':
+        return (
+          <div key={n} className="rx-block">
+            {intro(s.intro)}
+            <div className="rx-stats">
+              {s.items.map((it, k) => (
+                <div key={k} className="rx-stat" {...ed(it.label)}>
+                  <strong>{it.value}</strong>
+                  <span className="rx-stat-label">{it.label.text}</span>
+                  {it.body && t(it.body, 'p')}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case 'facts':
+        return (
+          <div key={n} className="rx-block">
+            {intro(s.intro)}
+            <table className="rx-facts">
+              <tbody>
+                {s.rows.map((r, k) => (
+                  <tr key={k} {...ed(r.value)}>
+                    <th scope="row">{r.key}</th>
+                    <td>{t(r.value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      case 'steps':
+        return (
+          <div key={n} className="rx-block">
+            {intro(s.intro)}
+            <ol className="rx-steps">
+              {s.items.map((it, k) => (
+                <li key={k}>
+                  <span className="rx-step-dot" aria-hidden="true">{pad(k)}</span>
+                  <div>
+                    {t(it.title, 'h3')}
+                    {it.body && t(it.body, 'p')}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        );
+      case 'quotes':
+        return (
+          <div key={n} className="rx-block">
+            {intro(s.intro)}
+            <div className="rx-quotes">
+              {s.items.map((q, k) => (
+                <figure key={k} className="rx-quote" {...ed(q.quote)}>
+                  <Quote size={22} aria-hidden="true" className="rx-quote-mark" />
+                  {t(q.quote, 'blockquote')}
+                  <figcaption>
+                    <span className="rx-avatar" aria-hidden="true">{q.name.trim().charAt(0)}</span>
+                    <span>
+                      <strong>{q.name}</strong>
+                      {q.role && <small>{q.role}</small>}
+                    </span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        );
+      case 'note':
+        return (
+          <aside key={n} className="rx-note">
+            <span className="rx-note-label"><Lightbulb size={15} aria-hidden="true" /> {s.label}</span>
+            {t(s.c, 'p')}
+          </aside>
+        );
+      case 'callout':
+        return (
+          <aside key={n} className="rx-callout">
+            {t(s.title, 'h3')}
+            {s.body && t(s.body, 'p')}
+            <Link href="/contact" className="rx-callout-cta">Talk to our team <ArrowUpRight size={17} /></Link>
+          </aside>
+        );
+      case 'raw':
+        return <div key={n} className="rx-raw" dangerouslySetInnerHTML={{ __html: s.html }} />;
+      case 'block':
+        return <Fragment key={n}>{renderBlock(s.block, n, editable)}</Fragment>;
+    }
+  };
+
+  return (
+    <div className="rich-copy rx" {...(fromHtml ? { 'data-cms-entry': 'html' } : {})}>
+      {doc.sections.map(render)}
+    </div>
+  );
+}
+
+/** Long checklists show the first ten items with a "show all" toggle (all items stay in the page for SEO). */
+function Checklist({
+  items,
+  ordered,
+  intro,
+  text,
+}: {
+  items: Inline[];
+  ordered?: boolean;
+  intro: ReactNode;
+  text: (c: Inline) => ReactNode;
+}) {
+  const LIMIT = 10;
+  const [all, setAll] = useState(false);
+  const long = items.length > LIMIT + 2;
+  const two = items.length >= 6 && items.reduce((a, c) => a + c.text.length, 0) / items.length < 150;
+  return (
+    <div className="rx-block">
+      {intro}
+      <ul className={`rx-checklist${two ? ' rx-checklist--2' : ''}${long && !all ? ' is-clipped' : ''}`}>
+        {items.map((c, k) => (
+          <li key={k} hidden={long && !all && k >= LIMIT ? true : undefined}>
+            <span className="rx-check" aria-hidden="true">{ordered ? k + 1 : <Check size={13} strokeWidth={2.6} />}</span>
+            {text(c)}
+          </li>
+        ))}
+      </ul>
+      {long && (
+        <button type="button" className="rx-more" data-cms-toggle="" aria-expanded={all} onClick={() => setAll(!all)}>
+          {all ? 'Show less' : `Show all ${items.length}`} <ChevronDown size={16} aria-hidden="true" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Legacy block types that aren't prose (FAQs, images, buttons, quotes, dividers). */
+function renderBlock(b: RichBlock, n: number, editable: boolean): ReactNode {
+  const edit = (extra = false) => (editable && b.i !== undefined ? { 'data-cms-edit': `b:${b.i}${extra ? ':extra' : ''}` } : {});
+  switch (b.type) {
+    case 'faq':
+      return (
+        <div className="rich-faq">
+          <details>
+            <summary data-cms-toggle="">
+              <span {...edit()}>{b.text}</span>
+              <ChevronDown size={20} aria-hidden="true" className="rich-faq-arrow" />
+            </summary>
+            <div {...edit(true)}>{(b.extra || '').split(/\n{2,}/).map((p, k) => <p key={k}>{linkedText(p)}</p>)}</div>
+          </details>
+        </div>
       );
-    } else if (b.type === 'faqs') {
+    case 'faqs': {
       const prefix = editable && b.i !== undefined ? `b:${b.i}:` : null;
-      result.push(
+      return (
         <ArticleFaq
-          key={n}
           heading={b.text}
           items={b.items ?? []}
-          headingEdit={edit(b)}
+          headingEdit={edit()}
           edit={(path) => (prefix ? { 'data-cms-edit': prefix + path } : {})}
-        />,
+        />
       );
-    } else if (b.type === 'img') {
-      if (!b.text) { if (editable) result.push(<div key={n} className="cms-s-placeholder">Choose an image in the editor →</div>); continue; }
-      result.push(
-        <figure key={n} className="rich-figure">
-          <img src={b.text} alt={b.extra || ''} loading="lazy" {...(editable && b.i !== undefined ? { 'data-cms-pick': `b:${b.i}` } : {})} />
-          {b.extra && <figcaption {...edit(b, true)}>{b.extra}</figcaption>}
-        </figure>,
-      );
-    } else if (b.type === 'quote') result.push(<blockquote key={n} className="rich-quote" {...edit(b)}>{b.text}</blockquote>);
-    else if (b.type === 'button') {
-      if (!b.text) continue;
-      const href = b.extra || '/contact';
-      result.push(
-        <p key={n}>
-          {/^https?:/.test(href)
-            ? <a href={href} className="btn-drop px-7 py-4" target="_blank" rel="noreferrer" {...edit(b)}>{b.text} <ArrowUpRight size={17} /></a>
-            : <Link href={href} className="btn-drop px-7 py-4" {...edit(b)}>{b.text} <ArrowUpRight size={17} /></Link>}
-        </p>,
-      );
-    } else if (b.type === 'divider') result.push(<hr key={n} className="rich-divider" />);
-    else if (b.type === 'h2' || b.type === 'h3') result.push(<h2 key={n} {...edit(b)}>{linkedText(b.text)}</h2>);
-    else if (b.type === 'h4' || b.type === 'h5') result.push(<h3 key={n} {...edit(b)}>{linkedText(b.text)}</h3>);
-    else {
-      const paras = b.text.split(/\r?\n\s*\r?\n/).filter((p) => p.trim().length > 0);
-      if (paras.length > 1) {
-        paras.forEach((para, k) => {
-          result.push(
-            <p key={`${n}-${k}`} {...(k === 0 ? edit(b) : {})}>
-              {linkedText(para)}
-            </p>
-          );
-        });
-      } else {
-        result.push(
-          <p key={n} {...edit(b)}>
-            {linkedText(b.text)}
-          </p>
-        );
-      }
     }
+    case 'img':
+      if (!b.text) return editable ? <div className="cms-s-placeholder">Choose an image in the editor →</div> : null;
+      return (
+        <figure className="rich-figure">
+          <img src={b.text} alt={b.extra || ''} loading="lazy" {...(editable && b.i !== undefined ? { 'data-cms-pick': `b:${b.i}` } : {})} />
+          {b.extra && <figcaption {...edit(true)}>{b.extra}</figcaption>}
+        </figure>
+      );
+    case 'quote':
+      return <blockquote className="rich-quote" {...edit()}>{b.text}</blockquote>;
+    case 'button': {
+      if (!b.text) return null;
+      const href = b.extra || '/contact';
+      return (
+        <p>
+          {/^https?:/.test(href)
+            ? <a href={href} className="btn-drop px-7 py-4" target="_blank" rel="noreferrer" {...edit()}>{b.text} <ArrowUpRight size={17} /></a>
+            : <Link href={href} className="btn-drop px-7 py-4" {...edit()}>{b.text} <ArrowUpRight size={17} /></Link>}
+        </p>
+      );
+    }
+    case 'divider':
+      return <hr className="rich-divider" />;
+    default:
+      return b.text ? <p {...edit()}>{linkedText(b.text)}</p> : null;
   }
-  return <div className="rich-copy">{result}</div>;
 }
 
 /** FAQ structured data so search engines can show questions in results. */
