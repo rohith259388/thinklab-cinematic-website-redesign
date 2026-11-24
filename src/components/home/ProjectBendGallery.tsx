@@ -16,12 +16,12 @@ const VERT = /* glsl */ `
     vUv = uv;
     vec3 p = position;
     vec4 wp = modelMatrix * vec4(p, 1.0);
-    // top ki taraf jaate hi plane peeche mudta hai
+    // As plane moves towards the top, smoothly curve backwards into 3D z-depth
     float k = smoothstep(uBend.x, uBend.y, wp.y);
     vK = k;
     p.z -= 1200.0 * k;
-    // scroll velocity pe ripple
-    p.z += sin((wp.x - wp.y) * 0.02 - uTime * 2.0) * 12.0 * clamp(abs(uVel), 0.0, 1.0);
+    // Scroll velocity ripple wave
+    p.z += sin((wp.x - wp.y) * 0.02 - uTime * 2.0) * 14.0 * clamp(abs(uVel), 0.0, 1.0);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
   }
 `;
@@ -38,11 +38,15 @@ const FRAG = /* glsl */ `
   uniform vec3 uBg;
   uniform vec3 uFog;
   void main() {
-    // rounded corners
+    // Rounded corners for the white 3D card
     vec2 q = abs(vUv - 0.5) * uMesh - uMesh * 0.5 + uRadius;
-    if (length(max(q, 0.0)) - uRadius > 0.0) discard;
+    float dist = length(max(q, 0.0)) - uRadius;
+    if (dist > 0.0) discard;
 
-    // image "contain" with padding
+    // Subtle premium border stroke on the card edge
+    float border = smoothstep(0.0, -1.2, dist) - smoothstep(-1.2, -2.4, dist);
+
+    // Contain image inside the card with generous padding
     vec2 box = uMesh * (1.0 - 0.36);
     float s = min(box.x / uImg.x, box.y / uImg.y);
     vec2 size = uImg * s;
@@ -50,15 +54,23 @@ const FRAG = /* glsl */ `
     vec4 t = texture2D(uTex, p);
     float inside = step(0.0, p.x) * step(p.x, 1.0) * step(0.0, p.y) * step(p.y, 1.0);
 
+    // Mix white card surface with texture, add border accent
     vec3 col = mix(uBg, t.rgb, t.a * inside * uHasTex);
+    col = mix(col, vec3(0.12, 0.13, 0.12), border * 0.06);
+
+    // Fog fade into the paper background
     col = mix(col, uFog, vK * 0.85);
-    gl_FragColor = vec4(col, 1.0);
+
+    // Smoothly dissolve alpha near the very top edge
+    float alpha = 1.0 - smoothstep(0.85, 1.0, vK);
+    gl_FragColor = vec4(col, alpha);
     #include <colorspace_fragment>
   }
 `;
 
 interface Item {
   el: HTMLElement;
+  textEl: HTMLElement | null;
   mesh: THREE.Mesh;
   mat: THREE.ShaderMaterial;
   scale: number;
@@ -75,6 +87,7 @@ export default function ProjectBendGallery({
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const visualRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const textRefs = useRef<(HTMLDivElement | null)[]>([]);
   const hovered = useRef(-1);
   const [gl, setGl] = useState(false);
 
@@ -108,7 +121,7 @@ export default function ProjectBendGallery({
     );
     camera.position.z = camZ;
 
-    const geo = new THREE.PlaneGeometry(1, 1, 24, 24);
+    const geo = new THREE.PlaneGeometry(1, 1, 32, 32);
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
     const bend = new THREE.Vector2(H * 0.05, H * 0.6);
@@ -137,7 +150,13 @@ export default function ProjectBendGallery({
       const mesh = new THREE.Mesh(geo, mat);
       mesh.visible = false;
       scene.add(mesh);
-      items.push({ el, mesh, mat, scale: 1 });
+      items.push({
+        el,
+        textEl: textRefs.current[i] || null,
+        mesh,
+        mat,
+        scale: 1,
+      });
 
       const imgUrl = projects[i]?.image;
       if (imgUrl) {
@@ -179,6 +198,7 @@ export default function ProjectBendGallery({
         it.mesh.visible = !off;
         if (off) return;
 
+        // Position 3D white card plane exactly over DOM placeholder
         it.mesh.scale.set(r.width, r.height, 1);
         it.mesh.position.set(
           r.left + r.width / 2 - W / 2,
@@ -186,13 +206,32 @@ export default function ProjectBendGallery({
           0
         );
 
-        const target = hovered.current === i ? 1.08 : 1;
+        const target = hovered.current === i ? 1.05 : 1;
         it.scale += (target - it.scale) * 0.1;
         const u = it.mat.uniforms;
         u.uScale.value = it.scale;
         u.uMesh.value.set(r.width, r.height);
         u.uVel.value = vel;
         u.uTime.value = t;
+
+        // Sync text element 3D bend animation so title, tags and arrow curve with the card
+        if (it.textEl) {
+          const textTop = r.bottom;
+          const kText = THREE.MathUtils.smoothstep(H - textTop, H * 0.35, H * 0.95);
+
+          if (kText > 0.005) {
+            const tilt = kText * -28;
+            const zDist = kText * -650;
+            const yDist = kText * -35;
+            const velRipple = Math.sin((r.left - r.top) * 0.02 - t * 2.0) * 10.0 * Math.min(Math.abs(vel), 1.0);
+            it.textEl.style.transformOrigin = 'top center';
+            it.textEl.style.transform = `perspective(1400px) rotateX(${tilt}deg) translateZ(${zDist + velRipple}px) translateY(${yDist}px)`;
+            it.textEl.style.opacity = `${Math.max(0, 1 - kText * 1.2)}`;
+          } else {
+            it.textEl.style.transform = 'none';
+            it.textEl.style.opacity = '1';
+          }
+        }
       });
 
       renderer.render(scene, camera);
@@ -238,11 +277,14 @@ export default function ProjectBendGallery({
             onPointerLeave={() => (hovered.current = -1)}
             aria-label={`${p.title} — view project`}
           >
+            {/* Visual container: when gl is active, background is transparent so the 3D WebGL white card is the only card surface */}
             <div
               ref={(el) => {
                 visualRefs.current[i] = el;
               }}
-              className="relative aspect-[820/430] w-full overflow-hidden rounded-3xl bg-white"
+              className={`relative aspect-[820/430] w-full overflow-hidden rounded-3xl transition-colors duration-300 ${
+                gl ? 'bg-transparent' : 'bg-white shadow-[0_20px_45px_-12px_rgba(0,0,0,0.08)]'
+              }`}
             >
               {/* WebGL fallback */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -254,12 +296,23 @@ export default function ProjectBendGallery({
                 style={{ opacity: gl ? 0 : 1 }}
               />
             </div>
-            <div className="mt-4 flex items-end justify-between border-b border-black/20 pb-3">
+
+            {/* Content text container: dynamically follows 3D perspective bend and opacity fade */}
+            <div
+              ref={(el) => {
+                textRefs.current[i] = el;
+              }}
+              className="mt-4 flex items-end justify-between border-b border-black/20 pb-3 transition-[color] duration-300 will-change-transform"
+            >
               <div>
-                <h3 className="text-[26px] font-semibold leading-tight text-[#20211f]">{p.title}</h3>
-                <p className="text-[18px] leading-tight text-[#71736d] mt-1">{p.tags}</p>
+                <h3 className="text-[26px] font-semibold leading-tight text-[#20211f] group-hover:text-black">
+                  {p.title}
+                </h3>
+                <p className="text-[18px] leading-tight text-[#71736d] mt-1 line-clamp-1">
+                  {p.tags}
+                </p>
               </div>
-              <ArrowUpRight className="text-[#20211f] transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" />
+              <ArrowUpRight className="text-[#20211f] shrink-0 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" />
             </div>
           </Link>
         ))}
