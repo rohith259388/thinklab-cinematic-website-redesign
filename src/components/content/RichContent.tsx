@@ -83,7 +83,24 @@ export default function RichContent({ blocks, editable = false }: { blocks: Rich
     } else if (b.type === 'divider') result.push(<hr key={n} className="rich-divider" />);
     else if (b.type === 'h2' || b.type === 'h3') result.push(<h2 key={n} {...edit(b)}>{linkedText(b.text)}</h2>);
     else if (b.type === 'h4' || b.type === 'h5') result.push(<h3 key={n} {...edit(b)}>{linkedText(b.text)}</h3>);
-    else result.push(<p key={n} {...edit(b)}>{linkedText(b.text)}</p>);
+    else {
+      const paras = b.text.split(/\r?\n\s*\r?\n/).filter((p) => p.trim().length > 0);
+      if (paras.length > 1) {
+        paras.forEach((para, k) => {
+          result.push(
+            <p key={`${n}-${k}`} {...(k === 0 ? edit(b) : {})}>
+              {linkedText(para)}
+            </p>
+          );
+        });
+      } else {
+        result.push(
+          <p key={n} {...edit(b)}>
+            {linkedText(b.text)}
+          </p>
+        );
+      }
+    }
   }
   return <div className="rich-copy">{result}</div>;
 }

@@ -710,7 +710,7 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .detail-header { max-width: 1500px; margin: auto; padding: 160px 4.5vw 60px; }
 .detail-header h1 { font-size: clamp(42px,6.8vw,104px); line-height: 1.04; letter-spacing: -.06em; max-width: 1200px; margin: 40px 0 24px; }
 .detail-header .micro-label { color: #b8a8d4; }
-.detail-deck { max-width: 710px; font-size: 18px; line-height: 1.65; color: #b9b5c2; }
+.detail-deck { max-width: 710px; font-size: 18px; line-height: 1.65; color: #b9b5c2; white-space: pre-line; }
 .detail-layout { display: grid; grid-template-columns: 1fr 2.5fr; gap: 6vw; max-width: 1500px; margin: auto; padding: 0 4.5vw 110px; }
 .detail-aside { align-self: start; position: sticky; top: 120px; border-top: 1px solid #ffffff25; padding-top: 24px; }
 .detail-aside p { color: #aaa6b2; font-size: 12px; line-height: 1.7; margin: 15px 0 25px; }
@@ -718,7 +718,8 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .detail-image { position: relative; aspect-ratio: 1.65; background: #fff; border-radius: 16px; overflow: hidden; margin-bottom: 45px; }
 .detail-image img { object-fit: contain; }
 .rich-copy { max-width: 780px; color: #bbb8c4; font-size: 16px; line-height: 1.9; }
-.rich-copy p { margin: 0 0 20px; }
+.rich-copy p { margin: 0 0 20px; white-space: pre-line; }
+.rich-copy blockquote { white-space: pre-line; }
 .rich-copy h2 { font-size: clamp(26px,3vw,40px); line-height: 1.2; letter-spacing: -.035em; margin: 48px 0 22px; color: #f1f0eb; }
 .rich-copy h3 { font-size: 23px; line-height: 1.3; letter-spacing: -.02em; margin: 35px 0 18px; color: #e1d8ef; }
 .rich-copy ul { margin: 15px 0 30px; padding-left: 22px; list-style: disc; }

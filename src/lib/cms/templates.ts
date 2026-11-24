@@ -47,6 +47,38 @@ export interface CareerTemplateInput {
   benefits?: string;
 }
 
+/** Parses multiline text (with paragraph spacing, markdown headings, quotes, and bullets) into block objects. */
+function parseTextToBlocks(text: string): { type: string; text: string }[] {
+  if (!text || !text.trim()) return [];
+  const chunks = text
+    .split(/\r?\n\s*\r?\n/)
+    .map((c) => c.trim())
+    .filter(Boolean);
+
+  const blocks: { type: string; text: string }[] = [];
+
+  for (const chunk of chunks) {
+    if (chunk.startsWith('### ')) {
+      blocks.push({ type: 'h3', text: chunk.replace(/^###\s+/, '').trim() });
+    } else if (chunk.startsWith('## ')) {
+      blocks.push({ type: 'h2', text: chunk.replace(/^##\s+/, '').trim() });
+    } else if (chunk.startsWith('# ')) {
+      blocks.push({ type: 'h2', text: chunk.replace(/^#\s+/, '').trim() });
+    } else if (chunk.startsWith('> ')) {
+      blocks.push({ type: 'quote', text: chunk.replace(/^>\s+/, '').trim() });
+    } else if (/^[•*-]\s+/.test(chunk)) {
+      const lines = chunk.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      for (const line of lines) {
+        blocks.push({ type: 'li', text: line.replace(/^[•*-]\s+/, '').trim() });
+      }
+    } else {
+      blocks.push({ type: 'p', text: chunk });
+    }
+  }
+
+  return blocks;
+}
+
 export function buildProjectContent(input: ProjectTemplateInput): Content {
   const content = emptyContent(input.title);
   content.summary = input.summary || 'Project case study for Thinklab Digital Solutions.';
@@ -73,30 +105,39 @@ export function buildProjectContent(input: ProjectTemplateInput): Content {
 
   // Challenge section
   blocks.push({ type: 'h2', text: 'The Challenge & Context' });
-  blocks.push({
-    type: 'p',
-    text:
-      input.challenge ||
-      'Understanding the brand’s digital opportunities and creating a tailored user experience that aligns with measurable business growth.',
-  });
+  if (input.challenge) {
+    blocks.push(...parseTextToBlocks(input.challenge));
+  } else {
+    blocks.push({
+      type: 'p',
+      text:
+        'Understanding the brand’s digital opportunities and creating a tailored user experience that aligns with measurable business growth.',
+    });
+  }
 
   // Solution section
   blocks.push({ type: 'h2', text: 'Our Solution & Craft' });
-  blocks.push({
-    type: 'p',
-    text:
-      input.solution ||
-      'Engineered a modern, responsive digital presence with fluid animations, intuitive navigation, and high-performance frontend architecture.',
-  });
+  if (input.solution) {
+    blocks.push(...parseTextToBlocks(input.solution));
+  } else {
+    blocks.push({
+      type: 'p',
+      text:
+        'Engineered a modern, responsive digital presence with fluid animations, intuitive navigation, and high-performance frontend architecture.',
+    });
+  }
 
   // Results / Impact
   blocks.push({ type: 'h2', text: 'Measurable Impact' });
-  blocks.push({
-    type: 'p',
-    text:
-      input.results ||
-      'Accelerated customer engagement, enhanced conversion pathways, and established a scalable digital foundation for ongoing expansion.',
-  });
+  if (input.results) {
+    blocks.push(...parseTextToBlocks(input.results));
+  } else {
+    blocks.push({
+      type: 'p',
+      text:
+        'Accelerated customer engagement, enhanced conversion pathways, and established a scalable digital foundation for ongoing expansion.',
+    });
+  }
 
   content.blocks = blocks;
   return content;
@@ -115,41 +156,58 @@ export function buildBlogContent(input: BlogTemplateInput): Content {
 
   const blocks: { type: string; text: string }[] = [];
 
-  // Intro
-  blocks.push({
-    type: 'p',
-    text:
-      input.intro ||
-      input.summary ||
-      'Exploring how strategy, design, and technology intersect to create sustainable business advantage.',
-  });
+  // Intro (supports multi-paragraph spacing)
+  if (input.intro) {
+    blocks.push(...parseTextToBlocks(input.intro));
+  } else if (input.summary) {
+    blocks.push(...parseTextToBlocks(input.summary));
+  } else {
+    blocks.push({
+      type: 'p',
+      text: 'Exploring how strategy, design, and technology intersect to create sustainable business advantage.',
+    });
+  }
 
-  // Main body section
-  blocks.push({ type: 'h2', text: 'Strategic Perspectives' });
-  blocks.push({
-    type: 'p',
-    text:
-      input.mainBody ||
-      'Modern digital brands must balance aesthetic precision with measurable velocity. Here is how leading teams navigate this dynamic.',
-  });
+  // Main body section (supports multi-paragraph spacing, headings, quotes, bullets)
+  if (input.mainBody) {
+    const mainBlocks = parseTextToBlocks(input.mainBody);
+    if (!mainBlocks.some((b) => b.type === 'h2' || b.type === 'h3')) {
+      blocks.push({ type: 'h2', text: 'Strategic Perspectives' });
+    }
+    blocks.push(...mainBlocks);
+  } else {
+    blocks.push({ type: 'h2', text: 'Strategic Perspectives' });
+    blocks.push({
+      type: 'p',
+      text:
+        'Modern digital brands must balance aesthetic precision with measurable velocity. Here is how leading teams navigate this dynamic.',
+    });
+  }
 
   // Key takeaways
   if (input.keyTakeaways) {
     blocks.push({ type: 'h2', text: 'Key Takeaways' });
-    const lines = input.keyTakeaways.split('\n').filter((l) => l.trim().length > 0);
+    const lines = input.keyTakeaways.split(/\r?\n/).filter((l) => l.trim().length > 0);
     for (const line of lines) {
       blocks.push({ type: 'li', text: line.replace(/^[•*-]\s*/, '').trim() });
     }
   }
 
-  // Conclusion
-  blocks.push({ type: 'h2', text: 'Moving Forward' });
-  blocks.push({
-    type: 'p',
-    text:
-      input.conclusion ||
-      'By turning insights into intentional design and technical execution, organizations establish compounding advantages in their category.',
-  });
+  // Conclusion (supports multi-paragraph spacing)
+  if (input.conclusion) {
+    const concBlocks = parseTextToBlocks(input.conclusion);
+    if (!concBlocks.some((b) => b.type === 'h2' || b.type === 'h3')) {
+      blocks.push({ type: 'h2', text: 'Moving Forward' });
+    }
+    blocks.push(...concBlocks);
+  } else {
+    blocks.push({ type: 'h2', text: 'Moving Forward' });
+    blocks.push({
+      type: 'p',
+      text:
+        'By turning insights into intentional design and technical execution, organizations establish compounding advantages in their category.',
+    });
+  }
 
   content.blocks = blocks;
   return content;

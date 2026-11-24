@@ -367,6 +367,7 @@ export default function TemplateModal({
                 <div className="cms-form-group full">
                   <label>Article Summary / Abstract</label>
                   <textarea
+                    rows={3}
                     placeholder="2-3 sentence overview introducing the thesis..."
                     value={summary}
                     onChange={(e) => setSummary(e.target.value)}
@@ -376,7 +377,8 @@ export default function TemplateModal({
                 <div className="cms-form-group full">
                   <label>Introductory Paragraph</label>
                   <textarea
-                    placeholder="Set the stage for the reader..."
+                    rows={3}
+                    placeholder="Set the stage for the reader... Multiple paragraphs are preserved."
                     value={intro}
                     onChange={(e) => setIntro(e.target.value)}
                   />
@@ -385,8 +387,9 @@ export default function TemplateModal({
                 <div className="cms-form-group full">
                   <label>Main Body & Strategic Perspectives</label>
                   <textarea
-                    style={{ minHeight: 90 }}
-                    placeholder="Core arguments, data points, or detailed reasoning..."
+                    rows={8}
+                    style={{ minHeight: 160 }}
+                    placeholder="Core arguments, data points, or detailed reasoning. Double Enter creates spaced paragraphs, ## adds subheadings, - adds bullet points..."
                     value={mainBody}
                     onChange={(e) => setMainBody(e.target.value)}
                   />
@@ -395,6 +398,7 @@ export default function TemplateModal({
                 <div className="cms-form-group full">
                   <label>Key Takeaways (one per line)</label>
                   <textarea
+                    rows={4}
                     placeholder="• First critical takeaway&#10;• Second actionable recommendation&#10;• Third key takeaway"
                     value={keyTakeaways}
                     onChange={(e) => setKeyTakeaways(e.target.value)}
@@ -404,7 +408,8 @@ export default function TemplateModal({
                 <div className="cms-form-group full">
                   <label>Conclusion</label>
                   <textarea
-                    placeholder="Closing summary and forward-looking action..."
+                    rows={3}
+                    placeholder="Closing summary and forward-looking action... Multiple paragraphs are preserved."
                     value={conclusion}
                     onChange={(e) => setConclusion(e.target.value)}
                   />
