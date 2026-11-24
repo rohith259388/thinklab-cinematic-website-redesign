@@ -153,3 +153,13 @@
   0% { box-shadow: 0 0 0 6px rgba(187, 155, 255, .75), 0 0 40px rgba(187, 155, 255, .6); }
   100% { box-shadow: 0 0 0 2px #bb9bff, 0 0 22px rgba(187, 155, 255, .35); }
 }
+
+/* Blog FAQ section (below the article editor) */
+.cms-blog-faq { margin-top: 24px; padding: 18px; border: 1px solid #3a3450; border-radius: 14px; background: linear-gradient(180deg, #1c1926, #16141d); }
+.cms-blog-faq-head { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start; margin-bottom: 12px; }
+.cms-blog-faq-head h2 { margin: 0 0 2px !important; }
+.cms-blog-faq-head .cms-hint { margin: 0; }
+.cms-blog-faq-icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: #c5b0ff1f; color: #c5b0ff; }
+.cms-blog-faq-remove { display: inline-flex !important; align-items: center; gap: 6px; padding: 6px 10px !important; border: 1px solid #4a3a4a !important; border-radius: 8px; background: transparent !important; color: #e8a5b5 !important; font-size: 11px; }
+.cms-blog-faq-remove:hover:not(:disabled) { border-color: #e8a5b5 !important; background: #e8a5b512 !important; }
+.cms-blog-faq .cms-faq-editor { margin-bottom: 0; }

@@ -37,6 +37,12 @@ function readPath(content: Content | null, path: string): string | undefined {
     }
     return block ? (b === "extra" ? block.extra ?? "" : block.text) : undefined;
   }
+  if (scope === "q") {
+    // Blog FAQ: "q:heading" or "q:items:<index>:title|body"
+    if (a === "heading") return content.faq?.heading ?? "";
+    const item = content.faq?.items[Number(b)];
+    return item && (c === "title" || c === "body") ? item[c] : undefined;
+  }
   if (scope === "s") {
     const section = content.sections.find((x) => x.id === a);
     if (!section) return undefined;

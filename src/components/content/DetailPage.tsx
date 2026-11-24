@@ -13,6 +13,8 @@ import { Reveal } from '@/components/ui/Reveal';
 import CareerApplyForm from '@/components/ui/CareerApplyForm';
 import GrowCtaCard from '@/components/ui/GrowCtaCard';
 import ProjectHero from './ProjectHero';
+import ArticleFaqSection from './ArticleFaqSection';
+import type { ArticleFaqData } from '@/lib/cms/schema';
 import { GalleryBackLink } from '@/components/transition/ProjectTransition';
 
 export default function DetailPage({ entry: originalEntry, page, back, label }: { entry: LiveEntry; page: PageKey; back: string; label: string }) {
@@ -25,7 +27,10 @@ export default function DetailPage({ entry: originalEntry, page, back, label }: 
   if (back === '/projects') { for (let i = 0; i < 4; i += 2) { if (/^[0-9#]/.test(entry.blocks[i]?.text || '') && entry.blocks[i + 1]) metrics.push({ value: entry.blocks[i].text, label: entry.blocks[i + 1].text }); } }
   const metricText = new Set(metrics.flatMap(m => [m.value, m.label]));
   const blocks = entry.blocks.map((b, i) => ({ ...b, i })).filter(b => !['p', 'h2', 'h3', 'h4', 'h5'].includes(b.type) || (!metricText.has(b.text) && b.text !== entry.summary && b.text !== 'Visit our events page'));
-  const faqData = faqJsonLd(blocks);
+  const faq = 'faq' in entry ? (entry.faq as ArticleFaqData | undefined) : undefined;
+  const faqItems = (faq?.items ?? []).filter((it) => it.title.trim() && it.body.trim());
+  // FAQ structured data covers FAQ blocks inside the body and the article's own FAQ section.
+  const faqData = faqJsonLd(faqItems.length ? [...blocks, { type: 'faqs', text: faq!.heading, items: faqItems }] : blocks);
   const altText = 'alt' in entry && typeof entry.alt === 'string' ? entry.alt : entry.title;
   const projectHero = page === 'projects' && Boolean(entry.image);
   const body = useRef<HTMLDivElement>(null);
@@ -81,6 +86,7 @@ export default function DetailPage({ entry: originalEntry, page, back, label }: 
       {metrics.length > 0 && <div className="project-metrics">{metrics.map(m => <div key={m.label}><strong>{m.value}</strong><span>{m.label}</span></div>)}</div>}
       {faqData && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faqData }} />}
       <RichContent blocks={blocks} editable={Boolean(canvas.previewId)} html={'html' in entry ? (entry.html as string) : undefined} />
+      {faq && faq.items.length > 0 && <ArticleFaqSection faq={faq} editable={editing} />}
       {entry.slug === 'pr-events' && <a href="https://events.thinklabdigitalsolutions.com" className="btn-drop px-7 py-4 mt-8">Visit Thinklab Events <ArrowUpRight size={18} /></a>}
       {isJob && <CareerApplyForm role={entry.title} roleSlug={entry.slug} />}
       <div className="detail-end">{!isJob && <><Link href={destination} className="btn-drop px-7 py-4">{cta}<ArrowUpRight size={18} /></Link><p className="mt-6 text-xs text-[#aaa6b2]">Have a different challenge in mind? We’d love to hear it.</p></>}<GalleryBackLink href={back} className="text-link mt-7"><ArrowLeft size={15} /> Back to {label.toLowerCase()}</GalleryBackLink></div>

@@ -7,6 +7,9 @@ import ImageField from "./ImageField";
 import PageModal from "./builder/PageModal";
 import PageSections from "./builder/PageSections";
 import BlockEditor from "./builder/BlockEditor";
+import FaqEditor from "./builder/FaqEditor";
+import { emptyItem } from "@/lib/cms/blocks";
+import { MessageCircleQuestionMark, Plus, Trash } from "lucide-react";
 import SeoFields from "./builder/SeoFields";
 import InsightRichEditor from "./InsightRichEditor";
 import { blocksToHtml } from "@/lib/cms/html-migration";
@@ -42,6 +45,18 @@ function applyPath(c: Content, path: string, value: string): Content | null {
         j === i ? (b === "extra" ? { ...x, extra: value } : { ...x, text: value }) : x,
       ),
     };
+  }
+  if (scope === "q" && c.faq) {
+    // Blog FAQ: "q:heading" or "q:items:<index>:title|body"
+    if (a === "heading") return { ...c, faq: { ...c.faq, heading: value } };
+    if (a === "items" && (idx === "title" || idx === "body")) {
+      const k = Number(b);
+      return {
+        ...c,
+        faq: { ...c.faq, items: c.faq.items.map((it, j) => (j === k ? { ...it, [idx]: value } : it)) },
+      };
+    }
+    return null;
   }
   if (scope === "s") {
     return {
@@ -1498,6 +1513,71 @@ export default function Studio({
                       assets={assets}
                       disabled={busy}
                     />
+
+                    {/* FAQ section shown at the end of the article */}
+                    <section className="cms-blog-faq" data-edit-path="q:heading">
+                      <div className="cms-blog-faq-head">
+                        <span className="cms-blog-faq-icon" aria-hidden="true">
+                          <MessageCircleQuestionMark size={16} />
+                        </span>
+                        <div>
+                          <h2>FAQs</h2>
+                          <p className="cms-hint">
+                            Shown at the end of the article and added to Google results as FAQ
+                            rich snippets. Group questions into categories if you have many.
+                          </p>
+                        </div>
+                        {draft.faq && (
+                          <button
+                            type="button"
+                            className="cms-blog-faq-remove"
+                            disabled={busy}
+                            title="Remove the FAQ section"
+                            onClick={() => {
+                              if (confirm("Remove all FAQs from this article?")) change({ ...draft, faq: undefined });
+                            }}
+                          >
+                            <Trash size={13} /> Remove
+                          </button>
+                        )}
+                      </div>
+                      {draft.faq ? (
+                        <>
+                          <label className="cms-field">
+                            FAQ heading
+                            <input
+                              value={draft.faq.heading}
+                              placeholder="Frequently asked questions"
+                              disabled={busy}
+                              onChange={(e) => change({ ...draft, faq: { ...draft.faq!, heading: e.target.value } })}
+                            />
+                          </label>
+                          <FaqEditor
+                            items={draft.faq.items}
+                            onChange={(items) => change({ ...draft, faq: { ...draft.faq!, items } })}
+                            pathPrefix="q:"
+                            focus={focus}
+                          />
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className="cms-add-wide cms-add-faq"
+                          disabled={busy}
+                          onClick={() =>
+                            change({
+                              ...draft,
+                              faq: {
+                                heading: "Frequently asked questions",
+                                items: [{ ...emptyItem(), title: "New question?", body: "Write the answer here." }],
+                              },
+                            })
+                          }
+                        >
+                          <Plus size={15} /> Add FAQ section
+                        </button>
+                      )}
+                    </section>
 
                     {/* Blog Cover Image directly below the text content box */}
                     <div className="cms-blog-cover-section mt-6 pt-4 border-t border-white/10" data-edit-path="e:image">

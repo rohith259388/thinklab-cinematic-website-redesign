@@ -68,6 +68,7 @@ export const blockTypes = [
  * A `faqs` block is a whole category FAQ: `text` is its heading, `items` its questions.
  */
 export type Block = { type: string; text: string; extra?: string; items?: SectionItem[] };
+export type ArticleFaqData = { heading: string; items: SectionItem[] };
 export type Content = {
   title: string;
   summary: string;
@@ -80,6 +81,8 @@ export type Content = {
   source: string;
   archive: boolean;
   html?: string;
+  /** Blog FAQ shown under the article (questions grouped by `group` category). */
+  faq?: ArticleFaqData;
   blocks: Block[];
   fields: Record<string, string>;
   styles: Record<
@@ -185,6 +188,21 @@ export function validateContent(raw: unknown): Content {
   out.archive = r.archive === true;
   if (r.html !== undefined && typeof r.html === 'string') {
     out.html = sanitizeArticleHtml(text(r.html, 500000));
+  }
+  if (r.faq !== undefined && r.faq !== null) {
+    const f = r.faq as Record<string, unknown>;
+    if (typeof f !== 'object' || Array.isArray(f) || !Array.isArray(f.items) || f.items.length > 200)
+      throw new Error('Invalid FAQ');
+    out.faq = {
+      heading: text(f.heading ?? '', 300),
+      items: f.items.map((it: Record<string, unknown>) => ({
+        title: text(it?.title ?? '', 2000),
+        body: text(it?.body ?? ''),
+        image: '',
+        href: '',
+        group: text(it?.group ?? '', 200),
+      })),
+    };
   }
   if (!Array.isArray(r.blocks) || r.blocks.length > 500)
     throw new Error('Invalid rich text');
