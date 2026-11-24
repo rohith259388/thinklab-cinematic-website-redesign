@@ -3,6 +3,7 @@
 import { CmsText, CmsLink, useCanvasContent } from '@/components/cms/Canvas';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { ArrowUpRight, Plus, X } from 'lucide-react';
 import { NAV, BRAND } from '@/lib/content';
@@ -45,7 +46,23 @@ export default function Nav() {
     <>
       <a className="skip-link" href="#main">Skip to content</a>
       <header className={`site-header${scrolled ? ' is-scrolled' : ''}${light ? ' header-light' : ''}`}>
-        <Link href="/" className="wordmark" aria-label="Thinklab — Home">thinklab<span>®</span></Link>
+        <Link href="/" className="wordmark flex items-center" aria-label="Thinklab — Home">
+          {/* Thinklab Digital Solutions Brand Logo (adaptive dark/light) */}
+          <div className="relative h-9 sm:h-10 w-auto flex items-center">
+            {/* Dark logo on light backgrounds */}
+            <img
+              src="/images/thinklab-logo-dark.png"
+              alt="Thinklab Digital Solutions"
+              className="h-8 sm:h-9 w-auto object-contain hidden [.header-light_&]:block"
+            />
+            {/* White logo on dark backgrounds */}
+            <img
+              src="/images/thinklab-logo-white.png"
+              alt="Thinklab Digital Solutions"
+              className="h-8 sm:h-9 w-auto object-contain block [.header-light_&]:hidden"
+            />
+          </div>
+        </Link>
         <span className="nav-descriptor">
           <CmsText global field="header.descriptor">
             Ideas into impact.<br />Independent digital studio.
@@ -59,7 +76,16 @@ export default function Nav() {
         </div>
       </header>
       <dialog ref={dialog} id="site-menu" aria-label="Site navigation" className="menu-dialog" onCancel={() => setOpen(false)} onClose={() => setOpen(false)}>
-        <div className="menu-top"><Link href="/" className="wordmark" onClick={() => setOpen(false)}>thinklab<span>®</span></Link><button className="menu-toggle" onClick={() => setOpen(false)} aria-label="Close menu">Close <X size={19} /></button></div>
+        <div className="menu-top">
+          <Link href="/" className="wordmark flex items-center" onClick={() => setOpen(false)} aria-label="Thinklab — Home">
+            <img
+              src="/images/thinklab-logo-white.png"
+              alt="Thinklab Digital Solutions"
+              className="h-8 sm:h-9 w-auto object-contain"
+            />
+          </Link>
+          <button className="menu-toggle" onClick={() => setOpen(false)} aria-label="Close menu">Close <X size={19} /></button>
+        </div>
         <div className="menu-body">
           <div className="menu-note">
             <Plus size={32} />

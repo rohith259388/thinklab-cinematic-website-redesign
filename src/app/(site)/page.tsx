@@ -55,15 +55,15 @@ export default async function HomePage() {
   // Four primary services from main website
   const primaryServices = SERVICES.slice(0, 4);
 
-  // Latest insights: newly created insights appear on top
+  // Latest insights: newly created insights appear on top (6 blogs on homepage)
   const homeInsights = (articles && articles.length > 0)
-    ? articles.slice(0, 3).map((a) => ({
+    ? articles.slice(0, 6).map((a) => ({
         title: a.title,
         date: a.date || 'Recent',
         tag: a.category || 'Insights',
         slug: a.slug,
       }))
-    : BLOGS.slice(0, 3);
+    : BLOGS.slice(0, 6);
 
   return (
     <CmsPage>

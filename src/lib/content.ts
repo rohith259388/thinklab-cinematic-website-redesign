@@ -122,10 +122,17 @@ export const HERO = {
   cta: 'Contact Us',
 };
 
-export const STATS = [
+export interface StatItem {
+  value: number;
+  label: string;
+  suffix?: string;
+  prefix?: string;
+}
+
+export const STATS: StatItem[] = [
   { value: 98, suffix: '%', label: 'Client Success Rate' },
   { value: 200, suffix: '+', label: 'Campaigns Launched' },
-  { value: 250, prefix: '₹', suffix: 'K+', label: 'Revenue Generated' },
+  { value: 150, suffix: '%', label: 'Revenue Increased' },
   { value: 200, suffix: '+', label: '5 Star Reviews' },
 ];
 
