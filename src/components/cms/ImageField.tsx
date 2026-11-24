@@ -146,19 +146,21 @@ export default function ImageField({
 
       {value && (
         <div className="cms-image-preview-card">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={value}
-            alt="Preview"
-            loading="lazy"
-            decoding="async"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = 'none';
-            }}
-            onLoad={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = 'block';
-            }}
-          />
+          <div className="cms-image-preview-media">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={value}
+              alt="Preview"
+              loading="lazy"
+              decoding="async"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = 'none';
+              }}
+              onLoad={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = 'block';
+              }}
+            />
+          </div>
           <div className="cms-image-preview-info">
             <span className="cms-image-preview-url" title={value}>
               {value}

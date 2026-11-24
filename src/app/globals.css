@@ -715,8 +715,34 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .detail-aside { align-self: start; position: sticky; top: 120px; border-top: 1px solid #ffffff25; padding-top: 24px; }
 .detail-aside p { color: #aaa6b2; font-size: 12px; line-height: 1.7; margin: 15px 0 25px; }
 .detail-aside a { font-size: 12px; display: flex; align-items: center; justify-content: space-between; margin-top: 15px; }
-.detail-image { position: relative; aspect-ratio: 1.65; background: #fff; border-radius: 16px; overflow: hidden; margin-bottom: 45px; }
-.detail-image img { object-fit: contain; }
+.detail-image {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 45px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: transparent;
+  display: block;
+}
+.detail-image img,
+.detail-adaptive-img {
+  width: 100%;
+  height: auto;
+  max-height: 720px;
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.6);
+}
+.rich-copy img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 14px;
+  display: block;
+  margin: 24px auto;
+}
 .rich-copy { max-width: 780px; color: #bbb8c4; font-size: 16px; line-height: 1.9; }
 .rich-copy p { margin: 0 0 20px; white-space: pre-line; }
 .rich-video-wrapper {

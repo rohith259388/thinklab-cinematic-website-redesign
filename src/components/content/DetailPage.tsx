@@ -23,7 +23,18 @@ export default function DetailPage({ entry: originalEntry, page, back, label }: 
   const faqData = faqJsonLd(blocks);
   return <><StageSetter page={page} /><div className="ink-surface"><header className="detail-header"><Link href={back} className="text-link"><ArrowLeft size={15} /> {label}</Link><Reveal><h1 data-cms-entry="title">{entry.title}</h1><p className="micro-label">{entry.category}{entry.date && ` / ${entry.date}`}</p><p data-cms-entry="summary" className="detail-deck mt-7">{entry.summary}</p></Reveal></header>
     <div className="detail-layout"><aside className="detail-aside"><span className="micro-label">{label}</span><p>Ideas, expertise and a shared ambition.<br />Thinklab Digital Solutions.</p><Link href={destination}>{cta}<ArrowUpRight size={16} /></Link><Link href={back}>Explore more<ArrowUpRight size={16} /></Link></aside><article>
-      {entry.image && <div data-cms-entry="image" className="detail-image"><Image unoptimized={entry.image.startsWith('/api/cms-media/') || entry.image.startsWith('http')} src={entry.image} alt={('alt' in entry && typeof entry.alt==='string' ? entry.alt : entry.title)} fill sizes="(max-width: 900px) 90vw, 65vw" priority /></div>}
+      {entry.image && (
+        <div data-cms-entry="image" className="detail-image">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={entry.image}
+            alt={('alt' in entry && typeof entry.alt === 'string' ? entry.alt : entry.title)}
+            loading="eager"
+            decoding="async"
+            className="detail-adaptive-img"
+          />
+        </div>
+      )}
       {metrics.length > 0 && <div className="project-metrics">{metrics.map(m => <div key={m.label}><strong>{m.value}</strong><span>{m.label}</span></div>)}</div>}
       {faqData && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faqData }} />}
       <RichContent blocks={blocks} editable={Boolean(canvas.previewId)} html={'html' in entry ? (entry.html as string) : undefined} />

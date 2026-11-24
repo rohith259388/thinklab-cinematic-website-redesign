@@ -929,9 +929,11 @@
   border-radius: 6px;
 }
 .cms-image-preview-card img {
-  width: 56px;
-  height: 56px;
-  object-fit: cover;
+  max-width: 100%;
+  max-height: 220px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   border-radius: 4px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: #000000;
@@ -982,3 +984,5 @@
 .cms-insight-editor-container { min-height: 520px; }
 .cms-article-meta-drawer summary { list-style: none; }
 .cms-article-meta-drawer summary::-webkit-details-marker { display: none; }
+
+.cms-image-preview-media { width: 100%; max-height: 220px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06); }
