@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useId, useState, type CSSProperties, type PointerEvent } from 'react';
+import { useEffect, useRef, useId, type CSSProperties, type MouseEvent, type PointerEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowUpRight } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { createProjectBendMap, easeProjectBend, nextProjectScroll } from '@/lib/project-bend';
+import { useProjectTransition } from '@/components/transition/ProjectTransition';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -42,6 +43,17 @@ function StackedProjectCard({
   cardRef: (el: HTMLElement | null) => void;
 }) {
   const planeRef = useRef<HTMLDivElement>(null);
+  const pt = useProjectTransition();
+
+  // Any link in the card opens the case study by expanding the white logo sheet into its hero.
+  const openProject = (e: MouseEvent<HTMLAnchorElement>) => {
+    const plane = planeRef.current;
+    if (!pt || !plane || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    e.preventDefault();
+    gsap.killTweensOf(plane);
+    pt.open(plane, { slug: project.slug, href: project.href, image: project.image });
+  };
+  const warm = () => pt?.prefetch(project.href, project.image);
 
   const handlePointerMove = (e: PointerEvent<HTMLAnchorElement>) => {
     if (e.pointerType !== 'mouse' || matchMedia('(prefers-reduced-motion: reduce)').matches || !planeRef.current) return;
@@ -81,6 +93,7 @@ function StackedProjectCard({
     <article
       ref={cardRef}
       className="project-stacked-card sticky w-full max-w-7xl mx-auto rounded-[24px] sm:rounded-[32px] md:rounded-[40px] overflow-hidden border border-[#20211f]/10 bg-white shadow-[0_20px_50px_-15px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.03)] group transition-all duration-500 hover:border-[#20211f]/20 hover:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.10)]"
+      onPointerEnter={warm}
       style={{
         top: `clamp(75px, 9vh, 96px)`,
         zIndex: index + 1,
@@ -123,6 +136,7 @@ function StackedProjectCard({
             <h3 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight text-[#1a1b18] group-hover:text-[#e11d48] transition-colors leading-[1.15]">
               <Link
                 href={project.href}
+                onClick={openProject}
                 className="focus:outline-none hover:underline decoration-[#20211f]/30 underline-offset-8"
               >
                 {project.title}
@@ -153,6 +167,7 @@ function StackedProjectCard({
           <div className="md:col-span-5 flex items-center justify-center">
             <Link
               href={project.href}
+              onClick={openProject}
               className="relative w-full aspect-[16/11] rounded-2xl overflow-hidden border border-[#20211f]/10 bg-gradient-to-br from-[#f8f9f4] via-[#f1f3ec] to-[#e8eae0] p-4 sm:p-6 flex items-center justify-center group/visual shadow-inner"
               onPointerMove={handlePointerMove}
               onPointerLeave={handlePointerLeave}
@@ -169,9 +184,10 @@ function StackedProjectCard({
               {/* 3D Tilting White Card Sheet around the logo (reference project card) */}
               <div
                 ref={planeRef}
+                data-pt-card={project.slug}
                 className="relative w-[90%] h-[86%] bg-white rounded-xl sm:rounded-2xl border border-black/[0.06] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden flex items-center justify-center p-6 sm:p-8 transition-transform will-change-transform group-hover/visual:scale-[1.03] duration-500 ease-out"
               >
-                <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative w-full h-full flex items-center justify-center" data-pt-logo>
                   <Image
                     src={project.image}
                     alt={project.title}
@@ -191,6 +207,7 @@ function StackedProjectCard({
         <div className="flex items-center justify-between border-t border-[#20211f]/10 pt-4 md:pt-5">
           <Link
             href={project.href}
+            onClick={openProject}
             className="inline-flex items-center gap-3 text-xs sm:text-sm font-mono uppercase tracking-wider text-[#20211f] hover:text-[#e11d48] transition-all group/btn"
           >
             <span className="font-semibold">Explore Case Study</span>

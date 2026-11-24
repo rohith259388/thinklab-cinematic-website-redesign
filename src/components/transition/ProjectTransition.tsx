@@ -47,12 +47,12 @@ type Api = {
   back: () => void;
   prefetch: (href: string, image?: string) => void;
 };
-type Rec = OpenPayload & { scrollY: number };
+type Rec = OpenPayload & { scrollY: number; origin: string };
 type Box = { x: number; y: number; w: number; h: number };
 type Insets = { top: number; right: number; bottom: number; left: number };
 type Logo = { src: string; aspect: number; tex: THREE_NS.Texture | null } | null;
 /** Everything one morph needs. */
-type Morph = { card: Box; logo: Logo; bent: boolean; logoScale: number };
+type Morph = { card: Box; logo: Logo; bent: boolean; logoScale: number; inset: Insets; radius: number };
 type GL = {
   THREE: typeof THREE_NS;
   renderer: THREE_NS.WebGLRenderer;
@@ -123,6 +123,30 @@ const bendK = (screenY: number) => {
   const x = Math.min(1, Math.max(0, (H / 2 - screenY - e0) / (e1 - e0)));
   return x * x * (3 - 2 * x);
 };
+
+/**
+ * Where the card sits on screen and how its logo is framed. Cards drawn by the WebGL gallery use
+ * the shader's own constants; DOM cards (e.g. the home page deck) mark their logo box with
+ * [data-pt-logo] so the morph starts from exactly that frame and corner radius.
+ */
+function measureCard(el: HTMLElement): { card: Box; inset: Insets; radius: number } {
+  const r = el.getBoundingClientRect();
+  const card: Box = { x: r.left, y: r.top, w: r.width, h: r.height };
+  const logoEl = el.querySelector<HTMLElement>('[data-pt-logo]');
+  if (!logoEl || !r.width || !r.height) return { card, inset: CARD_INSET, radius: CARD_RADIUS };
+  const l = logoEl.getBoundingClientRect();
+  const radius = parseFloat(getComputedStyle(el).borderTopLeftRadius);
+  return {
+    card,
+    inset: {
+      top: (l.top - r.top) / r.height,
+      right: (r.right - l.right) / r.width,
+      bottom: (r.bottom - l.bottom) / r.height,
+      left: (l.left - r.left) / r.width,
+    },
+    radius: Number.isFinite(radius) ? radius : CARD_RADIUS,
+  };
+}
 
 const detailSlug = (path: string) => {
   const m = path.match(/^\/projects\/([^/?#]+)/);
@@ -313,11 +337,11 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
     mesh.position.set(x + w / 2 - W / 2, -(y + h / 2 - H / 2), 0);
     const u = mat.uniforms;
     u.uAmt.value = m.bent ? 1 - t : 0;
-    u.uRadius.value = lerp(CARD_RADIUS, 0, t);
+    u.uRadius.value = lerp(m.radius, 0, t);
     u.uBorder.value = 1 - t;
     u.uScale.value = lerp(m.logoScale, 1, t);
     (u.uMesh.value as THREE_NS.Vector2).set(w, h);
-    const ins = lerpInsets(CARD_INSET, heroInset(), t);
+    const ins = lerpInsets(m.inset, heroInset(), t);
     (u.uIns.value as THREE_NS.Vector4).set(ins.top, ins.right, ins.bottom, ins.left);
     if (m.logo?.tex) {
       u.uTex.value = m.logo.tex;
@@ -341,7 +365,7 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
     const y = lerp(card.y, 0, t);
     const w = lerp(card.w, vp.w, t);
     const h = lerp(card.h, vp.h, t);
-    const r = lerp(CARD_RADIUS, 0, t);
+    const r = lerp(m.radius, 0, t);
     const clip = `inset(${y}px ${vp.w - x - w}px ${vp.h - y - h}px ${x}px round ${r}px)`;
     node.style.clipPath = clip;
     node.style.setProperty('-webkit-clip-path', clip);
@@ -370,7 +394,7 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
     }
 
     if (img && m.logo) {
-      const from = scaleBox(contain(inset(card, CARD_INSET), m.logo.aspect), m.logoScale);
+      const from = scaleBox(contain(inset(card, m.inset), m.logo.aspect), m.logoScale);
       const to = contain(inset(vp, heroInset()), m.logo.aspect);
       // Laid out once at hero size and only ever scaled down → crisp at rest.
       img.style.width = `${to.w}px`;
@@ -424,18 +448,17 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
         return;
       }
       busy.current = true;
-      rec.current = { ...p, scrollY: window.scrollY };
+      rec.current = { ...p, scrollY: window.scrollY, origin: pathRef.current };
       document.documentElement.dataset.pt = 'forward';
       prefetch(p.href);
       window.__lenis?.stop();
 
-      const r = el.getBoundingClientRect();
-      const card: Box = { x: r.left, y: r.top, w: r.width, h: r.height };
+      const shape = measureCard(el);
       const gl = await ensureGL();
       const logo = await prepareLogo(p.image, gl);
       // The gallery enlarges a hovered card's logo to 1.05 — start from exactly what's on screen.
       const hovered = el.closest('a')?.matches(':hover') ?? false;
-      const m: Morph = { card, logo, bent: Boolean(p.bent), logoScale: hovered ? 1.05 : 1 };
+      const m: Morph = { ...shape, logo, bent: Boolean(p.bent), logoScale: p.bent !== undefined && hovered ? 1.05 : 1 };
       const layer = layerFor(gl);
       layer.paint(m, 0);
       show(layer.el);
@@ -470,7 +493,8 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
 
   /* ─────────────── back: hero → card ─────────────── */
   const reverse = useCallback(
-    async (viaPopstate: boolean) => {
+    /** `dest` is where we're returning to: the card's origin page, or the gallery. */
+    async (viaPopstate: boolean, dest?: string) => {
       const node = panel.current;
       const slug = detailSlug(pathRef.current);
       if (!node || busy.current || !slug || reduced()) return false;
@@ -479,12 +503,13 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
 
       const hero = document.querySelector<HTMLElement>('[data-project-hero]');
       const record = rec.current?.slug === slug ? rec.current : null;
+      const to = dest ?? record?.origin ?? GALLERY;
       if (!record) prefetch(GALLERY);
       const src = hero?.querySelector('img')?.getAttribute('src') || record?.image;
 
       // 1) Cover at once with the DOM panel showing the hero's exact resting frame.
       const cover = await prepareLogo(src, null);
-      paintDOM({ card: viewport(), logo: cover, bent: false, logoScale: 1 }, 1);
+      paintDOM({ card: viewport(), logo: cover, bent: false, logoScale: 1, inset: CARD_INSET, radius: 0 }, 1);
       if (window.scrollY > 4) {
         show(node, 0);
         await gsap.to(node, { opacity: 1, duration: viaPopstate ? 0.12 : 0.2, ease: 'power1.out' });
@@ -504,7 +529,7 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
 
       const cardEl = await waitFor(
         () =>
-          pathRef.current === GALLERY
+          pathRef.current === to
             ? document.querySelector<HTMLElement>(`[data-pt-card="${CSS.escape(slug)}"]`)
             : null,
         5000,
@@ -532,14 +557,20 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
       //    stutters, especially on slower Windows/Android hardware.
       document.documentElement.dataset.ptRestored = '1'; // for a gallery that mounts after this
       window.dispatchEvent(new Event('pt:restored'));
-      await waitFor(() => document.querySelector('canvas[data-gallery-ready]'), 1200);
+      // Cards drawn by the WebGL bend gallery (Projects page, home page) are transparent DOM boxes.
+      const bent = cardEl.classList.contains('bg-transparent');
+      if (bent) await waitFor(() => document.querySelector('canvas[data-gallery-ready]'), 1200);
       await nextFrame(); // let the WebGL gallery draw its cards at the restored position
       await steadyFrames();
+      if (to !== GALLERY) {
+        // Pages like home keep mounting lazy sections for a moment; land on the exact spot again.
+        scrollToY(target);
+        window.__lenis?.stop();
+        await nextFrame();
+      }
 
       // 5) Hand the cover to the morph layer (identical frame), then close into the card.
-      const r = cardEl.getBoundingClientRect();
-      const bent = cardEl.classList.contains('bg-transparent'); // gallery is in WebGL mode
-      const m: Morph = { card: { x: r.left, y: r.top, w: r.width, h: r.height }, logo, bent, logoScale: 1 };
+      const m: Morph = { ...measureCard(cardEl), logo, bent, logoScale: 1 };
       const layer = layerFor(gl);
       if (layer.el !== node) {
         layer.paint(m, 1);
@@ -563,7 +594,9 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
   // Browser back button: detail → gallery
   useEffect(() => {
     const onPop = () => {
-      if (location.pathname === GALLERY && detailSlug(pathRef.current)) void reverse(true);
+      const to = location.pathname;
+      if (!detailSlug(pathRef.current)) return;
+      if (to === GALLERY || to === rec.current?.origin) void reverse(true, to);
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -573,7 +606,7 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
     pathRef.current = pathname;
     // Forget the origin card once the visitor wanders somewhere unrelated.
     const r = rec.current;
-    if (r && !busy.current && pathname !== r.href && pathname !== GALLERY) rec.current = null;
+    if (r && !busy.current && pathname !== r.href && pathname !== r.origin) rec.current = null;
   }, [pathname]);
 
   useEffect(

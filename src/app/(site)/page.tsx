@@ -20,7 +20,7 @@ import { entries, siteContent } from "@/lib/cms/public";
 import { CmsText } from "@/components/cms/Canvas";
 import { Reveal, CountUp, SplitWords } from "@/components/ui/Reveal";
 
-const ProjectGallery = dynamic(() => import("@/components/home/ProjectGallery"), {
+const ProjectBendGallery = dynamic(() => import("@/components/home/ProjectBendGallery"), {
   loading: () => <div className="min-h-[500px] flex items-center justify-center font-mono text-xs text-[#9a97a8]">Loading projects…</div>,
 });
 const VerticalTestimonials = dynamic(() => import("@/components/home/VerticalTestimonials"), {
@@ -214,7 +214,7 @@ export default async function HomePage() {
                   </Link>
                 </Reveal>
               </div>
-              <ProjectGallery projects={projectCards.slice(0, 4)} mode="stacked" />
+              <ProjectBendGallery projects={projectCards.slice(0, 4)} pageBg="#f0f0e9" cardBg="#ffffff" />
             </section>
 
             {/* 4. TESTIMONIALS */}
