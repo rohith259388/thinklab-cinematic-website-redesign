@@ -10,11 +10,10 @@ import { motion } from '@/lib/motion';
  * Sequence:
  *  1. FIRST: Border draws symmetrically from D in DIGITAL and last S in
  *     SOLUTIONS around to meet at top center.
- *  2. AFTER THAT: The connecting wire drops from the border and the bulb
- *     illuminates (the 'i' stem below the bulb stays hidden).
- *  3. AT LAST: Text ("Thinklab", including the 'i' stem below the bulb,
- *     "DIGITAL SOLUTIONS", and growth chart) fades in smoothly left to right.
- *  4. Brief hold, followed by circular bubble reveal.
+ *  2. THEN, SIMULTANEOUSLY: the connecting wire drops and the bulb illuminates,
+ *     while the text ("Thinklab" incl. the 'i' stem, "DIGITAL SOLUTIONS",
+ *     growth chart) fades in from top to bottom.
+ *  3. Brief hold, followed by circular bubble reveal.
  */
 
 // 1. Text & Chart symbols from original SVG
@@ -84,7 +83,7 @@ export default function IntroLoader() {
     // Initial hidden states: ONLY cord & bulb appear in Step 1 (NO 'i' below bulb)
     stem.style.opacity = '0';
     bulbGroup.style.opacity = '0';
-    textGroup.style.clipPath = 'inset(0 100% 0 0)';
+    textGroup.style.clipPath = 'inset(0 0 100% 0)';
     textGroup.style.opacity = '0';
     borderPath.style.opacity = '0';
 
@@ -129,7 +128,7 @@ export default function IntroLoader() {
       stem.style.opacity = '1';
       stemMask.style.strokeDashoffset = '0';
       bulbGroup.style.opacity = '1';
-      textGroup.style.clipPath = 'inset(0 0% 0 0)';
+      textGroup.style.clipPath = 'inset(0 0 0% 0)';
       textGroup.style.opacity = '1';
       borderPath.style.opacity = '1';
       maskLeft.style.strokeDashoffset = '0';
@@ -159,10 +158,12 @@ export default function IntroLoader() {
     );
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 2: Cord drops from the top of the border, then the bulb illuminates
+    // STEP 2: Cord drops + bulb illuminates, simultaneously with the text
     // ─────────────────────────────────────────────────────────────
-    const stemStartTime = borderStartTime + borderDuration - 0.05;
-    const stemDuration = 0.6;
+    // Cord, bulb and text all begin together the moment the border closes.
+    const revealStartTime = borderStartTime + borderDuration + 0.05;
+    const stemStartTime = revealStartTime;
+    const stemDuration = 0.55;
     tl.set(stem, { opacity: 1 }, stemStartTime);
     tl.to(
       stemMask,
@@ -170,19 +171,19 @@ export default function IntroLoader() {
       stemStartTime
     );
 
-    const bulbStartTime = stemStartTime + stemDuration - 0.08;
-    tl.to(bulbGroup, { opacity: 1, duration: 0.5, ease: 'power2.out' }, bulbStartTime);
+    const bulbStartTime = revealStartTime;
+    tl.to(bulbGroup, { opacity: 1, duration: 0.8, ease: 'power2.out' }, bulbStartTime);
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 3: Smooth left-to-right fade in for text (with 'i' stem below bulb)
+    // STEP 2b: Text fades in from top to bottom (with 'i' stem below bulb)
     // ─────────────────────────────────────────────────────────────
-    const textStartTime = bulbStartTime + 0.5 + 0.1;
+    const textStartTime = revealStartTime;
     tl.to(
       textGroup,
-      { clipPath: 'inset(0 0% 0 0)', duration: 1.25, ease: 'power2.inOut' },
+      { clipPath: 'inset(0 0 0% 0)', duration: 1.1, ease: 'power2.out' },
       textStartTime
     );
-    tl.to(textGroup, { opacity: 1, duration: 0.55, ease: 'power1.out' }, textStartTime);
+    tl.to(textGroup, { opacity: 1, duration: 0.8, ease: 'power1.out' }, textStartTime);
 
     // Hold briefly before circular bubble reveal
     tl.to({}, { duration: 0.4 });
@@ -281,7 +282,7 @@ export default function IntroLoader() {
           </g>
 
           {/* 2. TEXT ("Thinklab" + 'i' stem below bulb + "DIGITAL SOLUTIONS" + chart): Smooth fade-in */}
-          <g ref={textGroupRef} style={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}>
+          <g ref={textGroupRef} style={{ opacity: 0, clipPath: 'inset(0 0 100% 0)' }}>
             <path d={I_STEM_PATH} fill="#FFFFFF" fillRule="evenodd" />
             <path d={TEXT_PATH} fill="#FFFFFF" fillRule="evenodd" />
           </g>
