@@ -3976,6 +3976,67 @@ html[data-pt="forward"] .project-hero [data-pt-copy] > * {
   }
 }
 
+/* Full-bleed cover hero variant (e.g. Amigo AI) */
+.project-hero.project-hero--cover,
+.project-hero.project-hero--cover .ph-frame {
+  background: #0a0714;
+  color: #fcfcf7;
+}
+
+.project-hero.project-hero--cover .ph-logo {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.project-hero.project-hero--cover .ph-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.project-hero.project-hero--cover .ph-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 7, 20, 0.45) 0%,
+    rgba(10, 7, 20, 0.12) 38%,
+    rgba(10, 7, 20, 0.72) 72%,
+    rgba(10, 7, 20, 0.92) 100%
+  );
+}
+
+.project-hero.project-hero--cover .ph-copy {
+  z-index: 2;
+}
+
+.project-hero.project-hero--cover .ph-back,
+.project-hero.project-hero--cover .micro-label,
+.project-hero.project-hero--cover .ph-scroll {
+  color: rgba(255, 255, 255, 0.8);
+  z-index: 2;
+}
+
+.project-hero.project-hero--cover .ph-back:hover {
+  color: #ffffff;
+}
+
+.project-hero.project-hero--cover h1 {
+  color: #ffffff;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+}
+
+.project-hero.project-hero--cover .ph-summary {
+  color: rgba(242, 239, 255, 0.88);
+}
+
 /* ——— Article FAQ (blog): clean smoked-glass card, lavender accent ——— */
 .article-faq {
   margin: clamp(56px, 7vw, 88px) 0 8px;

@@ -1,10 +1,13 @@
 /**
  * The project-card shader, shared by the WebGL gallery and the card ↔ hero transition so the
- * expanding card is pixel-for-pixel the card you clicked (same bend curve, fog, logo fit).
+ * expanding card is pixel-for-pixel the card you clicked (same bend curve, fog, logo/cover fit).
  *
  * Extra uniforms over the original gallery shader:
- *   uAmt — how much of the bend/fog applies (1 in the gallery; eases to 0 as the card opens)
- *   uIns — logo box insets as fractions of the card (top, right, bottom, left)
+ *   uAmt        — how much of the bend/fog applies (1 in the gallery; eases to 0 as the card opens)
+ *   uIns        — artwork box insets as fractions of the card (top, right, bottom, left)
+ *   uCover      — 0 = object-contain logo on white card; 1 = object-cover full-bleed artwork
+ *   uScrim      — 0..1 gradient scrim fade-in for full-bleed hero legibility
+ *   uScrimColor — RGB color of the hero gradient scrim
  */
 
 export const CAM_Z = 1500; // camera distance; 1 world unit = 1 CSS px on the z = 0 plane
@@ -13,6 +16,16 @@ export const CARD_RADIUS = 24;
 export const CARD_PAD = 0.18; // logo box inset on a card (the original 0.36 total padding)
 /** World-y range (relative to the viewport centre, +up) over which cards bend back. */
 export const bendRange = (H: number): [number, number] => [H * 0.05, H * 0.6];
+
+/**
+ * Full-bleed banner/artwork projects fill the entire card and enlarge to fill the entire
+ * hero viewport background; transparent brand marks sit centered inside a white card sheet.
+ */
+export function isProjectCover(src?: string, slug?: string): boolean {
+  if (slug === 'amigo-ai') return true;
+  if (!src) return false;
+  return /\.(jpe?g|webp|avif)(\?|$)/i.test(src);
+}
 
 export const CARD_VERT = /* glsl */ `
   varying vec2 vUv;
@@ -45,11 +58,14 @@ export const CARD_FRAG = /* glsl */ `
   uniform float uHasTex;
   uniform float uRadius;
   uniform float uBorder;
+  uniform float uCover;
+  uniform float uScrim;
   uniform vec4 uIns;
   uniform vec3 uBg;
   uniform vec3 uFog;
+  uniform vec3 uScrimColor;
   void main() {
-    // Rounded corners for the white 3D card
+    // Rounded corners for the 3D card
     vec2 q = abs(vUv - 0.5) * uMesh - uMesh * 0.5 + uRadius;
     float dist = length(max(q, 0.0)) - uRadius;
     if (dist > 0.0) discard;
@@ -57,18 +73,25 @@ export const CARD_FRAG = /* glsl */ `
     // Subtle premium border stroke on the card edge
     float border = smoothstep(0.0, -1.2, dist) - smoothstep(-1.2, -2.4, dist);
 
-    // Contain the image inside the logo box (uv is bottom-up, insets are top/right/bottom/left)
+    // Contain or cover the image inside the inset box (uv is bottom-up, insets are top/right/bottom/left)
     vec2 box = uMesh * vec2(1.0 - uIns.w - uIns.y, 1.0 - uIns.x - uIns.z);
     vec2 c = vec2((uIns.w + 1.0 - uIns.y) * 0.5, (uIns.z + 1.0 - uIns.x) * 0.5);
-    float s = min(box.x / uImg.x, box.y / uImg.y);
+    float sContain = min(box.x / uImg.x, box.y / uImg.y);
+    float sCover = max(box.x / uImg.x, box.y / uImg.y);
+    float s = mix(sContain, sCover, uCover);
     vec2 size = uImg * s;
     vec2 p = (vUv - c) * uMesh / size / uScale + 0.5;
     vec4 t = texture2D(uTex, p);
     float inside = step(0.0, p.x) * step(p.x, 1.0) * step(0.0, p.y) * step(p.y, 1.0);
 
-    // Mix white card surface with texture, add border accent
+    // Mix card surface with texture, add subtle border accent
     vec3 col = mix(uBg, t.rgb, t.a * inside * uHasTex);
-    col = mix(col, vec3(0.12, 0.13, 0.12), border * 0.06 * uBorder);
+    col = mix(col, vec3(0.12, 0.13, 0.12), border * 0.06 * uBorder * (1.0 - uCover * 0.5));
+
+    // Readability scrim matching .project-hero--cover .ph-scrim during full-viewport expansion
+    float topScrim = mix(0.12, 0.45, smoothstep(0.62, 1.0, vUv.y));
+    float botScrim = mix(0.92, topScrim, smoothstep(0.0, 0.52, vUv.y));
+    col = mix(col, uScrimColor, uScrim * botScrim);
 
     // Fog fade into the paper background
     col = mix(col, uFog, vK * 0.85);

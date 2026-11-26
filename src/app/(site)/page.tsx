@@ -16,6 +16,7 @@ import {
 } from "@/lib/content";
 import StageSetter from "@/components/experience/StageSetter";
 import HomeJourney from "@/components/home/HomeJourney";
+import InsightsBento from "@/components/home/InsightsBento";
 import { entries, siteContent } from "@/lib/cms/public";
 import { CmsText } from "@/components/cms/Canvas";
 import { Reveal, CountUp, SplitWords } from "@/components/ui/Reveal";
@@ -55,15 +56,21 @@ export default async function HomePage() {
   // Four primary services from main website
   const primaryServices = SERVICES.slice(0, 4);
 
-  // Latest insights: newly created insights appear on top (6 blogs on homepage)
+  // Latest insights: newly created insights appear on top (5 blogs in balanced 2+3 Bento layout)
   const homeInsights = (articles && articles.length > 0)
-    ? articles.slice(0, 6).map((a) => ({
-        title: a.title,
-        date: a.date || 'Recent',
-        tag: a.category || 'Insights',
-        slug: a.slug,
-      }))
-    : BLOGS.slice(0, 6);
+    ? articles.slice(0, 5).map((a) => {
+        const words = (a.blocks ?? []).reduce((sum, b) => sum + (b.text ? b.text.split(/\s+/).length : 0), 0);
+        const mins = Math.max(2, Math.round(words / 160));
+        return {
+          title: a.title,
+          date: a.date || '',
+          tag: a.category || 'Insights',
+          slug: a.slug,
+          image: a.image,
+          readTime: `${mins} min read`,
+        };
+      })
+    : BLOGS.slice(0, 5);
 
   return (
     <CmsPage>
@@ -377,30 +384,7 @@ export default async function HomePage() {
                   </Link>
                 </Reveal>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-                {homeInsights.map((blog, i) => (
-                  <Reveal key={blog.slug || blog.title} delay={i * 0.07}>
-                    <Link
-                      href={blog.slug ? `/blog/${blog.slug}` : "/blog"}
-                      className="group p-6 rounded-2xl bg-white/75 border border-[#27291d]/15 shadow-sm hover:border-[#7e6ff0]/50 hover:shadow-md transition-all flex flex-col justify-between h-full"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between text-xs font-mono text-[#686b61] mb-3">
-                          <span className="px-2.5 py-0.5 rounded-full bg-[#7e6ff0]/10 text-[#644be2] font-medium border border-[#7e6ff0]/20">{blog.tag}</span>
-                          <span>{blog.date}</span>
-                        </div>
-                        <h3 className="text-base font-semibold text-[#1a1b18] group-hover:text-[#644be2] transition-colors leading-snug">
-                          <CmsText field={`home.blog.${i}.title`}>{blog.title}</CmsText>
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-[#644be2] font-mono font-medium mt-6 group-hover:translate-x-1 transition-transform">
-                        <span>Read article</span>
-                        <ArrowUpRight size={14} />
-                      </div>
-                    </Link>
-                  </Reveal>
-                ))}
-              </div>
+              <InsightsBento insights={homeInsights} />
             </section>
 
             {/* 8. BANNER (BRAND PHILOSOPHY / WHY CHOOSE US) */}

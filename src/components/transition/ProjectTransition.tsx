@@ -39,9 +39,10 @@ import {
   CARD_RADIUS,
   CARD_VERT,
   bendRange,
+  isProjectCover,
 } from './cardShader';
 
-type OpenPayload = { slug: string; href: string; image?: string; bent?: boolean };
+type OpenPayload = { slug: string; href: string; image?: string; bent?: boolean; cover?: boolean };
 type Api = {
   open: (el: HTMLElement, p: OpenPayload) => void;
   back: () => void;
@@ -52,7 +53,7 @@ type Box = { x: number; y: number; w: number; h: number };
 type Insets = { top: number; right: number; bottom: number; left: number };
 type Logo = { src: string; aspect: number; tex: THREE_NS.Texture | null } | null;
 /** Everything one morph needs. */
-type Morph = { card: Box; logo: Logo; bent: boolean; logoScale: number; inset: Insets; radius: number };
+type Morph = { card: Box; logo: Logo; bent: boolean; logoScale: number; inset: Insets; radius: number; cover: boolean };
 type GL = {
   THREE: typeof THREE_NS;
   renderer: THREE_NS.WebGLRenderer;
@@ -73,11 +74,14 @@ const EASE = 'expo.inOut';
 const PAGE_BG = '#f0f0e9'; // gallery page colour the bent cards fade into
 const FOG_RGB = '240, 240, 233';
 const CARD_INSET: Insets = { top: CARD_PAD, right: CARD_PAD, bottom: CARD_PAD, left: CARD_PAD };
+const ZERO_INSET: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
 // Must mirror .project-hero .ph-logo in globals.css
-const heroInset = (): Insets =>
-  window.innerWidth < 768
-    ? { top: 0.16, right: 0.12, bottom: 0.52, left: 0.12 }
-    : { top: 0.16, right: 0.3, bottom: 0.46, left: 0.3 };
+const heroInset = (cover?: boolean): Insets =>
+  cover
+    ? ZERO_INSET
+    : window.innerWidth < 768
+      ? { top: 0.16, right: 0.12, bottom: 0.52, left: 0.12 }
+      : { top: 0.16, right: 0.3, bottom: 0.46, left: 0.3 };
 
 // clientWidth excludes a classic (Windows/Linux) scrollbar, matching fixed/100%-wide boxes;
 // on macOS/iOS overlay scrollbars it equals innerWidth. Keeps every frame identical across OSes.
@@ -98,6 +102,16 @@ const contain = (b: Box, aspect: number): Box => {
   let w = b.w;
   let h = w / aspect;
   if (h > b.h) {
+    h = b.h;
+    w = h * aspect;
+  }
+  return { x: b.x + (b.w - w) / 2, y: b.y + (b.h - h) / 2, w, h };
+};
+/** The rect an `object-fit: cover` image of this aspect ratio occupies inside `b`. */
+const coverRect = (b: Box, aspect: number): Box => {
+  let w = b.w;
+  let h = w / aspect;
+  if (h < b.h) {
     h = b.h;
     w = h * aspect;
   }
@@ -132,6 +146,7 @@ const bendK = (screenY: number) => {
 function measureCard(el: HTMLElement): { card: Box; inset: Insets; radius: number } {
   const r = el.getBoundingClientRect();
   const card: Box = { x: r.left, y: r.top, w: r.width, h: r.height };
+  if (el.dataset.ptCover === '1') return { card, inset: ZERO_INSET, radius: CARD_RADIUS };
   const logoEl = el.querySelector<HTMLElement>('[data-pt-logo]');
   if (!logoEl || !r.width || !r.height) return { card, inset: CARD_INSET, radius: CARD_RADIUS };
   const l = logoEl.getBoundingClientRect();
@@ -236,6 +251,8 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
             uHasTex: { value: 0 },
             uRadius: { value: CARD_RADIUS },
             uBorder: { value: 1 },
+            uCover: { value: 0 },
+            uScrim: { value: 0 },
             uAmt: { value: 1 },
             uIns: { value: new THREE.Vector4(CARD_PAD, CARD_PAD, CARD_PAD, CARD_PAD) },
             uVel: { value: 0 },
@@ -243,6 +260,7 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
             uBend: { value: new THREE.Vector2(...bendRange(window.innerHeight)) },
             uBg: { value: new THREE.Color('#ffffff') },
             uFog: { value: new THREE.Color(PAGE_BG) },
+            uScrimColor: { value: new THREE.Color('#0a0714') },
           },
         });
         const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 32, 32), mat);
@@ -339,9 +357,12 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
     u.uAmt.value = m.bent ? 1 - t : 0;
     u.uRadius.value = lerp(m.radius, 0, t);
     u.uBorder.value = 1 - t;
+    u.uCover.value = m.cover ? 1 : 0;
+    u.uScrim.value = m.cover ? t : 0;
+    (u.uBg.value as THREE_NS.Color).set(m.cover ? '#120d21' : '#ffffff');
     u.uScale.value = lerp(m.logoScale, 1, t);
     (u.uMesh.value as THREE_NS.Vector2).set(w, h);
-    const ins = lerpInsets(m.inset, heroInset(), t);
+    const ins = lerpInsets(m.inset, heroInset(m.cover), t);
     (u.uIns.value as THREE_NS.Vector4).set(ins.top, ins.right, ins.bottom, ins.left);
     if (m.logo?.tex) {
       u.uTex.value = m.logo.tex;
@@ -354,11 +375,12 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
     renderer.render(gl.scene, camera);
   }, []);
 
-  /** DOM fallback / instant cover: clip-path for the shape, transform for the logo. */
+  /** DOM fallback / instant cover: clip-path for the shape, transform for the artwork. */
   const paintDOM = useCallback((m: Morph, t: number) => {
     const node = panel.current;
     const img = logoImg.current;
     if (!node) return;
+    node.style.background = m.cover ? '#0a0714' : '#ffffff';
     const { card } = m;
     const vp = viewport();
     const x = lerp(card.x, 0, t);
@@ -387,16 +409,22 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
     if (fog.current) {
       const aTop = 0.85 * kTop * u;
       const aBot = 0.85 * kBot * u;
-      fog.current.style.background =
-        aTop + aBot > 0.002
-          ? `linear-gradient(to bottom, rgba(${FOG_RGB}, ${aTop}) ${y}px, rgba(${FOG_RGB}, ${aBot}) ${y + h}px)`
-          : 'none';
+      if (m.cover && t > 0.002) {
+        fog.current.style.background = `linear-gradient(180deg, rgba(10,7,20,${(0.45 * t).toFixed(3)}) 0%, rgba(10,7,20,${(0.12 * t).toFixed(3)}) 38%, rgba(10,7,20,${(0.72 * t).toFixed(3)}) 72%, rgba(10,7,20,${(0.92 * t).toFixed(3)}) 100%)`;
+      } else {
+        fog.current.style.background =
+          aTop + aBot > 0.002
+            ? `linear-gradient(to bottom, rgba(${FOG_RGB}, ${aTop}) ${y}px, rgba(${FOG_RGB}, ${aBot}) ${y + h}px)`
+            : 'none';
+      }
     }
 
     if (img && m.logo) {
-      const from = scaleBox(contain(inset(card, m.inset), m.logo.aspect), m.logoScale);
-      const to = contain(inset(vp, heroInset()), m.logo.aspect);
+      const fit = m.cover ? coverRect : contain;
+      const from = scaleBox(fit(inset(card, m.inset), m.logo.aspect), m.logoScale);
+      const to = fit(inset(vp, heroInset(m.cover)), m.logo.aspect);
       // Laid out once at hero size and only ever scaled down → crisp at rest.
+      img.style.objectFit = m.cover ? 'cover' : 'contain';
       img.style.width = `${to.w}px`;
       img.style.height = `${to.h}px`;
       const lx = lerp(from.x, to.x, t);
@@ -453,12 +481,20 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
       prefetch(p.href);
       window.__lenis?.stop();
 
+      const isCover = Boolean(p.cover ?? (el.dataset.ptCover === '1' || isProjectCover(p.image, p.slug)));
       const shape = measureCard(el);
       const gl = await ensureGL();
       const logo = await prepareLogo(p.image, gl);
-      // The gallery enlarges a hovered card's logo to 1.05 — start from exactly what's on screen.
+      // The gallery enlarges a hovered card's image to 1.05 — start from exactly what's on screen.
       const hovered = el.closest('a')?.matches(':hover') ?? false;
-      const m: Morph = { ...shape, logo, bent: Boolean(p.bent), logoScale: p.bent !== undefined && hovered ? 1.05 : 1 };
+      const m: Morph = {
+        ...shape,
+        inset: isCover ? ZERO_INSET : shape.inset,
+        logo,
+        bent: Boolean(p.bent),
+        logoScale: p.bent !== undefined && hovered ? 1.05 : 1,
+        cover: isCover,
+      };
       const layer = layerFor(gl);
       layer.paint(m, 0);
       show(layer.el);
@@ -506,10 +542,22 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
       const to = dest ?? record?.origin ?? GALLERY;
       if (!record) prefetch(GALLERY);
       const src = hero?.querySelector('img')?.getAttribute('src') || record?.image;
+      const isCover = hero?.dataset.projectCover === '1' || Boolean(record?.cover) || isProjectCover(src, slug);
 
       // 1) Cover at once with the DOM panel showing the hero's exact resting frame.
       const cover = await prepareLogo(src, null);
-      paintDOM({ card: viewport(), logo: cover, bent: false, logoScale: 1, inset: CARD_INSET, radius: 0 }, 1);
+      paintDOM(
+        {
+          card: viewport(),
+          logo: cover,
+          bent: false,
+          logoScale: 1,
+          inset: isCover ? ZERO_INSET : CARD_INSET,
+          radius: 0,
+          cover: isCover,
+        },
+        1,
+      );
       if (window.scrollY > 4) {
         show(node, 0);
         await gsap.to(node, { opacity: 1, duration: viaPopstate ? 0.12 : 0.2, ease: 'power1.out' });
@@ -570,7 +618,16 @@ export default function ProjectTransitionProvider({ children }: { children: Reac
       }
 
       // 5) Hand the cover to the morph layer (identical frame), then close into the card.
-      const m: Morph = { ...measureCard(cardEl), logo, bent, logoScale: 1 };
+      const measured = measureCard(cardEl);
+      const cardCover = cardEl.dataset.ptCover === '1' || isCover;
+      const m: Morph = {
+        ...measured,
+        inset: cardCover ? ZERO_INSET : measured.inset,
+        logo,
+        bent,
+        logoScale: 1,
+        cover: cardCover,
+      };
       const layer = layerFor(gl);
       if (layer.el !== node) {
         layer.paint(m, 1);

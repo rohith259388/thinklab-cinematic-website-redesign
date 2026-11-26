@@ -14,6 +14,7 @@ import {
   CARD_PAD,
   CARD_RADIUS,
   bendRange,
+  isProjectCover,
 } from '@/components/transition/cardShader';
 
 interface Item {
@@ -95,6 +96,7 @@ export default function ProjectBendGallery({
     const items: Item[] = [];
     visualRefs.current.forEach((el, i) => {
       if (!el) return;
+      const isCover = isProjectCover(projects[i]?.image, projects[i]?.slug);
       const mat = new THREE.ShaderMaterial({
         vertexShader: CARD_VERT,
         fragmentShader: CARD_FRAG,
@@ -107,15 +109,20 @@ export default function ProjectBendGallery({
           uHasTex: { value: 0 },
           uRadius: { value: CARD_RADIUS },
           uBorder: { value: 1 },
+          uCover: { value: isCover ? 1 : 0 },
+          uScrim: { value: 0 },
           uAmt: { value: 1 },
           uIns: {
-            value: new THREE.Vector4(CARD_PAD, CARD_PAD, CARD_PAD, CARD_PAD),
+            value: isCover
+              ? new THREE.Vector4(0, 0, 0, 0)
+              : new THREE.Vector4(CARD_PAD, CARD_PAD, CARD_PAD, CARD_PAD),
           },
           uVel: { value: 0 },
           uTime: { value: 0 },
           uBend: { value: bend },
-          uBg: { value: new THREE.Color(cardBg) },
+          uBg: { value: new THREE.Color(isCover ? '#120d21' : cardBg) },
           uFog: { value: new THREE.Color(pageBg) },
+          uScrimColor: { value: new THREE.Color('#0a0714') },
         },
       });
       const mesh = new THREE.Mesh(geo, mat);
@@ -293,7 +300,9 @@ export default function ProjectBendGallery({
         }}
       />
       <div className="mx-auto grid w-full max-w-[1400px] grid-cols-1 gap-x-6 gap-y-14 px-5 py-10 md:grid-cols-2">
-        {projects.map((p, i) => (
+        {projects.map((p, i) => {
+          const isCover = isProjectCover(p.image, p.slug);
+          return (
           <Link
             key={p.slug}
             href={p.href}
@@ -322,18 +331,24 @@ export default function ProjectBendGallery({
                 href: p.href,
                 image: p.image,
                 bent: gl,
+                cover: isCover,
               });
             }}
             aria-label={`${p.title} — view project`}
           >
-            {/* Visual container: when gl is active, background is transparent so the 3D WebGL white card is the only card surface */}
+            {/* Visual container: when gl is active, background is transparent so the 3D WebGL card is the only card surface */}
             <div
               ref={(el) => {
                 visualRefs.current[i] = el;
               }}
               data-pt-card={p.slug}
+              data-pt-cover={isCover ? '1' : undefined}
               className={`relative aspect-[820/430] w-full overflow-hidden rounded-3xl transition-colors duration-300 ${
-                gl ? 'bg-transparent' : 'bg-white shadow-[0_20px_45px_-12px_rgba(0,0,0,0.08)]'
+                gl
+                  ? 'bg-transparent'
+                  : isCover
+                    ? 'bg-[#120d21] shadow-[0_20px_45px_-12px_rgba(0,0,0,0.18)]'
+                    : 'bg-white shadow-[0_20px_45px_-12px_rgba(0,0,0,0.08)]'
               }`}
             >
               {/* WebGL fallback */}
@@ -342,7 +357,11 @@ export default function ProjectBendGallery({
                 src={p.image}
                 alt=""
                 loading="lazy"
-                className="absolute inset-0 h-full w-full object-contain p-[18%]"
+                className={
+                  isCover
+                    ? 'absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105'
+                    : 'absolute inset-0 h-full w-full object-contain p-[18%]'
+                }
                 style={{ opacity: gl ? 0 : 1 }}
               />
             </div>
@@ -363,7 +382,8 @@ export default function ProjectBendGallery({
               <ArrowUpRight className="text-[#20211f] shrink-0 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" />
             </div>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </>
   );
