@@ -58,10 +58,7 @@ export default function TemplateModal({
   const [source, setSource] = useState('');
 
   // Blog specific
-  const [intro, setIntro] = useState('');
-  const [mainBody, setMainBody] = useState('');
-  const [keyTakeaways, setKeyTakeaways] = useState('');
-  const [conclusion, setConclusion] = useState('');
+  const [body, setBody] = useState('');
 
   // Career specific
   const [location, setLocation] = useState('Vijayawada · Hybrid');
@@ -126,11 +123,8 @@ export default function TemplateModal({
           date,
           image,
           alt: title,
-          summary,
-          intro,
-          mainBody,
-          keyTakeaways,
-          conclusion,
+          summary: '',
+          body,
         });
       } else if (kind === 'careers') {
         content = buildCareerContent({
@@ -365,53 +359,18 @@ export default function TemplateModal({
                 />
 
                 <div className="cms-form-group full">
-                  <label>Article Summary / Abstract</label>
+                  <label>Content</label>
                   <textarea
-                    rows={3}
-                    placeholder="2-3 sentence overview introducing the thesis..."
-                    value={summary}
-                    onChange={(e) => setSummary(e.target.value)}
-                  />
-                </div>
-
-                <div className="cms-form-group full">
-                  <label>Introductory Paragraph</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Set the stage for the reader... Multiple paragraphs are preserved."
-                    value={intro}
-                    onChange={(e) => setIntro(e.target.value)}
-                  />
-                </div>
-
-                <div className="cms-form-group full">
-                  <label>Main Body & Strategic Perspectives</label>
-                  <textarea
-                    rows={8}
-                    style={{ minHeight: 160 }}
-                    placeholder="Core arguments, data points, or detailed reasoning. Double Enter creates spaced paragraphs, ## adds subheadings, - adds bullet points..."
-                    value={mainBody}
-                    onChange={(e) => setMainBody(e.target.value)}
-                  />
-                </div>
-
-                <div className="cms-form-group full">
-                  <label>Key Takeaways (one per line)</label>
-                  <textarea
-                    rows={4}
-                    placeholder="• First critical takeaway&#10;• Second actionable recommendation&#10;• Third key takeaway"
-                    value={keyTakeaways}
-                    onChange={(e) => setKeyTakeaways(e.target.value)}
-                  />
-                </div>
-
-                <div className="cms-form-group full">
-                  <label>Conclusion</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Closing summary and forward-looking action... Multiple paragraphs are preserved."
-                    value={conclusion}
-                    onChange={(e) => setConclusion(e.target.value)}
+                    rows={14}
+                    style={{ minHeight: 280 }}
+                    placeholder={[
+                      'Write the full article here.',
+                      '',
+                      'The first paragraph is used as the summary on article cards.',
+                      'Leave a blank line between paragraphs. Start a line with ## for a subheading, or - for a bullet point.',
+                    ].join('\n')}
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
                   />
                 </div>
               </>

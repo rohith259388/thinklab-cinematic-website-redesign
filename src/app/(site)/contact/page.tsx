@@ -1,4 +1,5 @@
 import dynamic from 'next/dynamic';
+import { ListSkeleton } from '@/components/ui/Skeleton';
 import CmsPage from '@/components/cms/Page';
 import { siteContent } from '@/lib/cms/public';
 import type { Metadata } from 'next';
@@ -12,7 +13,7 @@ import { Reveal, EnergyLine } from '@/components/ui/Reveal';
 import { CmsText } from '@/components/cms/Canvas';
 
 const LeadForm = dynamic(() => import('@/components/ui/LeadForm'), {
-  loading: () => <div className="glass p-9 font-mono text-[11px] tracking-[0.3em] text-[#9a97a8] uppercase">Loading enquiry form…</div>,
+  loading: () => <div className="glass p-9"><ListSkeleton rows={5} minHeight={420} /></div>,
 });
 
 const defaultMetadata: Metadata = {
@@ -39,7 +40,7 @@ export default function ContactPage() {
       <section className="mx-auto max-w-[1500px] px-5 pb-16 md:px-10 md:pb-24">
         <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
           <Reveal>
-            <Suspense fallback={<div className="glass p-9 font-mono text-[11px] tracking-[0.3em] text-[#9a97a8] uppercase">Loading enquiry form…</div>}>
+            <Suspense fallback={<div className="glass p-9"><ListSkeleton rows={5} minHeight={420} /></div>}>
               <LeadForm source="contact" />
             </Suspense>
           </Reveal>
@@ -118,7 +119,7 @@ export default function ContactPage() {
             <CmsText field="contact.final.kicker">YOUR NEXT CHAPTER STARTS HERE</CmsText>
           </p>
         </Reveal>
-        <h2 className="mx-auto mt-8 max-w-5xl font-display text-[clamp(3rem,8.5vw,7.5rem)] leading-[0.98] tracking-[-0.02em] text-[#fcfcf7]">
+        <h2 className="mx-auto mt-8 max-w-5xl font-display text-[length:clamp(3rem,calc(8.5*var(--vw)),7.5rem)] leading-[0.98] tracking-[-0.02em] text-[#fcfcf7]">
           <Reveal delay={0.12}>
             <CmsText field="contact.final.title">What will we </CmsText>
             <em className="glow-violet italic text-[#c5b0ff]">

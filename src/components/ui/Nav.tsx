@@ -10,7 +10,7 @@ import { NAV, BRAND } from '@/lib/content';
 
 export default function Nav() {
   const pathname = usePathname();
-  const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [light, setLight] = useState(false);
   const { menu } = useCanvasContent();
   const [open, setOpen] = useState(false);
@@ -19,13 +19,23 @@ export default function Nav() {
 
   useEffect(() => {
     const surfaces = Array.from(document.querySelectorAll<HTMLElement>('.studio-content, [data-light-surface]'));
+    let lastY = window.scrollY;
+    let frame = 0;
     const update = () => {
-      setScrolled(window.scrollY > 40);
+      frame = 0;
+      const y = window.scrollY;
+      const delta = y - lastY;
+      // Hide while scrolling down, reveal on any scroll back up (ignore tiny jitter).
+      if (y < 80) setHidden(false);
+      else if (delta > 4) setHidden(true);
+      else if (delta < -4) setHidden(false);
+      if (Math.abs(delta) > 4 || y < 80) lastY = y;
       setLight(surfaces.some((s) => { const rect = s.getBoundingClientRect(); return rect.top < 80 && rect.bottom > 80; }));
     };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
     update();
-    window.addEventListener('scroll', update, { passive: true });
-    return () => window.removeEventListener('scroll', update);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(frame); };
   }, [pathname]);
 
   useEffect(() => {
@@ -45,7 +55,7 @@ export default function Nav() {
   return (
     <>
       <a className="skip-link" href="#main">Skip to content</a>
-      <header className={`site-header${scrolled ? ' is-scrolled' : ''}${light ? ' header-light' : ''}`}>
+      <header className={`site-header${hidden && !open ? ' is-hidden' : ''}${light ? ' header-light' : ''}`}>
         <Link href="/" className="wordmark flex items-center" aria-label="Thinklab — Home">
           {/* Thinklab Digital Solutions Brand Logo (adaptive dark/light) */}
           <div className="relative h-9 sm:h-10 w-auto flex items-center">

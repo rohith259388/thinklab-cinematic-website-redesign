@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import Lenis from 'lenis';
 import { ensureGsap, gsap, ScrollTrigger } from '@/lib/gsap';
 import 'lenis/dist/lenis.css';
@@ -12,6 +13,24 @@ declare global {
 }
 
 export default function SmoothScroll() {
+  const pathname = usePathname();
+  const firstRoute = useRef(true);
+
+  // On client navigation: snap Lenis to the top instantly (otherwise it eases from the
+  // old page's offset and the new page visibly jumps), then do ONE ScrollTrigger refresh
+  // once the new layout and its images/fonts have settled.
+  useEffect(() => {
+    if (firstRoute.current) { firstRoute.current = false; return; }
+    if (!window.location.hash) {
+      window.__lenis?.scrollTo(0, { immediate: true, force: true });
+      window.scrollTo(0, 0);
+    }
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(() => ScrollTrigger.refresh()); });
+    const late = setTimeout(() => ScrollTrigger.refresh(), 600);
+    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); clearTimeout(late); };
+  }, [pathname]);
+
   useEffect(() => {
     ensureGsap();
 
@@ -63,9 +82,13 @@ export default function SmoothScroll() {
     const refreshTimer = setTimeout(() => {
       ScrollTrigger.refresh();
     }, 400);
+    const onLoad = () => ScrollTrigger.refresh();
+    window.addEventListener('load', onLoad, { once: true });
+    document.fonts?.ready.then(() => ScrollTrigger.refresh());
 
     return () => {
       clearTimeout(refreshTimer);
+      window.removeEventListener('load', onLoad);
       document.removeEventListener('click', onAnchorClick);
       gsap.ticker.remove(tickerUpdate);
       lenis.destroy();

@@ -1,4 +1,5 @@
 import dynamic from 'next/dynamic';
+import { CardGridSkeleton } from '@/components/ui/Skeleton';
 import CmsPage from '@/components/cms/Page';
 import { siteContent } from '@/lib/cms/public';
 import type { Metadata } from 'next';
@@ -8,7 +9,7 @@ import GrowCtaCard from '@/components/ui/GrowCtaCard';
 import { entries } from '@/lib/cms/public';
 
 const ArticleLibrary = dynamic(() => import('@/components/content/ArticleLibrary'), {
-  loading: () => <div className="min-h-[400px] flex items-center justify-center font-mono text-xs text-[#9a97a8]">Loading articles…</div>,
+  loading: () => <CardGridSkeleton count={3} minHeight={400} />,
 });
 const defaultMetadata: Metadata = { title: 'Insights', description: 'Ideas from Thinklab on marketing, websites, brand strategy, CRM, automation and business growth.', alternates: { canonical: '/blog' } };
 export async function generateMetadata():Promise<Metadata>{const {page}=await siteContent();return {...defaultMetadata,...(page?.seoTitle?{title:page.seoTitle}:{}),...(page?.seoDescription?{description:page.seoDescription}:{}),...(page?.canonical?{alternates:{canonical:page.canonical}}:{})};}

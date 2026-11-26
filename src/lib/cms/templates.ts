@@ -31,6 +31,8 @@ export interface BlogTemplateInput {
   mainBody?: string;
   keyTakeaways?: string;
   conclusion?: string;
+  /** Single free-form article body. When provided, it replaces intro/mainBody/keyTakeaways/conclusion. */
+  body?: string;
 }
 
 export interface CareerTemplateInput {
@@ -146,6 +148,7 @@ export function buildProjectContent(input: ProjectTemplateInput): Content {
 }
 
 export function buildBlogContent(input: BlogTemplateInput): Content {
+  if (input.body !== undefined) return buildBlogFromBody(input);
   const content = emptyContent(input.title);
   content.summary = input.summary || 'Insights and perspective from Thinklab Digital Solutions.';
   content.category = input.category || 'Strategy';
@@ -211,6 +214,28 @@ export function buildBlogContent(input: BlogTemplateInput): Content {
     });
   }
 
+  content.blocks = blocks;
+  content.html = blocksToHtml(blocks);
+  return content;
+}
+
+/** Builds an article from one content box; the summary is taken from its first paragraph. */
+function buildBlogFromBody(input: BlogTemplateInput): Content {
+  const content = emptyContent(input.title);
+  const blocks = parseTextToBlocks(input.body || '');
+  const firstPara = blocks.find((b) => b.type === 'p')?.text || '';
+  const summary =
+    input.summary ||
+    (firstPara.length > 220 ? `${firstPara.slice(0, 217).trimEnd()}…` : firstPara) ||
+    'Insights and perspective from Thinklab Digital Solutions.';
+  content.summary = summary;
+  content.category = input.category || 'Strategy';
+  content.tags = `${input.category || 'Insights'}, Strategy, Digital`;
+  content.date = input.date || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  content.image = input.image || '';
+  content.alt = input.alt || input.title;
+  content.seoTitle = `${input.title} — Thinklab Insights`;
+  content.seoDescription = summary.slice(0, 155);
   content.blocks = blocks;
   content.html = blocksToHtml(blocks);
   return content;

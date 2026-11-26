@@ -31,7 +31,7 @@ export default function SectionIntro({
         </span>
       </Reveal>
       <h2
-        className={`mt-6 font-display text-[clamp(2.1rem,5.2vw,4.2rem)] leading-[1.04] tracking-tight ${
+        className={`mt-6 font-display text-[length:clamp(2.1rem,calc(5.2*var(--vw)),4.2rem)] leading-[1.04] tracking-tight ${
           tone === 'light' ? 'text-[#fcfcf7]' : 'text-[#e9e3dc]'
         }`}
       >

@@ -82,6 +82,21 @@
   }
 }
 
+/*
+ * Text-size lock: font sizes use var(--vw) instead of raw vw. Below 1440px it IS 1vw
+ * (fluid for phones/tablets/small laptops); from 1440px up it is frozen, so changing the
+ * display resolution (e.g. macOS "Default" ↔ "More Space") no longer resizes the type.
+ */
+:root {
+  --vw: 1vw;
+}
+
+@media (min-width: 1440px) {
+  :root {
+    --vw: 14.4px;
+  }
+}
+
 html {
   background: var(--color-void);
   scroll-behavior: auto;
@@ -586,7 +601,7 @@ button {
 }
 
 .menu-note p {
-  font-size: clamp(24px, 3vw, 42px);
+  font-size: clamp(24px, calc(3 * var(--vw)), 42px);
   line-height: 1.2;
   letter-spacing: -.05em;
   margin: 30px 0;
@@ -602,7 +617,7 @@ button {
 }
 
 .menu-body nav a>span:nth-child(2) {
-  font-size: clamp(28px, 4.5vw, 66px);
+  font-size: clamp(28px, calc(4.5 * var(--vw)), 66px);
   letter-spacing: -.065em;
   line-height: 1.1;
   transition: transform .35s;
@@ -693,7 +708,7 @@ button {
 }
 
 .hero-title {
-  font-size: clamp(55px, 7.5vw, 132px);
+  font-size: clamp(55px, calc(7.5 * var(--vw)), 132px);
   line-height: .96;
   letter-spacing: -.075em;
   font-weight: 400;
@@ -835,7 +850,7 @@ button {
 }
 
 .journey-caption p {
-  font-size: clamp(24px, 3vw, 44px);
+  font-size: clamp(24px, calc(3 * var(--vw)), 44px);
   line-height: 1.13;
   letter-spacing: -.045em;
   margin-top: 15px;
@@ -862,7 +877,7 @@ button {
   font-family: var(--font-grotesk), "Helvetica Neue", sans-serif !important;
   letter-spacing: -0.025em;
   margin-top: 14px;
-  font-size: clamp(40px, 8vw, 110px);
+  font-size: clamp(40px, calc(8 * var(--vw)), 110px);
   line-height: 1;
   font-weight: 400;
   display: inline-flex;
@@ -959,7 +974,7 @@ button {
 }
 
 .statement {
-  font-size: clamp(32px, 4.8vw, 76px);
+  font-size: clamp(32px, calc(4.8 * var(--vw)), 76px);
   font-weight: 400;
   letter-spacing: -.06em;
   line-height: 1.13;
@@ -1035,7 +1050,7 @@ button {
 }
 
 .stats-line p {
-  font-size: clamp(30px, 4.3vw, 65px);
+  font-size: clamp(30px, calc(4.3 * var(--vw)), 65px);
   letter-spacing: -.07em;
   line-height: 1;
   margin-bottom: 16px;
@@ -1061,7 +1076,7 @@ button {
 .section-heading h2,
 .services-intro h2,
 .faq-section h2 {
-  font-size: clamp(42px, 6.6vw, 100px);
+  font-size: clamp(42px, calc(6.6 * var(--vw)), 100px);
   letter-spacing: -.065em;
   line-height: 1.01;
   font-weight: 400;
@@ -1128,7 +1143,7 @@ button {
 }
 
 .project-caption h3 {
-  font-size: clamp(19px, 2vw, 29px);
+  font-size: clamp(19px, calc(2 * var(--vw)), 29px);
   letter-spacing: -.045em;
   line-height: 1.2;
 }
@@ -1188,7 +1203,7 @@ button {
 .art-title {
   position: absolute;
   z-index: 2;
-  font-size: clamp(28px, 4.2vw, 64px);
+  font-size: clamp(28px, calc(4.2 * var(--vw)), 64px);
   line-height: .98;
   letter-spacing: -.065em;
 }
@@ -1248,7 +1263,7 @@ button {
   z-index: 2;
   left: 7%;
   top: 27%;
-  font-size: clamp(40px, 6vw, 90px);
+  font-size: clamp(40px, calc(6 * var(--vw)), 90px);
   font-weight: 600;
   letter-spacing: -.09em;
 }
@@ -1371,7 +1386,7 @@ button {
   top: 25%;
   left: 7%;
   font-family: Georgia, serif;
-  font-size: clamp(45px, 6vw, 90px);
+  font-size: clamp(45px, calc(6 * var(--vw)), 90px);
   letter-spacing: -.08em;
 }
 
@@ -1428,7 +1443,7 @@ button {
   position: relative;
   z-index: 10;
   margin-top: 60px;
-  font-size: clamp(54px, 8vw, 136px);
+  font-size: clamp(54px, calc(8 * var(--vw)), 136px);
   letter-spacing: -.065em;
   line-height: .95;
   max-width: 65%;
@@ -1538,7 +1553,7 @@ button {
 }
 
 .services-intro h2 {
-  font-size: clamp(38px, 4.5vw, 68px);
+  font-size: clamp(38px, calc(4.5 * var(--vw)), 68px);
 }
 
 .services-intro>p {
@@ -1569,7 +1584,7 @@ button {
 }
 
 .service-row h3 {
-  font-size: clamp(20px, 2vw, 30px);
+  font-size: clamp(20px, calc(2 * var(--vw)), 30px);
   line-height: 1.1;
   letter-spacing: -.04em;
 }
@@ -1660,7 +1675,7 @@ button {
 }
 
 .faq-section h2 {
-  font-size: clamp(44px, 5.2vw, 80px);
+  font-size: clamp(44px, calc(5.2 * var(--vw)), 80px);
   margin: 22px 0 30px;
 }
 
@@ -1724,7 +1739,7 @@ button {
 .footer-invitation {
   display: block;
   position: relative;
-  font-size: clamp(65px, 12.8vw, 200px);
+  font-size: clamp(65px, calc(12.8 * var(--vw)), 200px);
   line-height: .95;
   letter-spacing: -.075em;
   padding: 70px 0 85px;
@@ -1836,7 +1851,7 @@ button {
   }
 
   .hero-title {
-    font-size: 8vw;
+    font-size: calc(8 * var(--vw));
   }
 
   .hero-title-left {
@@ -1980,7 +1995,7 @@ button {
   }
 
   .hero-title {
-    font-size: clamp(43px, 11.8vw, 77px);
+    font-size: clamp(43px, calc(11.8 * var(--vw)), 77px);
   }
 
   .hero-title-left {
@@ -2052,7 +2067,7 @@ button {
   }
 
   .journey-finale p {
-    font-size: clamp(34px, 9vw, 47px);
+    font-size: clamp(34px, calc(9 * var(--vw)), 47px);
     letter-spacing: -0.02em;
   }
 
@@ -2096,7 +2111,7 @@ button {
   }
 
   .statement {
-    font-size: clamp(28px, 7.5vw, 46px);
+    font-size: clamp(28px, calc(7.5 * var(--vw)), 46px);
     line-height: 1.16;
     letter-spacing: -.06em;
   }
@@ -2150,7 +2165,7 @@ button {
 
   .section-heading h2,
   .services-intro h2 {
-    font-size: clamp(42px, 11vw, 68px);
+    font-size: clamp(42px, calc(11 * var(--vw)), 68px);
   }
 
   .section-heading p {
@@ -2194,15 +2209,15 @@ button {
   }
 
   .art-title {
-    font-size: 10vw;
+    font-size: calc(10 * var(--vw));
   }
 
   .elevex-title {
-    font-size: 15vw;
+    font-size: calc(15 * var(--vw));
   }
 
   .amara-title {
-    font-size: 16vw;
+    font-size: calc(16 * var(--vw));
   }
 
   .art-corner {
@@ -2228,7 +2243,7 @@ button {
   }
 
   .possibility-panel h2 {
-    font-size: 15vw;
+    font-size: calc(15 * var(--vw));
     margin-top: 45px;
     max-width: 100%;
   }
@@ -2357,7 +2372,7 @@ button {
   }
 
   .footer-invitation {
-    font-size: 15vw;
+    font-size: calc(15 * var(--vw));
     padding: 45px 0 50px;
   }
 
@@ -2423,7 +2438,7 @@ button {
 }
 
 .case-visual .project-art .art-title {
-  font-size: clamp(42px, 8vw, 120px);
+  font-size: clamp(42px, calc(8 * var(--vw)), 120px);
 }
 
 .case-visual .paper-sculpture {
@@ -2432,7 +2447,7 @@ button {
 }
 
 .case-visual .elevex-title {
-  font-size: clamp(60px, 13vw, 190px);
+  font-size: clamp(60px, calc(13 * var(--vw)), 190px);
   top: 25%;
 }
 
@@ -2498,7 +2513,7 @@ button {
 }
 
 .inner-hero h1 {
-  font-size: clamp(48px, 8vw, 116px);
+  font-size: clamp(48px, calc(8 * var(--vw)), 116px);
   line-height: 1.02;
   letter-spacing: -.065em;
   margin-top: 35px;
@@ -2522,7 +2537,7 @@ button {
   }
 
   .inner-hero h1 {
-    font-size: clamp(40px, 10vw, 64px);
+    font-size: clamp(40px, calc(10 * var(--vw)), 64px);
   }
 
   .inner-hero-body {
@@ -2530,19 +2545,24 @@ button {
   }
 }
 
+/* Header stays transparent everywhere; it slides away on scroll-down and returns on scroll-up. */
 .site-header {
   mix-blend-mode: normal;
-  transition: background .35s, color .35s;
+  background: transparent;
+  transform: translate3d(0, 0, 0);
+  transition: transform .45s cubic-bezier(0.19, 1, 0.22, 1), color .35s;
+  will-change: transform;
 }
 
-.site-header.is-scrolled {
-  background: #15141bd9;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+.site-header.is-hidden {
+  transform: translate3d(0, -110%, 0);
+}
+
+.site-header:focus-within {
+  transform: translate3d(0, 0, 0);
 }
 
 .site-header.header-light {
-  background: #f0f0e9e6;
   color: #20211f;
 }
 
@@ -2833,7 +2853,7 @@ button {
 
 .project-meta h3 {
   position: relative;
-  font-size: clamp(23px, 2.5vw, 37px);
+  font-size: clamp(23px, calc(2.5 * var(--vw)), 37px);
   line-height: 1.18;
   letter-spacing: -.045em;
   font-weight: 400;
@@ -2990,7 +3010,7 @@ button {
 }
 
 .article-card h2 {
-  font-size: clamp(21px, 2vw, 29px);
+  font-size: clamp(21px, calc(2 * var(--vw)), 29px);
   line-height: 1.2;
   letter-spacing: -.035em;
   margin: 12px 0 18px;
@@ -3024,7 +3044,7 @@ button {
 }
 
 .detail-header h1 {
-  font-size: clamp(32px, 4.5vw, 72px);
+  font-size: clamp(32px, calc(4.5 * var(--vw)), 72px);
   line-height: 1.08;
   letter-spacing: -.05em;
   max-width: 1200px;
@@ -3053,7 +3073,7 @@ button {
 }
 
 .detail-header-main h1 {
-  font-size: clamp(28px, 3.8vw, 56px);
+  font-size: clamp(28px, calc(3.8 * var(--vw)), 56px);
   line-height: 1.1;
   letter-spacing: -.04em;
   margin: 24px 0 18px;
@@ -3226,7 +3246,7 @@ button {
 }
 
 .rich-copy h2 {
-  font-size: clamp(26px, 3vw, 40px);
+  font-size: clamp(26px, calc(3 * var(--vw)), 40px);
   line-height: 1.2;
   letter-spacing: -.035em;
   margin: 48px 0 22px;
@@ -3277,7 +3297,7 @@ button {
 }
 
 .job-row h2 {
-  font-size: clamp(24px, 3.2vw, 45px);
+  font-size: clamp(24px, calc(3.2 * var(--vw)), 45px);
   letter-spacing: -.04em;
 }
 
@@ -3336,7 +3356,7 @@ button {
 }
 
 .review-card blockquote {
-  font-size: clamp(22px, 2.5vw, 35px);
+  font-size: clamp(22px, calc(2.5 * var(--vw)), 35px);
   line-height: 1.35;
   letter-spacing: -.035em;
   margin: 24px 0 32px;
@@ -3357,7 +3377,7 @@ button {
 }
 
 .menu-body nav a {
-  font-size: clamp(30px, 4.5vw, 66px);
+  font-size: clamp(30px, calc(4.5 * var(--vw)), 66px);
 }
 
 @media (max-width: 900px) {
@@ -3427,7 +3447,7 @@ button {
   }
 
   .detail-header h1 {
-    font-size: clamp(26px, 7.5vw, 36px);
+    font-size: clamp(26px, calc(7.5 * var(--vw)), 36px);
     overflow-wrap: anywhere;
   }
 
@@ -3509,7 +3529,7 @@ button {
   display: block;
   color: #c5b0ff;
   font-weight: 400;
-  font-size: clamp(45px, 6vw, 75px);
+  font-size: clamp(45px, calc(6 * var(--vw)), 75px);
   line-height: 1;
   letter-spacing: -.06em;
 }
@@ -3676,7 +3696,7 @@ button {
   position: absolute;
   top: -26px;
   right: 20px;
-  font-size: clamp(96px, 12vw, 176px);
+  font-size: clamp(96px, calc(12 * var(--vw)), 176px);
   line-height: 1;
   letter-spacing: -.05em;
   color: rgba(255, 255, 255, .045);
@@ -3696,7 +3716,7 @@ button {
 
 .service-panel h2 {
   margin: 16px 0 0;
-  font-size: clamp(30px, 3.5vw, 52px);
+  font-size: clamp(30px, calc(3.5 * var(--vw)), 52px);
   line-height: 1.05;
   letter-spacing: -.045em;
   color: #fcfcf7;
@@ -3855,7 +3875,7 @@ button {
 }
 
 .project-hero h1 {
-  font-size: clamp(30px, 3.6vw, 64px);
+  font-size: clamp(30px, calc(3.6 * var(--vw)), 64px);
   line-height: 1.04;
   letter-spacing: -.045em;
   font-weight: 600;
@@ -3867,7 +3887,7 @@ button {
 }
 
 .project-hero .ph-summary {
-  font-size: clamp(15px, 1.25vw, 19px);
+  font-size: clamp(15px, calc(1.25 * var(--vw)), 19px);
   line-height: 1.55;
   color: #55574f;
   display: -webkit-box;
@@ -4066,7 +4086,7 @@ html[data-pt="forward"] .project-hero [data-pt-copy] > * {
 
 .article-faq-head h2 {
   margin: 14px 0 0;
-  font-size: clamp(28px, 3.2vw, 42px);
+  font-size: clamp(28px, calc(3.2 * var(--vw)), 42px);
   line-height: 1.12;
   letter-spacing: -.035em;
   color: #f1f0eb;
@@ -4312,7 +4332,7 @@ html[data-pt="forward"] .project-hero [data-pt-copy] > * {
 }
 
 .rx .rx-lead {
-  font-size: clamp(18px, 1.5vw, 21px);
+  font-size: clamp(18px, calc(1.5 * var(--vw)), 21px);
   line-height: 1.75;
   color: var(--rx-head);
   margin-bottom: 26px;
@@ -4322,7 +4342,7 @@ html[data-pt="forward"] .project-hero [data-pt-copy] > * {
   position: relative;
   margin: 34px 0;
   padding-left: 22px;
-  font-size: clamp(19px, 1.7vw, 24px);
+  font-size: clamp(19px, calc(1.7 * var(--vw)), 24px);
   line-height: 1.45;
   letter-spacing: -0.015em;
   color: var(--rx-head);
@@ -4459,7 +4479,7 @@ html[data-pt="forward"] .project-hero [data-pt-copy] > * {
 
 .rx-stat strong {
   display: block;
-  font-size: clamp(40px, 4.4vw, 58px);
+  font-size: clamp(40px, calc(4.4 * var(--vw)), 58px);
   line-height: 1;
   letter-spacing: -0.04em;
   font-weight: 500;
@@ -4743,7 +4763,7 @@ html[data-pt="forward"] .project-hero [data-pt-copy] > * {
 
 .rx .rx-callout h3 {
   margin: 0 0 10px;
-  font-size: clamp(22px, 2.2vw, 30px);
+  font-size: clamp(22px, calc(2.2 * var(--vw)), 30px);
   line-height: 1.25;
   letter-spacing: -0.02em;
   color: #f6f3ff !important;
@@ -4912,4 +4932,49 @@ html[data-pt="forward"] .project-hero [data-pt-copy] > * {
     transition: none;
     transform: none;
   }
+}
+
+/* ── Skeleton loading ─────────────────────────────────────────────── */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  to { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: none; }
+}
+.skeleton-line { height: 14px; border-radius: 7px; }
+.skeleton-title { height: clamp(40px, calc(6 * var(--vw)), 86px); border-radius: 18px; }
+.skeleton-media { aspect-ratio: 4 / 3; width: 100%; border-radius: 20px; }
+.skeleton-row { height: 64px; width: 100%; border-radius: 16px; }
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 24px;
+  width: 100%;
+  padding: 24px 0;
+}
+.skeleton-card { display: flex; flex-direction: column; gap: 14px; }
+.skeleton-list { display: flex; flex-direction: column; gap: 14px; width: 100%; padding: 16px 0; }
+.page-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100vh;
+  padding: 180px 3.5vw 80px;
+}
+@media (max-width: 700px) {
+  .page-skeleton { padding: 130px 22px 60px; }
 }

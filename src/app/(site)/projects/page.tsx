@@ -1,4 +1,5 @@
 import dynamic from 'next/dynamic';
+import { CardGridSkeleton } from '@/components/ui/Skeleton';
 import CmsPage from '@/components/cms/Page';
 import { toProjectCard } from '@/lib/live';
 import { siteContent } from '@/lib/cms/public';
@@ -8,11 +9,7 @@ import PageHero from '@/components/ui/PageHero';
 import { entries } from '@/lib/cms/public';
 
 const ProjectBendGallery = dynamic(() => import('@/components/home/ProjectBendGallery'), {
-  loading: () => (
-    <div className="min-h-[500px] flex items-center justify-center font-mono text-xs text-[#9a97a8]">
-      Loading projects…
-    </div>
-  ),
+  loading: () => <CardGridSkeleton count={3} minHeight={500} />,
 });
 
 const defaultMetadata: Metadata = {

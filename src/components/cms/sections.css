@@ -13,9 +13,9 @@
 .cms-s[style*="text-align: center"] .cms-s-copy { margin-left: auto; margin-right: auto; }
 .cms-s-narrow { max-width: 900px; }
 .cms-s-kicker { color: #c5b0ff; margin-bottom: 18px; }
-.cms-s-hero-title { font-size: clamp(44px, 7.4vw, 112px); line-height: 1; letter-spacing: -.06em; font-weight: 400; max-width: 1150px; }
-.cms-s-title { font-size: clamp(32px, 4.6vw, 70px); line-height: 1.05; letter-spacing: -.05em; font-weight: 400; max-width: 1000px; margin-bottom: 26px; }
-.cms-s-lead { max-width: 720px; margin-top: 26px; color: #c8c4d4; font-size: clamp(16px, 1.5vw, 21px); line-height: 1.6; }
+.cms-s-hero-title { font-size: clamp(44px, calc(7.4 * var(--vw)), 112px); line-height: 1; letter-spacing: -.06em; font-weight: 400; max-width: 1150px; }
+.cms-s-title { font-size: clamp(32px, calc(4.6 * var(--vw)), 70px); line-height: 1.05; letter-spacing: -.05em; font-weight: 400; max-width: 1000px; margin-bottom: 26px; }
+.cms-s-lead { max-width: 720px; margin-top: 26px; color: #c8c4d4; font-size: clamp(16px, calc(1.5 * var(--vw)), 21px); line-height: 1.6; }
 .cms-s-copy { max-width: 760px; color: #c6c2d2; font-size: 16px; line-height: 1.85; }
 .cms-s-lead p + p, .cms-s-copy p + p { margin-top: 18px; }
 .cms-s-btn { display: inline-flex; align-items: center; gap: 8px; margin-top: 34px; padding: 16px 28px; }
@@ -35,7 +35,7 @@ a.cms-s-card:hover { border-color: #c5b0ff66; background: #c5b0ff0d; transform: 
 .cms-s-index { font-family: var(--font-plex), monospace; font-size: 10px; letter-spacing: .18em; color: #8f86b0; }
 .cms-s-card-arrow { position: absolute; top: 26px; right: 24px; color: #c5b0ff; }
 .cms-s-stats > div { padding: 26px 0; border-top: 1px solid #ffffff1f; }
-.cms-s-stats strong { display: block; font-size: clamp(40px, 5vw, 76px); font-weight: 400; letter-spacing: -.06em; line-height: 1; color: #f1f0eb; }
+.cms-s-stats strong { display: block; font-size: clamp(40px, calc(5 * var(--vw)), 76px); font-weight: 400; letter-spacing: -.06em; line-height: 1; color: #f1f0eb; }
 .cms-s-stats span { display: block; margin-top: 12px; color: #b4b0c0; font-size: 14px; }
 .cms-s-faq { display: grid; grid-template-columns: .9fr 1.3fr; gap: clamp(28px, 6vw, 96px); text-align: left; }
 /* FAQ categories: a tab list beside the question card. */
@@ -69,7 +69,7 @@ a.cms-s-card:hover { border-color: #c5b0ff66; background: #c5b0ff0d; transform: 
 .cms-s-logos img { max-height: 46px; max-width: 150px; width: auto; object-fit: contain; filter: grayscale(1) brightness(1.6); opacity: .8; }
 .cms-s-logos span { color: #c8c4d4; font-size: 20px; letter-spacing: -.02em; }
 .cms-s-cta { padding: clamp(40px, 6vw, 90px); border-radius: 28px; background: radial-gradient(120% 120% at 0% 0%, #c5b0ff2b, transparent 60%), #15121f; border: 1px solid #c5b0ff2e; }
-.cms-s-quote blockquote { font-size: clamp(28px, 4vw, 58px); line-height: 1.15; letter-spacing: -.045em; max-width: 1100px; white-space: pre-wrap; }
+.cms-s-quote blockquote { font-size: clamp(28px, calc(4 * var(--vw)), 58px); line-height: 1.15; letter-spacing: -.045em; max-width: 1100px; white-space: pre-wrap; }
 .cms-s-quote figcaption { margin-top: 26px; color: #c5b0ff; font-family: var(--font-plex), monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
 .cms-s-video { position: relative; aspect-ratio: 16 / 9; margin: 34px 0 24px; border-radius: 18px; overflow: hidden; background: #000; }
 .cms-s-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
@@ -81,7 +81,7 @@ a.cms-s-card:hover { border-color: #c5b0ff66; background: #c5b0ff0d; transform: 
 .rich-figure { margin: 34px 0; }
 .rich-figure img { width: 100%; height: auto; border-radius: 16px; display: block; }
 .rich-figure figcaption { margin-top: 10px; font-size: 13px; color: #9a96a8; }
-.rich-quote { margin: 36px 0; padding: 4px 0 4px 26px; border-left: 2px solid #c5b0ff; color: #ede9f6; font-size: clamp(20px, 2vw, 26px); line-height: 1.5; letter-spacing: -.02em; white-space: pre-wrap; }
+.rich-quote { margin: 36px 0; padding: 4px 0 4px 26px; border-left: 2px solid #c5b0ff; color: #ede9f6; font-size: clamp(20px, calc(2 * var(--vw)), 26px); line-height: 1.5; letter-spacing: -.02em; white-space: pre-wrap; }
 .rich-faq { margin: 28px 0 36px; border: 1px solid #ffffff1a; border-radius: 18px; background: #ffffff08; overflow: hidden; }
 .rich-faq details + details { border-top: 1px solid #ffffff14; }
 .rich-faq details[open] { background: #c5b0ff0a; }

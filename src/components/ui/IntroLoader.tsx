@@ -8,12 +8,12 @@ import { motion } from '@/lib/motion';
  * ThinkLab SVG Logo Intro Loader
  *
  * Sequence:
- *  1. FIRST: Only the connecting wire draws down and the bulb illuminates
- *     (the 'i' stem below the bulb stays hidden).
- *  2. AFTER THAT: Text ("Thinklab", including the 'i' stem below the bulb,
+ *  1. FIRST: Border draws symmetrically from D in DIGITAL and last S in
+ *     SOLUTIONS around to meet at top center.
+ *  2. AFTER THAT: The connecting wire drops from the border and the bulb
+ *     illuminates (the 'i' stem below the bulb stays hidden).
+ *  3. AT LAST: Text ("Thinklab", including the 'i' stem below the bulb,
  *     "DIGITAL SOLUTIONS", and growth chart) fades in smoothly left to right.
- *  3. AT LAST: Border draws symmetrically from D in DIGITAL and last S in SOLUTIONS
- *     around to meet at top center.
  *  4. Brief hold, followed by circular bubble reveal.
  */
 
@@ -147,83 +147,42 @@ export default function IntroLoader() {
     tlRef.current = tl;
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 1: ONLY connecting line + bulb illuminate first (NO 'i' below bulb)
+    // STEP 1: Border draws symmetrically from D and S up to top center
     // ─────────────────────────────────────────────────────────────
-    const stemStartTime = 0.08;
-    const stemDuration = 0.6;
+    const borderStartTime = 0.08;
+    const borderDuration = 1.15;
+    tl.set(borderPath, { opacity: 1 }, borderStartTime);
+    tl.to(
+      [maskLeft, maskRight],
+      { strokeDashoffset: 0, duration: borderDuration, ease: 'power2.inOut' },
+      borderStartTime
+    );
 
+    // ─────────────────────────────────────────────────────────────
+    // STEP 2: Cord drops from the top of the border, then the bulb illuminates
+    // ─────────────────────────────────────────────────────────────
+    const stemStartTime = borderStartTime + borderDuration - 0.05;
+    const stemDuration = 0.6;
     tl.set(stem, { opacity: 1 }, stemStartTime);
     tl.to(
       stemMask,
-      {
-        strokeDashoffset: 0,
-        duration: stemDuration,
-        ease: 'power1.inOut',
-      },
+      { strokeDashoffset: 0, duration: stemDuration, ease: 'power1.inOut' },
       stemStartTime
     );
 
     const bulbStartTime = stemStartTime + stemDuration - 0.08;
-    tl.to(
-      bulbGroup,
-      {
-        opacity: 1,
-        duration: 0.5,
-        ease: 'power2.out',
-      },
-      bulbStartTime
-    );
+    tl.to(bulbGroup, { opacity: 1, duration: 0.5, ease: 'power2.out' }, bulbStartTime);
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 2: Smooth left-to-right fade in for text (with 'i' stem below bulb)
+    // STEP 3: Smooth left-to-right fade in for text (with 'i' stem below bulb)
     // ─────────────────────────────────────────────────────────────
-    const textStartTime = bulbStartTime + 0.5 + 0.14;
-
+    const textStartTime = bulbStartTime + 0.5 + 0.1;
     tl.to(
       textGroup,
-      {
-        clipPath: 'inset(0 0% 0 0)',
-        duration: 1.25,
-        ease: 'power2.inOut',
-      },
+      { clipPath: 'inset(0 0% 0 0)', duration: 1.25, ease: 'power2.inOut' },
       textStartTime
     );
-
-    tl.to(
-      textGroup,
-      {
-        opacity: 1,
-        duration: 0.55,
-        ease: 'power1.out',
-      },
-      textStartTime
-    );
-
-    // ─────────────────────────────────────────────────────────────
-    // STEP 3: Border draws symmetrically from D and S up to top center
-    // ─────────────────────────────────────────────────────────────
-    const borderStartTime = textStartTime + 1.25 + 0.1;
-    tl.set(borderPath, { opacity: 1 }, borderStartTime);
-
-    tl.to(
-      maskLeft,
-      {
-        strokeDashoffset: 0,
-        duration: 1.15,
-        ease: 'power2.inOut',
-      },
-      borderStartTime
-    );
-
-    tl.to(
-      maskRight,
-      {
-        strokeDashoffset: 0,
-        duration: 1.15,
-        ease: 'power2.inOut',
-      },
-      borderStartTime
-    );
+    tl.to(textGroup, { opacity: 1, duration: 0.55, ease: 'power1.out' }, textStartTime);
 
     // Hold briefly before circular bubble reveal
     tl.to({}, { duration: 0.4 });

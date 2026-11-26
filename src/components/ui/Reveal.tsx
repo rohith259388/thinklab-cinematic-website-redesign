@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode, type CSSProperties } from 'react';
+import { useRef, type ReactNode, type CSSProperties } from 'react';
 import { ensureGsap } from '@/lib/gsap';
+import { useIsoLayoutEffect } from '@/lib/useIsoLayoutEffect';
 
 /**
  * Motion language: nothing fades, everything transforms and grows.
@@ -25,19 +26,19 @@ export function Reveal({
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const { gsap, ScrollTrigger } = ensureGsap();
+  useIsoLayoutEffect(() => {
+    const { gsap } = ensureGsap();
     const el = ref.current;
     if (!el) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const ctx = gsap.context(() => {
       gsap.fromTo(
         el,
-        { y, autoAlpha: 0, filter: 'blur(8px)' },
+        { y, autoAlpha: 0 },
         {
           y: 0,
           autoAlpha: 1,
-          filter: 'blur(0px)',
+          force3D: true,
           duration: 1.1,
           delay,
           ease: 'power3.out',
@@ -45,7 +46,6 @@ export function Reveal({
         },
       );
     });
-    ScrollTrigger.refresh();
     return () => ctx.revert();
   }, [delay, y, once]);
 
@@ -60,7 +60,7 @@ export function Reveal({
 export function SplitWords({ text, className = '', delay = 0, stagger = 0.055 }: { text: string; className?: string; delay?: number; stagger?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     const { gsap } = ensureGsap();
     const el = ref.current;
     if (!el) return;
@@ -114,7 +114,7 @@ export function CountUp({
 }) {
   const ref = useRef<HTMLSpanElement>(null);
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     const { gsap } = ensureGsap();
     const el = ref.current;
     if (!el) return;
@@ -145,7 +145,7 @@ export function CountUp({
 export function EnergyLine({ className = '' }: { className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     const { gsap } = ensureGsap();
     const el = ref.current;
     if (!el) return;

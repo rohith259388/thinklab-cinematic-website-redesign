@@ -1,33 +1,30 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { ensureGsap } from '@/lib/gsap';
+import { useIsoLayoutEffect } from '@/lib/useIsoLayoutEffect';
 
 /**
- * Page transitions honour the motion law: nothing fades, everything transforms.
- * Each new room of the laboratory unfolds out of the centre and locks into place.
+ * Smooth route entry. Runs before paint (no flash of the new page) and animates
+ * opacity only — transforms/clip-paths on this wrapper would break sticky and fixed
+ * descendants mid-transition and cause a visible jump when they are cleared.
  */
 export default function PageTransition({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     const { gsap } = ensureGsap();
     const el = ref.current;
     if (!el) return;
     // A card → hero (or hero → card) transition owns this navigation; don't fight it.
     if (document.documentElement.dataset.pt) return;
-    gsap.fromTo(
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const tween = gsap.fromTo(
       el,
-      { clipPath: 'inset(9% 4% 9% 4% round 32px)', y: 34, autoAlpha: 0.001 },
-      {
-        clipPath: 'inset(0% 0% 0% 0% round 0px)',
-        y: 0,
-        autoAlpha: 1,
-        duration: 1.05,
-        ease: 'power3.out',
-        clearProps: 'clipPath,transform,opacity,visibility',
-      },
+      { opacity: 0 },
+      { opacity: 1, duration: 0.6, ease: 'power2.out', clearProps: 'opacity' },
     );
+    return () => { tween.kill(); };
   }, []);
 
   return <div ref={ref}>{children}</div>;

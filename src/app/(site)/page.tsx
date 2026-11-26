@@ -1,4 +1,5 @@
 import dynamic from "next/dynamic";
+import { CardGridSkeleton, ListSkeleton } from '@/components/ui/Skeleton';
 import CmsPage from "@/components/cms/Page";
 import { toProjectCard } from "@/lib/live";
 import type { Metadata } from "next";
@@ -22,13 +23,13 @@ import { CmsText } from "@/components/cms/Canvas";
 import { Reveal, CountUp, SplitWords } from "@/components/ui/Reveal";
 
 const ProjectBendGallery = dynamic(() => import("@/components/home/ProjectBendGallery"), {
-  loading: () => <div className="min-h-[500px] flex items-center justify-center font-mono text-xs text-[#9a97a8]">Loading projects…</div>,
+  loading: () => <CardGridSkeleton count={3} minHeight={500} />,
 });
 const VerticalTestimonials = dynamic(() => import("@/components/home/VerticalTestimonials"), {
-  loading: () => <div className="min-h-[300px] flex items-center justify-center font-mono text-xs text-[#9a97a8]">Loading testimonials…</div>,
+  loading: () => <ListSkeleton rows={3} minHeight={300} />,
 });
 const Accordion = dynamic(() => import("@/components/ui/Accordion"), {
-  loading: () => <div className="min-h-[200px] flex items-center justify-center font-mono text-xs text-[#9a97a8]">Loading FAQs…</div>,
+  loading: () => <ListSkeleton rows={4} minHeight={200} />,
 });
 
 export async function generateMetadata(): Promise<Metadata> {
