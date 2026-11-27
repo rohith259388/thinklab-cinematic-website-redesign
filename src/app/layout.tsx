@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { League_Spartan, Space_Grotesk, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import { BRAND } from '@/lib/content';
+import ServiceWorker from '@/components/ui/ServiceWorker';
 
 const leagueSpartan = League_Spartan({
   subsets: ['latin'],
@@ -72,6 +73,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" className={`${leagueSpartan.variable} ${grotesk.variable} ${plex.variable}`}>
       <body className="grain overflow-x-clip bg-[#050505] text-[#fcfcf7]">
         {children}
+        <ServiceWorker />
       </body>
     </html>
   );

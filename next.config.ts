@@ -4,6 +4,9 @@ import data from './src/lib/live-content.json';
 const nextConfig: NextConfig = {
   experimental: {
     agentUpgrade: "security",
+    // Keep visited/prefetched pages in the in-browser router cache, so going back
+    // to a page in the same session is instant (seconds).
+    staleTimes: { dynamic: 300, static: 1800 },
   },
   // Allow localtunnel and custom dev origins
   allowedDevOrigins: ['*.loca.lt', 'cold-ends-divide.loca.lt', '*.pinggy.link', '*.trycloudflare.com'],
