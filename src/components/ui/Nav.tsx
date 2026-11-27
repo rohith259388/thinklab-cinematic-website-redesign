@@ -1,12 +1,51 @@
 'use client';
 
 import { CmsText, CmsLink, useCanvasContent } from '@/components/cms/Canvas';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { ArrowUpRight, Plus, X } from 'lucide-react';
 import { NAV, BRAND } from '@/lib/content';
+import LiquidGlass from '@/components/ui/LiquidGlass';
+
+/** Relative luminance (0–1) of an `rgb()/rgba()` colour, or null if mostly transparent. */
+function luminance(color: string): number | null {
+  const m = color.match(/[\d.]+/g);
+  if (!m || m.length < 3) return null;
+  const [r, g, b, a = '1'] = m;
+  if (parseFloat(a) < 0.5) return null;
+  const lin = (v: string) => {
+    const c = parseFloat(v) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+/**
+ * Is the page surface directly behind the header light? Samples the element
+ * stack at three points along the header and reads the first opaque
+ * background colour (sections marked [data-light-surface] always count as light).
+ */
+function isLightBehind(header: HTMLElement | null): boolean {
+  if (!header) return false;
+  const box = header.getBoundingClientRect();
+  const y = Math.max(1, box.top + box.height / 2);
+  // Logo, centre and action buttons; the majority decides.
+  const points = [box.left + 60, box.left + box.width / 2, box.right - 60];
+  let votes = 0;
+  for (const x of points) {
+    for (const el of document.elementsFromPoint(x, y)) {
+      if (header.contains(el)) continue;
+      if (el.closest('[data-light-surface]')) { votes++; break; }
+      const lum = luminance(getComputedStyle(el).backgroundColor);
+      if (lum === null) continue;
+      if (lum > 0.45) votes++;
+      break;
+    }
+  }
+  return votes >= 2;
+}
 
 export default function Nav() {
   const pathname = usePathname();
@@ -16,9 +55,9 @@ export default function Nav() {
   const [open, setOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
+  const header = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const surfaces = Array.from(document.querySelectorAll<HTMLElement>('.studio-content, [data-light-surface]'));
     let lastY = window.scrollY;
     let frame = 0;
     const update = () => {
@@ -30,12 +69,26 @@ export default function Nav() {
       else if (delta > 4) setHidden(true);
       else if (delta < -4) setHidden(false);
       if (Math.abs(delta) > 4 || y < 80) lastY = y;
-      setLight(surfaces.some((s) => { const rect = s.getBoundingClientRect(); return rect.top < 80 && rect.bottom > 80; }));
+      setLight(isLightBehind(header.current));
     };
     const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
     update();
+    // Re-check the moment the page content changes (route streamed in, loader
+    // swapped for the page, lazy sections mounted) instead of waiting for a scroll.
+    const main = document.getElementById('main');
+    const observer = new MutationObserver(onScroll);
+    if (main) observer.observe(main, { childList: true, subtree: true });
+    // Safety net for late layout shifts (fonts, images) that don't touch the DOM tree.
+    const settle = window.setTimeout(onScroll, 400);
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(frame); };
+    window.addEventListener('resize', onScroll);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      window.clearTimeout(settle);
+      cancelAnimationFrame(frame);
+    };
   }, [pathname]);
 
   useEffect(() => {
@@ -55,13 +108,14 @@ export default function Nav() {
   return (
     <>
       <a className="skip-link" href="#main">Skip to content</a>
-      <header className={`site-header${hidden && !open ? ' is-hidden' : ''}${light ? ' header-light' : ''}`}>
+      <LiquidGlass target={header} />
+      <header ref={header} className={`site-header${hidden && !open ? ' is-hidden' : ''}${light ? ' header-light' : ''}`}>
         <Link href="/" className="wordmark flex items-center" aria-label="Thinklab — Home">
           {/* Thinklab Digital Solutions Brand Logo (adaptive dark/light) */}
           <div className="relative h-9 sm:h-10 w-auto flex items-center">
-            {/* Dark logo on light backgrounds */}
+            {/* Black logo on light backgrounds */}
             <img
-              src="/images/thinklab-logo-dark.png"
+              src="/images/thinklab-logo-black.png"
               alt="Thinklab Digital Solutions"
               className="h-8 sm:h-9 w-auto object-contain hidden [.header-light_&]:block"
             />
@@ -85,11 +139,11 @@ export default function Nav() {
           <button ref={toggle} onClick={() => setOpen(true)} className="menu-toggle" aria-label="Open menu" aria-expanded={open} aria-controls="site-menu">Menu <span className="menu-dots"><i /><i /></span></button>
         </div>
       </header>
-      <dialog ref={dialog} id="site-menu" aria-label="Site navigation" className="menu-dialog" onCancel={() => setOpen(false)} onClose={() => setOpen(false)}>
+      <dialog ref={dialog} id="site-menu" aria-label="Site navigation" className="menu-dialog" style={{ '--menu-count': NAV.length + (menu?.length ?? 0) } as CSSProperties} onCancel={() => setOpen(false)} onClose={() => setOpen(false)}>
         <div className="menu-top">
           <Link href="/" className="wordmark flex items-center" onClick={() => setOpen(false)} aria-label="Thinklab — Home">
             <img
-              src="/images/thinklab-logo-white.png"
+              src="/images/thinklab-logo-black.png"
               alt="Thinklab Digital Solutions"
               className="h-8 sm:h-9 w-auto object-contain"
             />

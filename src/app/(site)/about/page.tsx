@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic';
-import { ListSkeleton } from '@/components/ui/Skeleton';
+import { Loader } from '@/components/ui/Loader';
 import CmsPage from '@/components/cms/Page';
 import { siteContent } from '@/lib/cms/public';
 import type { Metadata } from 'next';
@@ -16,7 +16,7 @@ import { Reveal, EnergyLine } from '@/components/ui/Reveal';
 import { CmsText } from '@/components/cms/Canvas';
 
 const Accordion = dynamic(() => import('@/components/ui/Accordion'), {
-  loading: () => <ListSkeleton rows={4} minHeight={200} />,
+  loading: () => <Loader minHeight={200} />,
 });
 
 const defaultMetadata: Metadata = {

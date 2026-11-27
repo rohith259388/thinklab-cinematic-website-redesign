@@ -1,10 +1,11 @@
 import dynamic from "next/dynamic";
-import { CardGridSkeleton, ListSkeleton } from '@/components/ui/Skeleton';
+import { Loader } from '@/components/ui/Loader';
 import CmsPage from "@/components/cms/Page";
 import { toProjectCard } from "@/lib/live";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowUpRight, Plus, Star } from "lucide-react";
+import { Suspense } from "react";
+import { ArrowUpRight, Mail, Phone, Plus, Star } from "lucide-react";
 import {
   BRAND,
   SERVICES,
@@ -23,13 +24,16 @@ import { CmsText } from "@/components/cms/Canvas";
 import { Reveal, CountUp, SplitWords } from "@/components/ui/Reveal";
 
 const ProjectBendGallery = dynamic(() => import("@/components/home/ProjectBendGallery"), {
-  loading: () => <CardGridSkeleton count={3} minHeight={500} />,
+  loading: () => <Loader minHeight={500} />,
 });
 const VerticalTestimonials = dynamic(() => import("@/components/home/VerticalTestimonials"), {
-  loading: () => <ListSkeleton rows={3} minHeight={300} />,
+  loading: () => <Loader minHeight={300} />,
 });
 const Accordion = dynamic(() => import("@/components/ui/Accordion"), {
-  loading: () => <ListSkeleton rows={4} minHeight={200} />,
+  loading: () => <Loader minHeight={200} />,
+});
+const LeadForm = dynamic(() => import("@/components/ui/LeadForm"), {
+  loading: () => <div className="glass p-9"><Loader minHeight={420} /></div>,
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -431,6 +435,48 @@ export default async function HomePage() {
               >
                 <ArrowUpRight size={36} />
               </Link>
+            </section>
+
+            {/* 9. CONTACT */}
+            <section id="contact" className="home-contact" aria-label="Contact Thinklab">
+              <div className="home-contact-intro">
+                <span className="micro-label">
+                  <CmsText field="home.contact.kicker">07 / GET IN TOUCH</CmsText>
+                </span>
+                <h2>
+                  <CmsText field="home.contact.title" split><SplitWords text="It starts with" /></CmsText>
+                  <br />
+                  <span className="muted">
+                    <CmsText field="home.contact.accent" split><SplitWords text="a conversation." /></CmsText>
+                  </span>
+                </h2>
+                <p>
+                  <CmsText field="home.contact.body">
+                    Share a few details about your project and our team will get back to you within one business day.
+                  </CmsText>
+                </p>
+                <ul className="home-contact-lines">
+                  <li>
+                    <a href={`mailto:${BRAND.email}`}>
+                      <span className="home-contact-icon"><Mail size={16} /></span>
+                      {BRAND.email}
+                    </a>
+                  </li>
+                  {BRAND.phones.map((p) => (
+                    <li key={p.href}>
+                      <a href={p.href}>
+                        <span className="home-contact-icon"><Phone size={16} /></span>
+                        {p.label} <span className="micro-label">{p.region}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <Reveal>
+                <Suspense fallback={<div className="glass p-9"><Loader minHeight={420} /></div>}>
+                  <LeadForm source="home" />
+                </Suspense>
+              </Reveal>
             </section>
           </div>
         </>

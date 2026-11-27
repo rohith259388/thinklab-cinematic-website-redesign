@@ -108,8 +108,10 @@ export const SERVICES: Service[] = [
       'We map long-term digital roadways — market analysis, channel strategy, budgets and milestones — so every campaign, website and system is built against a clear, measurable growth plan.',
     capabilities: ['Market Analysis', 'Channel Strategy', 'Budget Planning', 'Growth Roadmaps'],
   },
-  { id: 'pr-events', index: '07', title: 'PR & Events', layer: 'Events bring people together', summary:
-      'PR and event experiences, promoted digitally from registration to the room.', description: 'We help brands, businesses and communities organize impactful PR events through digital promotion, online registrations, attendee coordination and engaging event experiences.', capabilities: ['Event Promotion', 'Digital Registrations', 'Audience Engagement', 'Attendee Coordination'] },
+  {
+    id: 'pr-events', index: '07', title: 'PR & Events', layer: 'Events bring people together', summary:
+      'PR and event experiences, promoted digitally from registration to the room.', description: 'We help brands, businesses and communities organize impactful PR events through digital promotion, online registrations, attendee coordination and engaging event experiences.', capabilities: ['Event Promotion', 'Digital Registrations', 'Audience Engagement', 'Attendee Coordination']
+  },
 ];
 
 export const HERO = {

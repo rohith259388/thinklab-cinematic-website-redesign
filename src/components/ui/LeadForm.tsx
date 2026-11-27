@@ -90,23 +90,22 @@ export default function LeadForm({ source = 'contact' }: { source?: string }) {
       <div className="mt-7 grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="mb-2 block font-mono text-[10px] tracking-[0.24em] text-[#9a97a8] uppercase">Your name *</span>
-          <input required minLength={2} maxLength={160} name="name" className="field" placeholder="Ada Lovelace" autoComplete="name" />
+          <input required minLength={2} maxLength={160} name="name" className="field" placeholder="Enter your full name" autoComplete="name" />
         </label>
         <label className="block">
           <span className="mb-2 block font-mono text-[10px] tracking-[0.24em] text-[#9a97a8] uppercase">Email *</span>
-          <input required type="email" name="email" className="field" placeholder="ada@company.com" autoComplete="email" />
+          <input required type="email" name="email" className="field" placeholder="Enter your email address" autoComplete="email" />
         </label>
         <label className="block">
-          <span className="mb-2 flex items-center justify-between font-mono text-[10px] tracking-[0.24em] text-[#9a97a8] uppercase">
-            <span>Phone number <span className="text-[#a280ff] font-bold">*</span></span>
-            <span className="inline-flex items-center gap-1 rounded bg-[#a280ff]/15 px-1.5 py-0.5 text-[9px] font-sans font-semibold tracking-wider text-[#c5b0ff] uppercase">Important &bull; Required</span>
+          <span className="mb-2 block font-mono text-[10px] tracking-[0.24em] text-[#9a97a8] uppercase">
+            Phone number <span className="text-[#a280ff] font-bold">*</span>
           </span>
           <input
             required
             type="tel"
             name="phone"
             className="field"
-            placeholder="+91 98765 43210"
+            placeholder="Enter your phone number"
             autoComplete="tel"
             minLength={7}
             maxLength={25}
@@ -116,7 +115,7 @@ export default function LeadForm({ source = 'contact' }: { source?: string }) {
         </label>
         <label className="block">
           <span className="mb-2 block font-mono text-[10px] tracking-[0.24em] text-[#9a97a8] uppercase">Company</span>
-          <input name="company" className="field" placeholder="Company / brand" autoComplete="organization" />
+          <input name="company" className="field" placeholder="Enter your company or brand name" autoComplete="organization" />
         </label>
         <label className="block sm:col-span-2">
           <span className="mb-2 block font-mono text-[10px] tracking-[0.24em] text-[#9a97a8] uppercase">What can we help with?</span>
@@ -139,7 +138,7 @@ export default function LeadForm({ source = 'contact' }: { source?: string }) {
           maxLength={4000}
           rows={5}
           className="field resize-none"
-          placeholder="Where is your business today — and where must it be in twelve months?"
+          placeholder="Tell us about your project, goals and timeline"
         />
       </label>
 
